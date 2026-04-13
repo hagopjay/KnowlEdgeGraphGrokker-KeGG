@@ -90,6 +90,7 @@ just like the data stack did 10 years ago:
     where each component does what it's best at.
 
     
+<script src="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f.js"></script>
 
 
 MIT License
