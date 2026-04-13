@@ -89,8 +89,9 @@ just like the data stack did 10 years ago:
     "best" graph database. They need the right ARCHITECTURE
     where each component does what it's best at.
 
-    
-<script src="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f.js"></script>
+
+# Andrej Krpathy's LLM Wiki / Graph wiki funnel idea. confirming my overall direction instincts to leverage the graph structure for future learning, both man and machine.
+https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f.js
 
 
 MIT License
