@@ -137,7 +137,8 @@ just like the data stack did 10 years ago:
     where each component does what it's best at.
 
 ############################################################################## added 4.13.2026
-[Andrej Karpathy](./karpathy/README.md)
+
+# [Andrej Karpathy](./karpathy/README.md)
 ## Andrej Karpathy's LLM Wiki / Graph wiki funnel idea. confirming my overall direction instincts to leverage the graph structure for future learning, both man and machine.
 [https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f.js](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
 
