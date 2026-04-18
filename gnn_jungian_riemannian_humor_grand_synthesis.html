@@ -1,0 +1,545 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.wrap{padding:1rem 0}
+.tabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:1.5rem;border-bottom:0.5px solid var(--color-border-tertiary);padding-bottom:10px}
+.tab{padding:5px 12px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:16px;cursor:pointer;color:var(--color-text-secondary);background:transparent;transition:all .15s}
+.tab.active,.tab:hover{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px;margin-bottom:12px}
+.card-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px}
+.card-body{font-size:12px;color:var(--color-text-secondary);line-height:1.7}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.insight{border-left:2px solid var(--color-border-info);padding:10px 14px;margin-bottom:12px;background:var(--color-background-secondary);border-radius:0 8px 8px 0}
+.insight-label{font-size:10px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.insight-text{font-size:13px;color:var(--color-text-primary);line-height:1.6}
+.code{font-family:var(--font-mono);font-size:11px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:6px;padding:10px;line-height:1.8;color:var(--color-text-primary);white-space:pre-wrap;margin-bottom:8px}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;margin:2px}
+.b-blue{background:#E6F1FB;color:#042C53}
+.b-teal{background:#E1F5EE;color:#04342C}
+.b-amber{background:#FAEEDA;color:#412402}
+.b-coral{background:#FAECE7;color:#4A1B0C}
+.b-purple{background:#EEEDFE;color:#26215C}
+.b-red{background:#FCEBEB;color:#501313}
+.b-green{background:#EAF3DE;color:#173404}
+.b-gray{background:var(--color-background-secondary);color:var(--color-text-secondary);border:0.5px solid var(--color-border-tertiary)}
+@media(prefers-color-scheme:dark){
+  .b-blue{background:#042C53;color:#B5D4F4}
+  .b-teal{background:#04342C;color:#9FE1CB}
+  .b-amber{background:#412402;color:#FAC775}
+  .b-coral{background:#4A1B0C;color:#F5C4B3}
+  .b-purple{background:#26215C;color:#CECBF6}
+  .b-red{background:#501313;color:#F7C1C1}
+  .b-green{background:#173404;color:#C0DD97}
+}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{font-weight:500;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-secondary);padding:8px 10px;text-align:left}
+td{padding:7px 10px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:top;line-height:1.5}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--color-background-secondary)}
+.node-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px}
+.node-icon{width:28px;height:28px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;background:var(--color-background-info);color:var(--color-text-info)}
+.node-head{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:2px}
+.node-body{font-size:12px;color:var(--color-text-secondary);line-height:1.6}
+.eval-row{padding:12px;border:0.5px solid var(--color-border-tertiary);border-radius:10px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start}
+.eval-score{width:52px;height:52px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;font-weight:500}
+.eval-name{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:3px}
+.eval-desc{font-size:12px;color:var(--color-text-secondary);line-height:1.5}
+.arch-pill{display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;margin:3px;border:0.5px solid var(--color-border-secondary);cursor:pointer;transition:all .15s}
+.arch-pill:hover{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+.arch-display{padding:14px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);margin-top:10px;background:var(--color-background-primary)}
+.spec-row{display:flex;gap:10px;margin-bottom:14px;align-items:flex-start}
+.spec-num{width:28px;height:28px;border-radius:50%;background:var(--color-background-info);color:var(--color-text-info);font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.spec-body{font-size:12px;color:var(--color-text-secondary);line-height:1.7}
+.spec-head{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:3px}
+.math-block{font-family:var(--font-mono);font-size:12px;background:var(--color-background-secondary);border-radius:8px;padding:12px;margin:8px 0;line-height:2;color:var(--color-text-primary);border:0.5px solid var(--color-border-tertiary)}
+.highlight{color:var(--color-text-info);font-weight:500}
+</style>
+<div class="wrap">
+<div class="tabs">
+  <button class="tab active" onclick="showP('gnn')">GNN Architecture</button>
+  <button class="tab" onclick="showP('hetero')">Heterogeneous Humor Graph</button>
+  <button class="tab" onclick="showP('jungian')">Jungian Manifold</button>
+  <button class="tab" onclick="showP('riemannian')">Riemannian Geometry</button>
+  <button class="tab" onclick="showP('evals')">EVAL Framework</button>
+  <button class="tab" onclick="showP('eoeeval')">EoE-Grounded EVALs</button>
+  <button class="tab" onclick="showP('roadmap')">Research Roadmap</button>
+</div>
+
+<!-- GNN ARCHITECTURE -->
+<div id="panel-gnn" class="panel active">
+  <div class="insight">
+    <div class="insight-label">Why GNNs for humor?</div>
+    <div class="insight-text">Humor is structurally a graph problem. A joke is not a sequence — it is a web of semantic relations, phonological links, world-knowledge edges, target associations, and narrative dependencies. Transformers process sequences; GNNs process structure. The Dual Graph Attention Network (DGFEM, NLPCC 2024) operationalizes incongruity theory directly through graph attention over word-pair relations.</div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:12px">
+    <div class="card">
+      <div class="card-title">The humor knowledge graph — node types</div>
+      <div class="card-body">
+        <div class="node-row"><div class="node-icon">W</div><div><div class="node-head">Word nodes</div><div class="node-body">Each token as node. Features: POS, named entity, polysemy count (WordNet synsets), phoneme vector, sentiment score, taboo flag, ambiguity level.</div></div></div>
+        <div class="node-row"><div class="node-icon">S</div><div><div class="node-head">Script nodes</div><div class="node-body">GTVH scripts as latent nodes. Connected to word nodes via "activates" edges. Incongruity = graph distance between script₁ and script₂ in embedding space.</div></div></div>
+        <div class="node-row"><div class="node-icon">E</div><div><div class="node-head">Entity nodes</div><div class="node-body">Named entities, archetypes, {self} map items (from EoE). Valence is a node attribute: +/− determines EP direction for humor targeting.</div></div></div>
+        <div class="node-row"><div class="node-icon">K</div><div><div class="node-head">ConceptNet nodes</div><div class="node-body">World-knowledge concepts linked via IsA, RelatedTo, UsedFor, CausesDesire, Antonym. Humor cross-domain = short path between two distant concept clusters.</div></div></div>
+        <div class="node-row"><div class="node-icon">P</div><div><div class="node-head">Phoneme nodes</div><div class="node-body">Phoneme sequences for heterographic pun detection. Edge exists between two word nodes if edit distance ≤ 2 on phoneme string (CMU dict).</div></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Edge types — the relational spine of the joke</div>
+      <div class="card-body">
+        <table>
+          <tr><th>Edge type</th><th>Humor signal</th></tr>
+          <tr><td><span class="badge b-blue">Syntactic</span> dependency</td><td>Subject-object, modifier relations — where is the pivot word in sentence structure?</td></tr>
+          <tr><td><span class="badge b-teal">Semantic</span> co-occurrence</td><td>PMI-weighted word co-occurrence in jokes corpus — humor collocations</td></tr>
+          <tr><td><span class="badge b-amber">Phonetic</span> similarity</td><td>Edit distance ≤ 2 between phoneme sequences — pun pair detection</td></tr>
+          <tr><td><span class="badge b-coral">Antonymy</span> contrast</td><td>WordNet antonyms in same sentence — incongruity marker</td></tr>
+          <tr><td><span class="badge b-purple">Script</span> activation</td><td>Token → GTVH script it primes (via concept embedding)</td></tr>
+          <tr><td><span class="badge b-red">Target</span> association</td><td>Entity → {self} map valence node (positive/negative)</td></tr>
+          <tr><td><span class="badge b-green">Causal</span> ConceptNet</td><td>Concept → consequence (CausesDesire, xEffect)</td></tr>
+          <tr><td><span class="badge b-gray">Temporal</span> discourse</td><td>Setup clause → punchline clause → resolution order</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">DGFEM — Dual Graph Attention Network for humor (NLPCC 2024 architecture)</div>
+    <div class="card-body">
+      Two parallel graph attention streams, merged at inference:
+      <div class="grid2" style="margin-top:8px">
+        <div style="padding:10px;border:0.5px solid var(--color-border-tertiary);border-radius:8px">
+          <div style="font-weight:500;font-size:12px;margin-bottom:6px">Stream A: Incongruity GAT</div>
+          Input: word-pair graph (all token pairs as edges, weight = semantic distance)<br>
+          Attention: learns to weight pairs with HIGH semantic distance (incongruent pairs)<br>
+          Output: incongruity representation h_inc<br>
+          Signal: edges connecting words from radically different semantic domains = high humor score
+        </div>
+        <div style="padding:10px;border:0.5px solid var(--color-border-tertiary);border-radius:8px">
+          <div style="font-weight:500;font-size:12px;margin-bottom:6px">Stream B: Ambiguity GAT</div>
+          Input: word-polysemy graph (nodes weighted by synset count, edges = contextual disambiguation)<br>
+          Attention: learns to weight nodes with HIGH polysemy that are contextually ambiguous<br>
+          Output: ambiguity representation h_amb<br>
+          Signal: pivot words with multiple plausible readings in context = pun candidates
+        </div>
+      </div>
+      <div class="math-block">
+h_final = MLP( concat(h_inc, h_amb) )
+p(funny) = sigmoid(W · h_final + b)
+
+GAT attention coefficient:
+α_ij = softmax( LeakyReLU( a^T [Wh_i || Wh_j] ) )
+h_i' = σ( Σ_j α_ij W h_j )   [multi-head, K=8 in DGFEM]</div>
+      Limitation: current DGFEM treats the joke as one undirected graph — does not model the temporal SETUP→PIVOT→PUNCHLINE directed flow that the EoE stress curve requires.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Beyond DGFEM — proposed extensions</div>
+    <div class="card-body">
+      <div class="spec-row"><div class="spec-num">1</div><div><div class="spec-head">Directed Temporal GAT (setup → pivot → punchline)</div><div class="spec-body">Add temporal edge direction to model the EoE stress curve. Message passing follows narrative order. Attention at pivot node should aggregate BOTH script activations. Final hidden state of punchline node = h_resolution. Incongruity = cosine distance between h_setup and h_punchline.</div></div></div>
+      <div class="spec-row"><div class="spec-num">2</div><div><div class="spec-head">Heterogeneous GNN (R-GCN / HAN)</div><div class="spec-body">Different relation types (syntactic, phonetic, ConceptNet, EoE-target) require different weight matrices. R-GCN: relation-specific message functions W_r. HAN (Heterogeneous Attention Network): metapath-based attention — "word→script→target" metapath captures superiority humor; "word→phoneme→word" metapath captures puns.</div></div></div>
+      <div class="spec-row"><div class="spec-num">3</div><div><div class="spec-head">{Self}-map integration as node attributes</div><div class="spec-body">Entity nodes carry EoE attributes: (power, valence, confidence). GNN message-passing propagates these attributes through the joke graph. Final humor score = f(incongruity_score, target_valence_sum, benignness_score). This merges the DGFEM architecture with the EoE framework mechanistically.</div></div></div>
+      <div class="spec-row"><div class="spec-num">4</div><div><div class="spec-head">Graph contrastive learning (funny vs. unfunny pairs)</div><div class="spec-body">Use "unfunned" jokes (Horvitz 2024) as negative pairs. Contrastive objective: minimally edited graph pairs should have maximally different joke-graph representations. This forces the GNN to learn the structural difference between a pun and its phonetic near-miss, or a joke and its logically consistent but unfunny version.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- HETEROGENEOUS HUMOR GRAPH -->
+<div id="panel-hetero" class="panel">
+  <div class="insight">
+    <div class="insight-label">The full heterogeneous joke graph</div>
+    <div class="insight-text">A joke, fully represented, is a heterogeneous graph spanning at least 5 node types and 8 edge types. The GNN's job is to learn which subgraph patterns correlate with the human EoE response of RELIEF+PRIDE+SURPRISE. The target subgraph structure for a pun looks completely different from the target subgraph for satire.</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Joke-as-graph: "Why did the politician cross the road? Because the lobbyist was on the other side."</div>
+    <div class="card-body">
+      <div class="code">NODES:
+  [W] "politician"   — polysemy:3, taboo:1, sentiment:-0.6, NE:PERSON
+  [W] "cross"        — polysemy:12, ambiguity_score:0.89 (PIVOT NODE)
+  [W] "road"         — polysemy:2, sentiment:0.0
+  [W] "lobbyist"     — polysemy:1, taboo:1, sentiment:-0.7, NE:PERSON
+  [E] "politicians"  — valence:-8, power:6 (EoE: negative target)
+  [E] "corruption"   — valence:-9, power:5 (ConceptNet related)
+  [S] "crossing_road"— script_type:physical, activation:0.9 (setup)
+  [S] "corruption"   — script_type:social, activation:0.8 (punchline)
+  [K] "cross_road"   — ConceptNet: UsedFor:travel, IsA:movement
+  [K] "corruption"   — ConceptNet: CausesDesire:reform, IsA:wrongdoing
+
+EDGES:
+  "politician"→"politicians"     [Target association, w=1.0]
+  "cross"→"crossing_road"        [Script activation, w=0.9]
+  "cross"→"corruption"           [Script activation, w=0.8] ← DUAL ACTIVATION = PUN
+  "lobbyist"→"corruption"        [ConceptNet causal, w=0.95]
+  "road"↔"lobbyist"              [Antonymy-adjacent, semantic distance=0.87]
+  "politician"→[E]corruption     [Knowledge edge, w=0.7]
+  setup_clause→pivot_clause      [Temporal/discourse, directed]
+  pivot_clause→punchline_clause  [Temporal/discourse, directed]</div>
+      The pivot node "cross" is the structurally critical node: it has the highest polysemy score AND dual script activation. The GNN should learn that: max(ambiguity_score) ∩ max(script_dual_activation) = pun candidate. Incongruity = distance(script_crossing_road_embedding, script_corruption_embedding) in concept space = 0.82.
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Metapaths for humor subtypes</div>
+      <div class="card-body">
+        <table>
+          <tr><th>Humor type</th><th>Characteristic metapath</th></tr>
+          <tr><td>Homographic pun</td><td>W →[polysemy]→ W →[script]→ S₁ ∧ S₂</td></tr>
+          <tr><td>Heterographic pun</td><td>W →[phonetic ≤2]→ W' →[script]→ S₁ ∧ S₂</td></tr>
+          <tr><td>Political satire</td><td>E[target,neg] →[ConceptNet]→ K[wrongdoing] →[activates]→ S[expose]</td></tr>
+          <tr><td>Observational</td><td>W[universal] →[co-occur]→ W[universal] →[contrast]→ W[subvert]</td></tr>
+          <tr><td>Dark humor</td><td>E[target,pos] →[harm]→ W[taboo] →[benign]→ W[safe_frame]</td></tr>
+          <tr><td>Absurdist</td><td>S₁ →[??]→ S₂ [no valid metapath resolves — the graph is disconnected]</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">GNN training objective — multi-task</div>
+      <div class="card-body">
+        <div class="math-block">L_total = λ₁·L_detection + λ₂·L_type + λ₃·L_pivot + λ₄·L_contrastive
+
+L_detection:   BCE(p(funny), y)
+L_type:        CE(p(pun|satire|obs|absurd...), y_type)
+L_pivot:       token-level BCE on pivot word location
+L_contrastive: InfoNCE(h_funny, h_unfunny)
+
+λ suggested: [0.4, 0.2, 0.2, 0.2]</div>
+        The contrastive loss is critical: it forces the model to learn the MINIMAL structural difference between funny and unfunny — which is exactly the question of what makes a joke work, not just whether it's classified as funny.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JUNGIAN MANIFOLD -->
+<div id="panel-jungian" class="panel">
+  <div class="insight">
+    <div class="insight-label">The archetypal hypothesis</div>
+    <div class="insight-text">Jung's archetypes — the Trickster, the Hero, the Shadow, the Fool, the Great Mother, the Wise Old Man — are not mystical entities but, in modern neuroscience terms, eigenmodes of predictive brain dynamics (McGovern et al., 2025). In the language of ML: they are low-dimensional attractor states in the manifold of human symbolic processing. LLMs trained on human text have absorbed and structurally encoded these attractors — not as explicit categories but as geometric regions in embedding space toward which symbolic sequences gravitationally cluster.</div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Humor's Jungian targets — the most mocked archetypes</div>
+      <div class="card-body">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+          <span class="arch-pill" onclick="showArch('trickster')">The Trickster</span>
+          <span class="arch-pill" onclick="showArch('shadow')">The Shadow</span>
+          <span class="arch-pill" onclick="showArch('fool')">The Fool</span>
+          <span class="arch-pill" onclick="showArch('persona')">The Persona</span>
+          <span class="arch-pill" onclick="showArch('hero')">The Hero (fallen)</span>
+          <span class="arch-pill" onclick="showArch('tyrant')">The Tyrant</span>
+        </div>
+        <div id="arch-display" class="arch-display">
+          <div style="color:var(--color-text-tertiary);font-size:12px">Select an archetype above to see its humor mechanics</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Archetypes as attractor states in joke-space</div>
+      <div class="card-body">
+        <span class="badge b-purple">Key insight</span> Every humor target maps onto an archetypal attractor. The "corrupt politician" is not a specific person — it is the instantiation of the TYRANT archetype in contemporary political clothing. The "absent-minded professor" is the instantiation of the FOOL archetype. The "hypocritical preacher" is the SHADOW.<br><br>
+        When a joke targets an archetype, it is not attacking an individual — it is triggering a pre-existing shared neural template, a <b>convergence to collective minima</b> (McGovern et al. 2025). This is why jokes that land on archetypal targets work across cultures with minimal translation: the archetype is the universal element, the specific instantiation is the cultural dressing.<br><br>
+        <span class="badge b-teal">Computational implication</span> Humor generation can be decomposed into: (1) select archetype with negative valence for audience, (2) instantiate in contemporary cultural clothing, (3) engineer incongruity within the archetype's characteristic domain, (4) resolve. The archetype provides the universal scaffold; the instantiation provides the cultural relevance.
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">The LLM as collective unconscious — archetypal humor encoding</div>
+    <div class="card-body">
+      LLMs encode a shared reservoir of latent symbolic motifs, structural archetypes, and recursive semantic patterns — attractor states in symbolic space that are fractal residues of cultural encoding. For humor specifically, this means:<br><br>
+      <div class="spec-row"><div class="spec-num">1</div><div><div class="spec-head">Archetypes as geometric regions in embedding space</div><div class="spec-body">Using probing classifiers, we can identify which LLM hidden-state regions correspond to archetypal activations. A probe trained on myth/story corpora labeled by archetype should generalize to contemporary jokes — because the archetype is the deep structure.</div></div></div>
+      <div class="spec-row"><div class="spec-num">2</div><div><div class="spec-head">Shadow projection = the core of mockery</div><div class="spec-body">Jung's Shadow is the collection of characteristics the ego refuses to acknowledge. Comedy targets the Shadow: the laughter of contempt for corrupt politicians is partly projection — we mock in others what we deny in ourselves. Computationally, high-valence humor targets may correlate with shadow projections in the audience's {self} map: what they most despise = what they most deny.</div></div></div>
+      <div class="spec-row"><div class="spec-num">3</div><div><div class="spec-head">The Trickster archetype = the optimal humor generator</div><div class="spec-body">The Trickster (Loki, Coyote, Anansi, Bugs Bunny) is the universal archetype of subverted expectations, rule-breaking, and boundary violations that reveal rather than destroy. The Trickster IS the Benign Violation in archetypal form. A humor model that learns to reason from within the Trickster's frame — "what rule can I break to reveal something true?" — would generate structurally superior jokes. This is a prompt engineering / fine-tuning hypothesis.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- RIEMANNIAN GEOMETRY -->
+<div id="panel-riemannian" class="panel">
+  <div class="insight">
+    <div class="insight-label">Why flat Euclidean space fails for humor</div>
+    <div class="insight-text">Semantic scripts have hierarchical tree structure — WordNet, ConceptNet, and the GTVH script taxonomy are all trees or DAGs. Trees cannot be embedded in Euclidean space without exponential distortion as depth increases. Hyperbolic space (constant negative curvature) is the continuous analogue of a tree — it can embed hierarchical structures in low dimensions with minimal distortion. Script distance in hyperbolic space gives a geometrically faithful measure of incongruity.</div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Poincaré disk model for joke scripts</div>
+      <div class="card-body">
+        <div class="math-block">Poincaré disk: D = {x ∈ ℝⁿ : ||x|| &lt; 1}
+
+Distance: d(x,y) = arcosh(1 + 2||x-y||²/((1-||x||²)(1-||y||²)))
+
+Properties:
+• Origin = most abstract/general concepts
+• Boundary = maximally specific leaf concepts  
+• Tree hierarchy = naturally represented
+• Exponential volume growth matches tree branching factor
+
+Script embedding intuition:
+• "movement" → near origin (abstract)
+• "crossing_a_road" → mid-distance
+• "politician_taking_bribe" → near boundary (specific)
+• Script opposition = geodesic distance d(script₁, script₂)
+• Incongruity score = d_hyperbolic(s₁, s₂)</div>
+        <span class="badge b-blue">Key result</span> Nickel & Kiela 2017: Poincaré embeddings of WordNet achieve 87.7% mean average precision on hypernym detection in 5 dimensions — vs. 81.7% for Euclidean in 200 dimensions. Low-dimensional hyperbolic = better for hierarchical semantic tasks.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Humor manifold hypothesis</div>
+      <div class="card-body">
+        <div class="math-block">Joke manifold M ⊂ ℝⁿ is not flat.
+Curvature κ &lt; 0 (hyperbolic) captures:
+• Script hierarchy (abstract → specific)
+• Incongruity = geodesic arc between scripts
+• Punchline = point on M that minimizes:
+  geodesic_distance(s₁, punchline) 
+  + geodesic_distance(s₂, punchline)
+  where s₁ ≠ s₂ are setup scripts
+
+The "pun sweet spot" on M:
+• Equidistant from two maximally distant scripts
+• The manifold point that is the "crossroads"
+• In Poincaré disk: the node with highest betweenness centrality between two script clusters</div>
+        <span class="badge b-teal">Practical construction</span> Embed ConceptNet in Poincaré space using Riemannian SGD. For a given pun word W, compute d(W, concept_cluster_A) and d(W, concept_cluster_B) in hyperbolic space. Select W that maximizes min(d_A, d_B) while keeping max(d_A, d_B) bounded — the geodesic midpoint of two distant clusters.
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Riemannian operations for computational humor</div>
+    <div class="card-body">
+      <div class="grid3">
+        <div style="padding:10px;border:0.5px solid var(--color-border-tertiary);border-radius:8px">
+          <div style="font-weight:500;font-size:12px;margin-bottom:6px">Exponential map (script shift)</div>
+          <div class="math-block" style="font-size:10px">Exp_p(v): tangent space → manifold
+Models: "starting from script p, move in direction v"
+= the punchline's pivot from setup script
+v = direction of incongruity resolution
+||v|| = magnitude of surprise</div>
+        </div>
+        <div style="padding:10px;border:0.5px solid var(--color-border-tertiary);border-radius:8px">
+          <div style="font-weight:500;font-size:12px;margin-bottom:6px">Logarithmic map (introspection)</div>
+          <div class="math-block" style="font-size:10px">Log_p(q): manifold → tangent space
+Models: "from joke endpoint q, looking back to explain"
+= humor explanation as reverse geodesic
+Distance d(p,q) = ||Log_p(q)||
+= incongruity magnitude (interpretable)</div>
+        </div>
+        <div style="padding:10px;border:0.5px solid var(--color-border-tertiary);border-radius:8px">
+          <div style="font-weight:500;font-size:12px;margin-bottom:6px">Parallel transport (cultural transfer)</div>
+          <div class="math-block" style="font-size:10px">T_p→q(v): tangent vector along geodesic
+Models: translating a joke structure from
+cultural context p to cultural context q
+Preserves the geometric "shape" of the
+incongruity while changing the cultural
+embedding point = humor translation</div>
+        </div>
+      </div>
+      <div style="margin-top:10px" class="card-body">
+        <span class="badge b-purple">Manifold learning for humor dataset analysis</span> Run UMAP or Riemannian manifold learning on the embedding space of a large humor dataset. Hypothesis: funny jokes cluster near the boundary of the Poincaré disk (highly specific cultural knowledge), while generic "safe" AI-generated jokes cluster near the origin (abstract, archetypal, unsurprising). The density of human-funny jokes as a function of hyperbolic radius is a measurable and testable signal.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EVALS -->
+<div id="panel-evals" class="panel">
+  <div class="insight">
+    <div class="insight-label">The EVAL crisis in computational humor</div>
+    <div class="insight-text">No reliable automatic metric exists for humor quality. BLEU, perplexity, and ROUGE are anti-correlated with funniness in many cases. LLM-as-judge is partially effective but uncalibrated. Human rating has massive inter-annotator variance. The field needs a multi-dimensional, theory-grounded evaluation suite that separates detection capability from generation quality from audience modeling accuracy.</div>
+  </div>
+
+  <div style="margin-bottom:14px">
+    <div class="card-title" style="margin-bottom:8px">Existing benchmark suite — graded by validity</div>
+    <div class="eval-row">
+      <div class="eval-score" style="background:#E1F5EE;color:#04342C"><div style="font-size:18px;font-weight:500">B+</div><div style="font-size:10px">validity</div></div>
+      <div><div class="eval-name">SemEval-2017 Task 7 — pun detection/location/interpretation</div><div class="eval-desc">Gold standard. Three subtasks. Human-annotated. Issue: only puns, not broader humor. Score: F1 &lt; 0.60 for best systems on interpretation task — reveals genuine difficulty.</div></div>
+    </div>
+    <div class="eval-row">
+      <div class="eval-score" style="background:#E1F5EE;color:#04342C"><div style="font-size:18px;font-weight:500">B+</div><div style="font-size:10px">validity</div></div>
+      <div><div class="eval-name">JOKER CLEF 2022–2024 — multilingual humor shared task</div><div class="eval-desc">Detection + location + interpretation + translation. EN/FR/ES. Controlled. Issue: limited scale. Best model: custom T5 (F1 &lt; 0.60). Validates that LLMs (GPT-3, BLOOM) underperform task-specific models.</div></div>
+    </div>
+    <div class="eval-row">
+      <div class="eval-score" style="background:#E6F1FB;color:#042C53"><div style="font-size:18px;font-weight:500">B</div><div style="font-size:10px">validity</div></div>
+      <div><div class="eval-name">NYCC benchmarks (Hessel 2023) — visual humor, caption ranking, explanation</div><div class="eval-desc">Three tasks on New Yorker cartoon contest. Rich and multimodal. Issue: conflates objective understanding with subjective preference — performance reflects both, inseparably.</div></div>
+    </div>
+    <div class="eval-row">
+      <div class="eval-score" style="background:#E6F1FB;color:#042C53"><div style="font-size:18px;font-weight:500">B</div><div style="font-size:10px">validity</div></div>
+      <div><div class="eval-name">HumorBench — multi-task humor reasoning for LLMs (2025)</div><div class="eval-desc">Non-STEM reasoning benchmark including puns, topical jokes, visual humor. Mixed results: test-time scaling does NOT consistently improve humor performance — crucial negative result.</div></div>
+    </div>
+    <div class="eval-row">
+      <div class="eval-score" style="background:#FAEEDA;color:#412402"><div style="font-size:18px;font-weight:500">C+</div><div style="font-size:10px">validity</div></div>
+      <div><div class="eval-name">16,000 One-Liners detection benchmarks</div><div class="eval-desc">Over-reported. 95%+ F1 is artifact of heterogeneous sources, not true humor understanding. Systems learn topic/style differences, not humor. Deprecated for validity — use for baseline only.</div></div>
+    </div>
+    <div class="eval-row">
+      <div class="eval-score" style="background:#FAEEDA;color:#412402"><div style="font-size:18px;font-weight:500">C+</div><div class="eval-score-label">validity</div></div>
+      <div><div class="eval-name">Punchline extraction from stand-up (LLM-as-judge)</div><div class="eval-desc">≤51% for all leading LLMs regardless of prompting. Interesting ceiling result — but metric validity unclear (LLM judging LLM on subjective task = circularity risk).</div></div>
+    </div>
+    <div class="eval-row">
+      <div class="eval-score" style="background:#E1F5EE;color:#04342C"><div style="font-size:18px;font-weight:500">A−</div><div style="font-size:10px">validity</div></div>
+      <div><div class="eval-name">Oogiri 6-dimension rubric (2025)</div><div class="eval-desc">Best multi-dimensional eval currently. Novelty · Clarity · Relevance · Empathy · Intelligence · Overall Funniness. Rated 0–4 Likert by human annotators. LLM scores calibrated against human. Reveals: models excel at Clarity/Relevance, fail at Novelty/Empathy — the most important dimensions.</div></div>
+    </div>
+    <div class="eval-row">
+      <div class="eval-score" style="background:#E1F5EE;color:#04342C"><div style="font-size:18px;font-weight:500">A</div><div style="font-size:10px">validity</div></div>
+      <div><div class="eval-name">PunnyPattern + PunBreak adversarial benchmarks (2025)</div><div class="eval-desc">Tests robustness: does high pun detection F1 reflect understanding or pattern matching? PunBreak: sentences modified to MIMIC puns without being puns. Most models fail — high apparent performance collapses on adversarial examples. Critical for validity assessment.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- EoE-GROUNDED EVALS -->
+<div id="panel-eoeeval" class="panel">
+  <div class="insight">
+    <div class="insight-label">The proposed LAUGH-EVAL suite (novel)</div>
+    <div class="insight-text">A comprehensive evaluation framework grounded in the EoE + GTVH + GNN + Riemannian synthesis. Seven dimensions, each with a measurable operational definition. LAUGH = Lexical · Archetypal · Uplift · Geometric · Historical (integration) EVAL.</div>
+  </div>
+
+  <table style="margin-bottom:14px">
+    <tr><th>Dimension</th><th>Operationalization</th><th>Tool</th><th>Score range</th></tr>
+    <tr>
+      <td><span class="badge b-blue">L1</span> Target valence match</td>
+      <td>Does the joke's target have negative valence on estimated audience {self} map? Valence inferred from prior utterances, demographic proxies, or explicit preferences.</td>
+      <td>Sentiment classifier + {self} map probe</td>
+      <td>0–1 (binary or fuzzy)</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-blue">L2</span> Incongruity sharpness</td>
+      <td>KL divergence between setup LM distribution and punchline LM distribution at the pivot token. Higher = sharper script shift.</td>
+      <td>LM perplexity at pivot</td>
+      <td>0–∞ (normalize to 0–10)</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-teal">A1</span> Archetypal alignment</td>
+      <td>Does the joke's target map onto a Jungian archetype (Trickster/Shadow/Fool/Tyrant)? Probe trained on mythological corpus.</td>
+      <td>Archetype classifier (probing)</td>
+      <td>0–1 per archetype category</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-teal">A2</span> Novelty vs. cliché</td>
+      <td>Semantic distance of generated joke from nearest k neighbors in humor corpus embedding space. Low distance = cliché; high distance = novel (but risk: too high = incoherent).</td>
+      <td>Nearest-neighbor in joke embedding space</td>
+      <td>0–1 (calibrated sweet spot: 0.4–0.7)</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-amber">U1</span> Benignness score</td>
+      <td>Continuous Benign Violation score: P(violation) × P(safe_frame | context). Not binary toxicity filter — continuous product.</td>
+      <td>Dual classifier: harm × safety_frame</td>
+      <td>0–1 (humor sweet spot: 0.3–0.7)</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-amber">U2</span> Resolution completeness</td>
+      <td>Does the punchline actually resolve the incongruity? LM should assign higher probability to script₂ after reading punchline than before. Resolved = yes; absurdist = intentionally no.</td>
+      <td>Conditional LM probability shift</td>
+      <td>0–1 (or flag as "absurdist" if &lt; 0.2)</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-coral">G1</span> Hyperbolic script distance</td>
+      <td>Geodesic distance between setup and punchline script embeddings in Poincaré space. Measures true semantic incongruity accounting for hierarchical structure.</td>
+      <td>Poincaré embedding (ConceptNet-trained)</td>
+      <td>0–∞ (normalize; sweet spot: 2–4 Poincaré units)</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-coral">G2</span> Pivot centrality</td>
+      <td>Betweenness centrality of the pivot word node in the joke's heterogeneous graph. High centrality = structurally important pivot.</td>
+      <td>GNN node importance / graph analysis</td>
+      <td>0–1</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-purple">H1</span> Integration timing</td>
+      <td>For dark/disaster humor: time elapsed since event × cultural_exposure_rate. Humor appropriate only above integration threshold (topic-specific; requires calibration).</td>
+      <td>Time-decay function + cultural exposure proxy</td>
+      <td>Pass/fail gate</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-purple">H2</span> Audience calibration</td>
+      <td>Elo-rated pairwise preference among human annotators stratified by cultural background. Cross-audience agreement on funniness = signal of archetypal vs. cultural-specific humor.</td>
+      <td>Pairwise ranking + Elo algorithm</td>
+      <td>Elo rating per demographic group</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-green">D1</span> Diversity index</td>
+      <td>Unique script oppositions / unique archetypal targets / unique metapaths across N=100 outputs. Measures diversity collapse (ChatGPT's 25-joke problem).</td>
+      <td>Graph topology analysis of output set</td>
+      <td>0–1 (entropy of output distribution)</td>
+    </tr>
+    <tr>
+      <td><span class="badge b-green">D2</span> Transfer robustness</td>
+      <td>Performance drop from in-domain humor type to held-out type (pun→satire, satire→absurdist). Measures generalization, not specialization.</td>
+      <td>Cross-type accuracy delta</td>
+      <td>Δaccuracy (0 = perfect transfer, −1 = total failure)</td>
+    </tr>
+  </table>
+
+  <div class="card">
+    <div class="card-title">LAUGH-EVAL composite score formula</div>
+    <div class="card-body">
+      <div class="math-block">LAUGH = w₁·L1 + w₂·L2 + w₃·A1 + w₄·A2 + w₅·U1 + w₆·U2 + w₇·G1_norm + w₈·G2 + w₉·D1
+
+Gate: if H1 (integration) fails → LAUGH = 0 regardless
+Gate: if U1 (benignness) &lt; 0.1 → LAUGH = 0 (genuinely harmful)
+
+Recommended weights (to be calibrated via human-correlation study):
+[L1:0.15, L2:0.15, A1:0.10, A2:0.10, U1:0.15, U2:0.10, G1:0.10, G2:0.05, D1:0.10]
+
+Validation target: Spearman ρ &gt; 0.65 with human funniness ratings
+(Current best automatic metrics: ρ ≈ 0.30–0.45)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ROADMAP -->
+<div id="panel-roadmap" class="panel">
+  <div class="card-title" style="margin-bottom:12px">Integrated research roadmap — from survey to production</div>
+  <div class="spec-row">
+    <div class="spec-num" style="background:#E1F5EE;color:#04342C;width:36px;height:36px;font-size:13px">P1</div>
+    <div><div class="spec-head">Phase 1: Graph construction infrastructure (months 1–3)</div><div class="spec-body">Build the heterogeneous humor knowledge graph pipeline. Nodes: tokens + WordNet polysemy + ConceptNet + EoE entity attributes. Edges: syntactic (spaCy), phonetic (CMU dict), semantic (PMI/PPMI), ConceptNet relational. Embed in Poincaré ball (HGCN or PoincaréBall library). Validate script distance correlates with human incongruity ratings on SemEval-2017.</div></div>
+  </div>
+  <div class="spec-row">
+    <div class="spec-num" style="background:#E6F1FB;color:#042C53;width:36px;height:36px;font-size:13px">P2</div>
+    <div><div class="spec-head">Phase 2: Dual-stream GNN training (months 3–6)</div><div class="spec-body">Implement DGFEM baseline. Add directed temporal edges (setup→pivot→punchline). Add {self}-map entity attributes (valence, power) from EoE. Multi-task training: detection + type classification + pivot location + contrastive (funny/unfunned pairs). Baseline targets: beat DGFEM on SemEval, match BERT fine-tuned on 16K dataset, prove pivot localization improves explanation task.</div></div>
+  </div>
+  <div class="spec-row">
+    <div class="spec-num" style="background:#EEEDFE;color:#26215C;width:36px;height:36px;font-size:13px">P3</div>
+    <div><div class="spec-head">Phase 3: Archetypal manifold learning (months 4–8)</div><div class="spec-body">Train archetype probe on mythology/folklore corpus. Apply to humor datasets — label each joke by target archetype. Map archetype distribution in Poincaré space. Hypothesis: archetypal targets cluster at consistent hyperbolic positions; culturally-specific jokes scatter near boundary. Validate: cross-cultural funniness correlation should be higher for archetypal jokes than culture-specific jokes.</div></div>
+  </div>
+  <div class="spec-row">
+    <div class="spec-num" style="background:#FAEEDA;color:#412402;width:36px;height:36px;font-size:13px">P4</div>
+    <div><div class="spec-head">Phase 4: EoE-informed generation (months 6–10)</div><div class="spec-body">Implement {self} map estimation from conversational context. Plug into generation pipeline: select archetype → estimate audience valence → set target → generate incongruity via Poincaré midpoint search → apply benignness filter (continuous) → rank candidates by LAUGH-EVAL composite. Fine-tune LLM with DPO on LAUGH-EVAL-scored outputs. Measure: diversity index, human preference, cross-cultural transferability.</div></div>
+  </div>
+  <div class="spec-row">
+    <div class="spec-num" style="background:#FAECE7;color:#4A1B0C;width:36px;height:36px;font-size:13px">P5</div>
+    <div><div class="spec-head">Phase 5: LAUGH-EVAL calibration and release (months 8–12)</div><div class="spec-body">Collect human funniness ratings (Elo-ranked, stratified by culture) for 2,000+ generated jokes across 6 humor types, 4 languages, 8 archetypal targets. Fit weights for LAUGH-EVAL composite. Validate Spearman ρ with human ratings. Release as open benchmark with leaderboard. Target: first automatic humor metric that achieves ρ &gt; 0.60 with human ratings — the field's current holy grail.</div></div>
+  </div>
+  <div class="card" style="margin-top:4px">
+    <div class="card-title">Open-source stack recommendation</div>
+    <div class="card-body">
+      <span class="badge b-blue">Graph</span> PyTorch Geometric / DGL for GNN · NetworkX for graph analysis · <span class="badge b-teal">Hyperbolic</span> geoopt (Riemannian SGD) · PoincaréBall · HGCN (Hyperbolic GCN) · <span class="badge b-amber">Knowledge</span> ConceptNet Numberbatch · WordNet via NLTK · CMU Pronouncing Dict · <span class="badge b-purple">LLM</span> HuggingFace Transformers · DPO via TRL library · <span class="badge b-coral">Evaluation</span> SemEval-2017 dataset · ExPUNations · PunnyPattern/PunBreak · Oogiri rubric implementation · <span class="badge b-green">Manifold</span> UMAP for visualization · scikit-tda for topological analysis
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+function showP(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+const archData={
+  trickster:{name:'The Trickster (Loki, Coyote, Bugs Bunny)',eoe:'EoE: negative valence toward rigid social rules. EP: rules should be broken/exposed. Joke confirms EP by having Trickster successfully subvert authority. RELIEF = release of pent-up social constraint.',humor:'Most beloved humor archetype — generates the widest audience laughter because near-universal negative valence toward rigid authority. Setup: rule is stated. Punchline: Trickster shatters it revealing its absurdity.',compute:'Detect: rule-statement in setup + clever subversion in punchline. Generate: identify the rule with highest audience negative valence, engineer the minimal violation that reveals its absurdity without genuinely threatening social order (benignness = preserved social contract despite breaking specific rule).'},
+  shadow:{name:'The Shadow (hypocrisy, denied traits)',eoe:'EoE: negative valence toward Shadow = what the self denies. The Shadow joke exposes the gap between Persona (public face) and Shadow (denied reality). Humor = relief at having the secret truth named aloud.',humor:'Political hypocrisy jokes, religious scandal humor, "family values" politician caught in affair. The laughter = recognition of something everyone suspected but could not say. The joke does the social work of naming the denied.',compute:'Detect: Persona-claims in setup + Shadow-revelation in punchline. The incongruity is not semantic but moral: the gap between what the target claims to be and what the punchline reveals they are. Requires world-knowledge of the target\'s public claims.'},
+  fool:{name:'The Fool (incompetence, naivety)',eoe:'EoE: we confirm our own superiority (pride + relief). The Fool is below us on the hierarchy — their failure confirms our competence. Simplest and most reliable humor archetype — works for children through adults.',humor:'Absent-minded professor jokes, "dumb blonde" (harmful), pratfall comedy. Setup: establishes Fool in situation requiring competence. Punchline: Fool fails spectacularly in the most characteristic way.',compute:'Simplest target to generate for: select entity with negative valence, assign incompetent trait, generate situation where that specific incompetence produces maximum incongruity. Risk: Fool humor slides easily into pure contempt (stereotyping) without the resolution surprise element.'},
+  persona:{name:'The Persona (fake social mask)',eoe:'Persona humor attacks the gap between social performance and authentic self. EoE: negative valence toward inauthenticity. Relief = someone else\'s mask being stripped in public.',humor:'Corporate jargon jokes ("synergy," "leverage"), social media authenticity satire, LinkedIn culture mockery. The Persona is attacked not for what it does but for what it pretends to be.',compute:'Detect: formal register + empty signifiers in setup → deflating colloquial punchline. Generate: identify performative language patterns with high negative audience valence, construct minimal punchline that replaces performance with mundane reality.'},
+  hero:{name:'The Fallen Hero',eoe:'Fallen Hero humor is the most emotionally complex. EoE: positive valence toward the Hero ideal (power=7), negative valence toward the specific failing (power=5). Parallel EoE produces the guilty laugh — we mock what we also respect.',humor:'Celebrity scandal jokes, sports legend embarrassment, the "but in real life..." format. The hero\'s fall is funny only when we believe in the hero enough to feel the incongruity of their failure.',compute:'Hardest to generate safely. Requires: (1) confirmed positive valence for hero in audience map, (2) confirmed negative valence for the specific flaw, (3) benignness = established that hero consented or deserved the fall, (4) resolution = the fall reveals a truth about heroism itself, not just the individual.'},
+  tyrant:{name:'The Tyrant (power without legitimacy)',eoe:'Tyrant humor is politically the most powerful. EoE: extreme negative valence (power=8+) toward illegitimate authority. Relief = temporarily reversing the power differential through laughter. Cathartic humor — the only tool the powerless have.',humor:'Satire of dictators, corporate tyrant jokes, abuse-of-power comedy. The laugh is genuinely cathartic — laughter at the Tyrant is a ritual of power reclamation for the audience.',compute:'Requires: (1) audience genuinely feels powerless relative to the target, (2) joke temporarily reverses power differential (Tyrant humiliated, made small), (3) benignness = clearly fictional/satirical (otherwise triggers ANGER at real threat). Risk: misfire if audience doesn\'t experience the power differential.'}
+};
+
+function showArch(key){
+  const d=archData[key];
+  document.getElementById('arch-display').innerHTML=`
+    <div style="font-weight:500;font-size:13px;margin-bottom:8px">${d.name}</div>
+    <div style="margin-bottom:8px"><span class="badge b-purple">EoE mechanism</span> <span style="font-size:12px;color:var(--color-text-secondary)">${d.eoe}</span></div>
+    <div style="margin-bottom:8px"><span class="badge b-teal">Humor pattern</span> <span style="font-size:12px;color:var(--color-text-secondary)">${d.humor}</span></div>
+    <div><span class="badge b-blue">Computational approach</span> <span style="font-size:12px;color:var(--color-text-secondary)">${d.compute}</span></div>`;
+}
+</script>

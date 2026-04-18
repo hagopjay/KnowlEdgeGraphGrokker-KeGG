@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apache Iceberg — Production Field Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #06090f;
+    --bg1:      #090e18;
+    --bg2:      #0d1422;
+    --bg3:      #111c2e;
+    --surface:  #172135;
+    --border:   #1a2a42;
+    --border2:  #1f3454;
+    --ice:      #7ef0ff;
+    --ice2:     #3ac8e0;
+    --ice3:     #1a7a90;
+    --ice4:     #0a3a48;
+    --amber:    #ffc040;
+    --amber2:   #b88000;
+    --red:      #ff5060;
+    --red2:     #b02030;
+    --green:    #40e890;
+    --green2:   #1a9a58;
+    --purple:   #a080ff;
+    --purple2:  #6040cc;
+    --coral:    #ff7060;
+    --text:     #c0d8e8;
+    --text2:    #6a9ab0;
+    --text3:    #3a6070;
+    --dim:      #1a2a3a;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* subtle grid texture */
+  body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(126,240,255,0.012) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(126,240,255,0.012) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* ── HEADER ──────────────────────────────────────────────── */
+  header {
+    border-bottom: 1px solid var(--border2);
+    padding: 24px 48px 20px;
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(6,9,15,0.97);
+    backdrop-filter: blur(12px);
+    display: flex; align-items: flex-end; justify-content: space-between;
+  }
+  .brand { display: flex; align-items: flex-end; gap: 20px; }
+  .logo-mark {
+    font-family: 'Syne', sans-serif;
+    font-size: 48px; font-weight: 800; line-height: 1;
+    color: var(--ice);
+    letter-spacing: -3px;
+  }
+  .brand-text { padding-bottom: 4px; }
+  .brand-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px; font-weight: 800;
+    color: #ddf0f8; letter-spacing: -0.5px;
+  }
+  .brand-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 3px; color: var(--text3);
+    text-transform: uppercase; margin-top: 2px;
+  }
+  .header-right {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--text3);
+    text-align: right; line-height: 2;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(126,240,255,0.1);
+    border: 1px solid rgba(126,240,255,0.25);
+    color: var(--ice2);
+    padding: 2px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 500;
+  }
+
+  /* ── TABS ────────────────────────────────────────────────── */
+  .tab-bar {
+    display: flex;
+    background: var(--bg1);
+    border-bottom: 1px solid var(--border2);
+    padding: 0 48px;
+    overflow-x: auto; gap: 0;
+    position: sticky; top: 89px; z-index: 99;
+  }
+  .tab-bar::-webkit-scrollbar { height: 2px; }
+  .tab-bar::-webkit-scrollbar-thumb { background: var(--border2); }
+  .tab-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--text3);
+    background: none; border: none; cursor: pointer;
+    padding: 13px 18px;
+    border-bottom: 2px solid transparent;
+    transition: all .18s; white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--ice); border-bottom-color: var(--ice); }
+
+  /* ── MAIN ────────────────────────────────────────────────── */
+  main { max-width: 1300px; margin: 0 auto; padding: 0 48px 100px; }
+  .tab-content { display: none; padding-top: 52px; }
+  .tab-content.active { display: block; animation: fadein .2s ease; }
+  @keyframes fadein { from {opacity:0;transform:translateY(6px)} to {opacity:1;transform:translateY(0)} }
+
+  /* ── SECTION TITLES ──────────────────────────────────────── */
+  .sect-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 5px;
+    color: var(--ice3); text-transform: uppercase; margin-bottom: 10px;
+  }
+  h2.sect-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 40px; font-weight: 800; letter-spacing: -1px;
+    color: #d8eef8; line-height: 1.05; margin-bottom: 14px;
+  }
+  h3.sub-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px; font-weight: 700;
+    color: var(--ice2); margin: 44px 0 12px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  h3.sub-title::before {
+    content: ''; flex-shrink: 0;
+    width: 28px; height: 2px;
+    background: linear-gradient(90deg, var(--ice), transparent);
+  }
+  h4 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px; font-weight: 700; letter-spacing: 0.3px;
+    color: var(--amber); margin: 28px 0 8px;
+  }
+  p { color: var(--text2); margin-bottom: 12px; font-weight: 300; line-height: 1.78; }
+  strong { color: var(--text); font-weight: 500; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ice); background: var(--ice4); padding: 1px 7px; border-radius: 3px; }
+  a { color: var(--ice2); text-decoration: none; border-bottom: 1px solid var(--border2); }
+  a:hover { border-bottom-color: var(--ice); }
+
+  /* ── CODE BLOCKS ─────────────────────────────────────────── */
+  .code-block {
+    background: var(--bg1);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--ice3);
+    border-radius: 6px;
+    margin: 14px 0 26px;
+    overflow: hidden;
+  }
+  .code-block.warn-block { border-left-color: var(--amber2); }
+  .code-block.crit-block { border-left-color: var(--red2); }
+  .code-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 16px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  }
+  .code-lang { color: var(--ice3); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .code-file { color: var(--text3); }
+  pre {
+    padding: 20px 24px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px; line-height: 1.78;
+    color: var(--text);
+    tab-size: 4;
+  }
+  pre::-webkit-scrollbar { height: 4px; }
+  pre::-webkit-scrollbar-track { background: transparent; }
+  pre::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* Syntax */
+  .k  { color: var(--purple); }
+  .s  { color: var(--amber); }
+  .c  { color: var(--text3); font-style: italic; }
+  .f  { color: var(--ice); }
+  .n  { color: var(--green); }
+  .d  { color: #88aaff; }
+  .t  { color: #ff9988; }
+  .bi { color: #88bbff; }
+  .op { color: var(--ice2); }
+  .cm { color: var(--text3); }
+
+  /* ── CALLOUTS ────────────────────────────────────────────── */
+  .callout {
+    padding: 14px 20px; border-radius: 5px;
+    margin: 14px 0; border-left: 3px solid;
+    font-size: 13.5px; line-height: 1.65;
+  }
+  .callout.warn  { background: rgba(255,192,64,0.06); border-color: var(--amber);  color: #c89028; }
+  .callout.info  { background: rgba(126,240,255,0.05); border-color: var(--ice3); color: var(--ice2); }
+  .callout.crit  { background: rgba(255,80,96,0.06);  border-color: var(--red);   color: var(--red); }
+  .callout.tip   { background: rgba(64,232,144,0.05); border-color: var(--green2);color: var(--green); }
+  .callout.purple{ background: rgba(160,128,255,0.06);border-color: var(--purple2);color: var(--purple); }
+  .callout strong { color: inherit; font-weight: 600; }
+
+  /* ── CARDS ───────────────────────────────────────────────── */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 14px; margin: 18px 0; }
+  .card-grid-2 { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 8px; padding: 20px;
+  }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px; font-weight: 700;
+    color: #d8eef8; margin-bottom: 8px;
+  }
+  .card p { font-size: 13px; margin: 0; }
+  .tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 3px; margin-bottom: 8px;
+  }
+  .tag.ice    { background: var(--ice4);                  color: var(--ice);    border: 1px solid var(--ice3); }
+  .tag.amber  { background: rgba(255,192,64,0.1);         color: var(--amber);  border: 1px solid var(--amber2); }
+  .tag.red    { background: rgba(255,80,96,0.1);          color: var(--red);    border: 1px solid var(--red2); }
+  .tag.green  { background: rgba(64,232,144,0.08);        color: var(--green);  border: 1px solid var(--green2); }
+  .tag.purple { background: rgba(160,128,255,0.1);        color: var(--purple); border: 1px solid var(--purple2); }
+  .tag.coral  { background: rgba(255,112,96,0.1);         color: var(--coral);  border: 1px solid rgba(255,112,96,0.3); }
+
+  /* ── METRICS ─────────────────────────────────────────────── */
+  .metric-row { display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
+  .metric {
+    flex: 1; min-width: 130px;
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: 6px;
+    padding: 14px 16px;
+  }
+  .metric-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 30px; font-weight: 800; line-height: 1;
+  }
+  .metric-label { font-size: 11px; color: var(--text3); margin-top: 5px; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'JetBrains Mono', monospace; }
+
+  /* ── TABLES ──────────────────────────────────────────────── */
+  .data-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+  .data-table th {
+    background: var(--bg2); color: var(--text3);
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border2);
+  }
+  .data-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: top; }
+  .data-table tr:hover td { background: var(--bg2); }
+  .data-table td:first-child { font-family: 'JetBrains Mono', monospace; color: var(--ice2); font-size: 12px; white-space: nowrap; }
+  .data-table td.ok  { color: var(--green); }
+  .data-table td.warn{ color: var(--amber); }
+  .data-table td.bad { color: var(--red); }
+
+  /* ── ARCHITECTURE LAYERS ─────────────────────────────────── */
+  .layer-stack { margin: 20px 0; }
+  .layer {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px 20px; margin-bottom: 3px;
+    border-radius: 5px; position: relative;
+  }
+  .layer-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; min-width: 90px;
+  }
+  .layer-content { flex: 1; font-size: 13px; color: var(--text2); }
+  .layer-items {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  }
+  .layer-item {
+    background: var(--bg); border: 1px solid var(--border2);
+    padding: 3px 10px; border-radius: 3px;
+  }
+  .layer.l1 { background: rgba(126,240,255,0.06); border: 1px solid rgba(126,240,255,0.15); }
+  .layer.l1 .layer-label { color: var(--ice); }
+  .layer.l2 { background: rgba(160,128,255,0.06); border: 1px solid rgba(160,128,255,0.15); }
+  .layer.l2 .layer-label { color: var(--purple); }
+  .layer.l3 { background: rgba(64,232,144,0.05); border: 1px solid rgba(64,232,144,0.15); }
+  .layer.l3 .layer-label { color: var(--green); }
+
+  /* ── DECISION MATRIX ─────────────────────────────────────── */
+  .decision-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px; margin: 16px 0;
+  }
+  .decision-cell {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 6px; padding: 16px;
+  }
+  .decision-cell h5 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--text3); margin-bottom: 10px;
+  }
+  .decision-cell ul { list-style: none; }
+  .decision-cell li {
+    font-size: 12.5px; color: var(--text2); padding: 4px 0;
+    border-bottom: 1px solid var(--border); display: flex; gap: 8px;
+  }
+  .decision-cell li:last-child { border: none; }
+  .decision-cell li::before { content: '›'; color: var(--ice3); flex-shrink: 0; }
+
+  /* ── CHECKLIST ───────────────────────────────────────────── */
+  .checklist { list-style: none; margin: 12px 0; }
+  .checklist li {
+    padding: 9px 0 9px 30px; border-bottom: 1px solid var(--border);
+    position: relative; font-size: 13.5px; color: var(--text2);
+  }
+  .checklist li::before { content: '▸'; position: absolute; left: 0; color: var(--ice3); font-size: 12px; top: 10px; }
+  .checklist li strong { color: var(--text); }
+
+  /* ── FLOW DIAGRAM ────────────────────────────────────────── */
+  .flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 16px 0; }
+  .flow-node {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 5px; padding: 8px 14px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--text2); text-align: center; line-height: 1.4;
+  }
+  .flow-node.active { border-color: var(--ice2); color: var(--ice); }
+  .flow-node.warn   { border-color: var(--amber2); color: var(--amber); }
+  .flow-node.new    { border-color: var(--green2); color: var(--green); }
+  .flow-arrow { color: var(--text3); font-size: 18px; }
+
+  /* ── VS COMPARE ──────────────────────────────────────────── */
+  .vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .vs-card { background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px; overflow: hidden; }
+  .vs-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .vs-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+  .vs-body { padding: 14px 16px; }
+  .vs-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .vs-row:last-child { border: none; }
+  .vs-key { color: var(--text3); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .vs-val { color: var(--text2); }
+
+  /* ── DIVIDER ─────────────────────────────────────────────── */
+  .divider { height: 1px; background: var(--border); margin: 44px 0; }
+
+  /* ── FOOTER ──────────────────────────────────────────────── */
+  footer {
+    margin-top: 80px; padding: 28px 48px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text3);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo-mark">∆ICE</div>
+    <div class="brand-text">
+      <div class="brand-name">Apache Iceberg</div>
+      <div class="brand-sub">Production Field Guide — Spec v1 / v2 / v3</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="badge">Format Spec · Not an Engine</span><br>
+    Spark · Trino · Flink · Hive · DuckDB<br>
+    Parquet · ORC · Avro · REST Catalog
+  </div>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('adopt')">Adoption Guide</button>
+  <button class="tab-btn" onclick="switchTab('arch')">Architecture</button>
+  <button class="tab-btn" onclick="switchTab('catalog')">Catalogs</button>
+  <button class="tab-btn" onclick="switchTab('writes')">Writes &amp; DML</button>
+  <button class="tab-btn" onclick="switchTab('reads')">Reads &amp; Perf</button>
+  <button class="tab-btn" onclick="switchTab('maintenance')">Maintenance</button>
+  <button class="tab-btn" onclick="switchTab('engines')">Engine Setup</button>
+  <button class="tab-btn" onclick="switchTab('ops')">Ops &amp; Risks</button>
+</div>
+
+<main>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: ADOPTION GUIDE
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content active" id="adopt">
+  <div class="sect-label">// 00 — Before You Commit</div>
+  <h2 class="sect-title">Should You Adopt Iceberg?</h2>
+  <p>Iceberg is a <strong>table format specification</strong>, not an engine or a database. It defines the layout of files on object storage and how multiple compute engines can safely read and write them. Adopting it is an infrastructure commitment with genuine operational weight — answer these questions honestly first.</p>
+
+  <h3 class="sub-title">Pre-Adoption Decision Framework</h3>
+
+  <div class="decision-row">
+    <div class="decision-cell">
+      <h5>Adopt Iceberg if...</h5>
+      <ul>
+        <li>Multiple engines need the same tables (Spark + Trino + Flink)</li>
+        <li>You need ACID writes with snapshot isolation</li>
+        <li>You need time travel / reproducible queries</li>
+        <li>Schema evolution without ETL rewrites is critical</li>
+        <li>Tables exceed 1 TB and file pruning matters</li>
+        <li>CDC / row-level updates / deletes are required</li>
+        <li>Partition evolution without breaking existing queries</li>
+        <li>Regulatory need to audit or roll back table state</li>
+      </ul>
+    </div>
+    <div class="decision-cell">
+      <h5>Maybe don't if...</h5>
+      <ul>
+        <li>Single-engine workload (Spark only → Delta might be simpler)</li>
+        <li>Purely streaming, no batch reads</li>
+        <li>Tables &lt; 100 GB — plain Parquet is faster to operate</li>
+        <li>No dedicated data engineers to run compaction</li>
+        <li>Your cloud platform is already Delta-native (Databricks)</li>
+        <li>Existing Hive tables work and you have no pain</li>
+        <li>Append-only logs with no time travel need</li>
+      </ul>
+    </div>
+    <div class="decision-cell">
+      <h5>Clarify before starting</h5>
+      <ul>
+        <li>Row-level updates / deletes — or append-only analytics?</li>
+        <li>Which engines need write access vs. read-only?</li>
+        <li>Do you need nanosecond timestamps or geospatial types? (V3)</li>
+        <li>Catalog: managed (Glue) or self-hosted (Nessie)?</li>
+        <li>Existing Hive tables to migrate or greenfield?</li>
+        <li>Who owns compaction scheduling?</li>
+        <li>Storage backend: S3 / GCS / ADLS?</li>
+        <li>SLA on stale metadata / snapshot expiry?</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="sub-title">Storage Backend Comparison</h3>
+  <table class="data-table">
+    <thead><tr><th>Backend</th><th>Strong Consistency?</th><th>Atomic Rename?</th><th>Cost Profile</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>AWS S3</td><td class="ok">Yes (since 2020)</td><td class="bad">No — use DynamoDB lock</td><td>$0.023/GB + req</td><td>Most mature. Use S3 DynamoDB locking for catalog safety with Hive Metastore.</td></tr>
+      <tr><td>GCS</td><td class="ok">Yes</td><td class="ok">Yes (multi-obj)</td><td>$0.020/GB + ops</td><td>Best atomic semantics outside cloud. BigLake catalog integrates natively.</td></tr>
+      <tr><td>Azure ADLS Gen2</td><td class="ok">Yes</td><td class="ok">Yes (HNS)</td><td>~$0.018/GB + tx</td><td>Hierarchical namespace required for atomic directory ops. Enable HNS from the start.</td></tr>
+      <tr><td>MinIO (on-prem)</td><td class="ok">Yes</td><td class="warn">Partial</td><td>Infra cost</td><td>S3-compatible. Works well; needs proper replication setup for durability.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub-title">Key Decisions at a Glance</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div class="tag ice">File Format</div>
+      <div class="card-title">Parquet, ORC, or Avro?</div>
+      <p><strong>Default: Parquet.</strong> Best columnar read performance for analytics. ORC if primarily Hive-native and you need transactional efficiency there. Avro for streaming write-heavy workloads (row-oriented, fast append) — rarely used for analytical queries. Iceberg V3 adds Variant type for semi-structured JSON embedded in Parquet.</p>
+    </div>
+    <div class="card">
+      <div class="tag purple">Catalog</div>
+      <div class="card-title">Hive / Glue / Nessie / REST?</div>
+      <p><strong>Greenfield on AWS:</strong> Glue Data Catalog. <strong>Multi-cloud or Git-like branching:</strong> Nessie. <strong>Vendor-neutral / multi-engine:</strong> REST catalog (Polaris, Unity Catalog OSS). <strong>Existing Hadoop:</strong> Hive Metastore. Catalog choice determines multi-engine safety — never share a table across engines without a catalog enforcing the metadata pointer.</p>
+    </div>
+    <div class="card">
+      <div class="tag amber">Write Pattern</div>
+      <div class="card-title">Copy-on-Write vs. Merge-on-Read</div>
+      <p><strong>Copy-on-Write (COW):</strong> rewrites data files on each update — expensive writes, fast reads. Use for OLAP where reads dominate. <strong>Merge-on-Read (MOR):</strong> writes delete files + new data files — cheap writes, reads must merge. Use for CDC / high-frequency updates. Can mix per-table and change later.</p>
+    </div>
+    <div class="card">
+      <div class="tag green">Compaction</div>
+      <div class="card-title">Who Runs Maintenance?</div>
+      <p>Small files accumulate fast with streaming writes or MOR. Without compaction, reads degrade. You <strong>must</strong> schedule: <code>rewriteDataFiles</code> (bin-packing), <code>expireSnapshots</code>, and <code>removeOrphanFiles</code>. Options: Spark job (most flexible), Hive scheduled query, or managed services (AWS EMR Serverless, Tabular). This is non-negotiable operational work.</p>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <strong>The hidden complexity:</strong> Iceberg's format is elegant; the <em>operations surrounding it</em> are not. Catalog management, compaction scheduling, snapshot expiry, and cross-engine compatibility all require sustained engineering attention. Iceberg is not a "set it and forget it" solution.
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: ARCHITECTURE
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content" id="arch">
+  <div class="sect-label">// 01 — Format Internals</div>
+  <h2 class="sect-title">The Three-Layer Architecture</h2>
+  <p>Iceberg is a specification of files on object storage. Every "table" is a set of JSON/Avro metadata files plus the actual data files. Understanding this layering explains every behavioral characteristic of the format.</p>
+
+  <div class="layer-stack">
+    <div class="layer l1">
+      <div class="layer-label">Catalog</div>
+      <div class="layer-content">
+        <div style="font-size:13px;margin-bottom:8px;color:var(--text)">Stores a single pointer: <code>table_name → metadata.json path</code>. Manages atomic swaps of that pointer.</div>
+        <div class="layer-items">
+          <span class="layer-item" style="color:var(--ice2)">Hive Metastore</span>
+          <span class="layer-item" style="color:var(--ice2)">AWS Glue</span>
+          <span class="layer-item" style="color:var(--ice2)">Nessie</span>
+          <span class="layer-item" style="color:var(--ice2)">REST Catalog</span>
+          <span class="layer-item" style="color:var(--ice2)">JDBC Catalog</span>
+          <span class="layer-item" style="color:var(--ice2)">DynamoDB Catalog</span>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;color:var(--text3);font-size:22px;margin:2px 0">↕</div>
+    <div class="layer l2">
+      <div class="layer-label">Metadata</div>
+      <div class="layer-content">
+        <div style="font-size:13px;margin-bottom:8px;color:var(--text)">Immutable JSON &amp; Avro files. Snapshot list, schema versions, partition specs, manifests. Small — lives on object storage alongside data.</div>
+        <div class="layer-items">
+          <span class="layer-item" style="color:var(--purple)">metadata.json</span>
+          <span class="layer-item" style="color:var(--purple)">snapshot-N.avro</span>
+          <span class="layer-item" style="color:var(--purple)">manifest-list.avro</span>
+          <span class="layer-item" style="color:var(--purple)">manifest-file.avro</span>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;color:var(--text3);font-size:22px;margin:2px 0">↕</div>
+    <div class="layer l3">
+      <div class="layer-label">Data</div>
+      <div class="layer-content">
+        <div style="font-size:13px;margin-bottom:8px;color:var(--text)">Actual data files and delete files. Named by UUID — never renamed or mutated. Immutable once written.</div>
+        <div class="layer-items">
+          <span class="layer-item" style="color:var(--green)">*.parquet</span>
+          <span class="layer-item" style="color:var(--green)">*.orc</span>
+          <span class="layer-item" style="color:var(--green)">*.avro</span>
+          <span class="layer-item" style="color:var(--amber)">positional-delete.avro</span>
+          <span class="layer-item" style="color:var(--amber)">equality-delete.avro</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="sub-title">Snapshot Mechanics — What Happens on Every Write</h3>
+
+  <div class="flow">
+    <div class="flow-node active">Writer<br>writes data file(s)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node new">New manifest<br>lists data files</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node new">New manifest list<br>references manifests</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node new">New metadata.json<br>adds snapshot</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node warn">Catalog atomic swap<br>old ptr → new ptr</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">Readers see<br>new snapshot</div>
+  </div>
+
+  <p>Old data files and old metadata are never deleted immediately — they remain valid until <code>expireSnapshots</code> runs. This is the source of <strong>time travel</strong> and also the source of <strong>storage bloat</strong> if expiry is not scheduled.</p>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">arch/inspect_metadata.py — understand your table internals</span></div>
+    <pre><span class="c">"""
+Inspect a live Iceberg table's metadata without modifying it.
+Uses PyIceberg — the Python library for the Iceberg spec.
+pip install pyiceberg[s3,glue]
+"""</span>
+<span class="k">from</span> pyiceberg.catalog.glue <span class="k">import</span> GlueCatalog
+<span class="k">from</span> pyiceberg.catalog <span class="k">import</span> load_catalog
+<span class="k">import</span> json, datetime
+
+<span class="c"># ── Connect to catalog ──────────────────────────────────────</span>
+catalog = <span class="f">GlueCatalog</span>(
+    name=<span class="s">"prod"</span>,
+    **{
+        <span class="s">"type"</span>: <span class="s">"glue"</span>,
+        <span class="s">"s3.region"</span>: <span class="s">"us-east-1"</span>,
+        <span class="s">"s3.access-key-id"</span>: <span class="s">"..."</span>,     <span class="c"># prefer instance role / env</span>
+        <span class="s">"s3.secret-access-key"</span>: <span class="s">"..."</span>,
+    }
+)
+
+table = catalog.<span class="f">load_table</span>(<span class="s">"analytics.events"</span>)
+
+<span class="c"># ── 1. Schema and Partition Spec ────────────────────────────</span>
+<span class="f">print</span>(<span class="s">"=== SCHEMA ==="</span>)
+<span class="k">for</span> field <span class="k">in</span> table.schema().fields:
+    <span class="f">print</span>(<span class="f">f"  [{field.field_id:>3}] {field.name:<30} {str(field.field_type):<20} required={field.required}"</span>)
+
+<span class="f">print</span>(<span class="s">"\n=== PARTITION SPEC ==="</span>)
+<span class="k">for</span> pf <span class="k">in</span> table.spec().fields:
+    <span class="f">print</span>(<span class="f">f"  {pf.name} = {pf.transform}({pf.source_id})"</span>)
+
+<span class="c"># ── 2. Snapshot History ─────────────────────────────────────</span>
+<span class="f">print</span>(<span class="s">"\n=== LAST 10 SNAPSHOTS ==="</span>)
+snapshots = table.metadata.snapshots[-<span class="n">10</span>:]
+<span class="k">for</span> snap <span class="k">in</span> snapshots:
+    ts = datetime.datetime.<span class="f">fromtimestamp</span>(snap.timestamp_ms / <span class="n">1000</span>, tz=datetime.timezone.utc)
+    <span class="f">print</span>(
+        <span class="f">f"  snapshot_id={snap.snapshot_id}  "
+        f"ts={ts.isoformat()}  "
+        f"op={snap.summary.get('operation','?'):<12}  "
+        f"added_files={snap.summary.get('added-data-files','0'):<6}  "
+        f"deleted_files={snap.summary.get('deleted-data-files','0')}"</span>
+    )
+
+<span class="c"># ── 3. Current manifest statistics ─────────────────────────</span>
+<span class="f">print</span>(<span class="s">"\n=== MANIFEST STATS (current snapshot) ==="</span>)
+current = table.<span class="f">current_snapshot</span>()
+<span class="k">if</span> current:
+    summary = current.summary
+    total_recs  = <span class="f">int</span>(summary.get(<span class="s">'total-records'</span>, <span class="n">0</span>))
+    total_files = <span class="f">int</span>(summary.get(<span class="s">'total-data-files'</span>, <span class="n">0</span>))
+    total_size  = <span class="f">int</span>(summary.get(<span class="s">'total-files-size'</span>, <span class="n">0</span>))
+    del_files   = <span class="f">int</span>(summary.get(<span class="s">'total-delete-files'</span>, <span class="n">0</span>))
+    <span class="f">print</span>(<span class="f">f"  Records:      {total_recs:>15,}"</span>)
+    <span class="f">print</span>(<span class="f">f"  Data files:   {total_files:>15,}"</span>)
+    <span class="f">print</span>(<span class="f">f"  Delete files: {del_files:>15,}"</span>)
+    <span class="f">print</span>(<span class="f">f"  Total size:   {total_size / 1_073_741_824:>14.2f} GiB"</span>)
+    avg_size = total_size / total_files <span class="k">if</span> total_files > <span class="n">0</span> <span class="k">else</span> <span class="n">0</span>
+    <span class="f">print</span>(<span class="f">f"  Avg file sz:  {avg_size / 1_048_576:>14.1f} MiB  {'⚠ small files!' if avg_size < 64*1024*1024 else '✓ healthy'}"</span>)
+
+<span class="c"># ── 4. Time travel scan ─────────────────────────────────────</span>
+<span class="f">print</span>(<span class="s">"\n=== TIME TRAVEL READ (as of 24h ago) ==="</span>)
+<span class="k">import</span> pyarrow <span class="k">as</span> pa
+yesterday_ms = <span class="f">int</span>((datetime.datetime.<span class="f">now</span>() - datetime.timedelta(days=<span class="n">1</span>)).timestamp() * <span class="n">1000</span>)
+historical = table.<span class="f">scan</span>(snapshot_id=<span class="k">None</span>, as_of_timestamp=yesterday_ms).<span class="f">to_arrow</span>()
+<span class="f">print</span>(<span class="f">f"  Row count 24h ago: {len(historical):,}"</span>)
+<span class="f">print</span>(<span class="f">f"  Schema: {historical.schema}"</span>)</pre>
+  </div>
+
+  <h3 class="sub-title">Iceberg V1 vs V2 vs V3 — What Changed</h3>
+  <table class="data-table">
+    <thead><tr><th>Feature</th><th>V1</th><th>V2</th><th>V3</th></tr></thead>
+    <tbody>
+      <tr><td>Row-level deletes</td><td class="bad">No</td><td class="ok">Yes (positional + equality)</td><td class="ok">Yes + deletion vectors</td></tr>
+      <tr><td>Row lineage</td><td class="bad">No</td><td class="ok">sequence numbers</td><td class="ok">Yes</td></tr>
+      <tr><td>Nanosecond timestamps</td><td class="bad">No</td><td class="bad">No</td><td class="ok">Yes (timestamptz_ns)</td></tr>
+      <tr><td>Variant type (semi-structured)</td><td class="bad">No</td><td class="bad">No</td><td class="ok">Yes</td></tr>
+      <tr><td>Geospatial types</td><td class="bad">No</td><td class="bad">No</td><td class="ok">geometry / geography</td></tr>
+      <tr><td>Default sort order in metadata</td><td class="bad">No</td><td class="ok">Yes</td><td class="ok">Yes</td></tr>
+      <tr><td>Multiple partition specs</td><td class="bad">No</td><td class="ok">Yes</td><td class="ok">Yes</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn">
+    <strong>V3 adoption:</strong> As of 2024–2025, V3 is spec-complete but engine support is uneven. Spark 3.5+ and Trino 430+ have partial V3 support. Verify your engine supports the V3 features you need before specifying <code>'format-version' = '3'</code> at table creation — a V2 engine will refuse to read a V3 table.
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: CATALOGS
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content" id="catalog">
+  <div class="sect-label">// 02 — Metadata Coordination</div>
+  <h2 class="sect-title">Catalog Deep Dive</h2>
+  <p>The catalog is the <strong>single most critical architectural decision</strong> in an Iceberg deployment. It enforces the atomic metadata pointer swap that makes ACID writes possible. A misconfigured catalog leads to silent data corruption — two writers can both commit and one overwrites the other.</p>
+
+  <div class="vs-grid">
+    <div class="vs-card">
+      <div class="vs-header" style="border-color:var(--border)">
+        <span class="vs-title" style="color:var(--ice2)">AWS Glue Data Catalog</span>
+        <span class="tag ice">Managed</span>
+      </div>
+      <div class="vs-body">
+        <div class="vs-row"><span class="vs-key">Concurrency control</span><span class="vs-val" style="color:var(--green)">Optimistic locking via Glue API</span></div>
+        <div class="vs-row"><span class="vs-key">Engine support</span><span class="vs-val">Spark, Trino, Flink, Athena, EMR</span></div>
+        <div class="vs-row"><span class="vs-key">Branching/tagging</span><span class="vs-val" style="color:var(--red)">No</span></div>
+        <div class="vs-row"><span class="vs-key">Multi-cloud</span><span class="vs-val" style="color:var(--red)">AWS only</span></div>
+        <div class="vs-row"><span class="vs-key">Best for</span><span class="vs-val">AWS-native stacks, serverless Athena queries</span></div>
+        <div class="vs-row"><span class="vs-key">Gotcha</span><span class="vs-val" style="color:var(--amber)">10MB metadata size limit per table object</span></div>
+      </div>
+    </div>
+    <div class="vs-card">
+      <div class="vs-header" style="border-color:var(--border)">
+        <span class="vs-title" style="color:var(--purple)">Nessie</span>
+        <span class="tag purple">Git-for-Data</span>
+      </div>
+      <div class="vs-body">
+        <div class="vs-row"><span class="vs-key">Concurrency control</span><span class="vs-val" style="color:var(--green)">Optimistic + MVCC commits</span></div>
+        <div class="vs-row"><span class="vs-key">Engine support</span><span class="vs-val">Spark, Flink, Trino (via REST adapter)</span></div>
+        <div class="vs-row"><span class="vs-key">Branching/tagging</span><span class="vs-val" style="color:var(--green)">Yes — full Git-like branching of tables</span></div>
+        <div class="vs-row"><span class="vs-key">Multi-cloud</span><span class="vs-val" style="color:var(--green)">Yes — vendor neutral</span></div>
+        <div class="vs-row"><span class="vs-key">Best for</span><span class="vs-val">Multi-engine, experimentation, data-as-code</span></div>
+        <div class="vs-row"><span class="vs-key">Gotcha</span><span class="vs-val" style="color:var(--amber)">Self-hosted; operational burden</span></div>
+      </div>
+    </div>
+    <div class="vs-card">
+      <div class="vs-header" style="border-color:var(--border)">
+        <span class="vs-title" style="color:var(--amber)">Hive Metastore (HMS)</span>
+        <span class="tag amber">Legacy</span>
+      </div>
+      <div class="vs-body">
+        <div class="vs-row"><span class="vs-key">Concurrency control</span><span class="vs-val" style="color:var(--amber)">DB-level locking (fragile)</span></div>
+        <div class="vs-row"><span class="vs-key">Engine support</span><span class="vs-val">Spark, Trino, Flink, Hive</span></div>
+        <div class="vs-row"><span class="vs-key">Branching/tagging</span><span class="vs-val" style="color:var(--red)">No</span></div>
+        <div class="vs-row"><span class="vs-key">Multi-cloud</span><span class="vs-val" style="color:var(--green)">Yes</span></div>
+        <div class="vs-row"><span class="vs-key">Best for</span><span class="vs-val">Migration from existing Hive deployments</span></div>
+        <div class="vs-row"><span class="vs-key">Gotcha</span><span class="vs-val" style="color:var(--red)">Concurrent writers can corrupt — must serialize</span></div>
+      </div>
+    </div>
+    <div class="vs-card">
+      <div class="vs-header" style="border-color:var(--border)">
+        <span class="vs-title" style="color:var(--green)">REST Catalog (Polaris / Unity OSS)</span>
+        <span class="tag green">Standard</span>
+      </div>
+      <div class="vs-body">
+        <div class="vs-row"><span class="vs-key">Concurrency control</span><span class="vs-val" style="color:var(--green)">Optimistic, server-side enforcement</span></div>
+        <div class="vs-row"><span class="vs-key">Engine support</span><span class="vs-val" style="color:var(--green)">Any engine with REST client (all major)</span></div>
+        <div class="vs-row"><span class="vs-key">Branching/tagging</span><span class="vs-val">Depends on implementation</span></div>
+        <div class="vs-row"><span class="vs-key">Multi-cloud</span><span class="vs-val" style="color:var(--green)">Yes — the future standard</span></div>
+        <div class="vs-row"><span class="vs-key">Best for</span><span class="vs-val">Greenfield multi-engine, vendor neutral</span></div>
+        <div class="vs-row"><span class="vs-key">Gotcha</span><span class="vs-val" style="color:var(--amber)">Polaris OSS is young; Unity is Databricks-tied</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="sub-title">Catalog Configuration — PyIceberg &amp; Spark</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">catalog/pyiceberg_catalog.py</span></div>
+    <pre><span class="c">"""
+PyIceberg catalog initialization patterns for all major catalog types.
+pip install "pyiceberg[s3,glue,nessie,sql,pyarrow]"
+"""</span>
+<span class="k">from</span> pyiceberg.catalog <span class="k">import</span> load_catalog
+
+<span class="c"># ── 1. AWS Glue ─────────────────────────────────────────────</span>
+glue_catalog = <span class="f">load_catalog</span>(
+    <span class="s">"prod_glue"</span>,
+    **{
+        <span class="s">"type"</span>: <span class="s">"glue"</span>,
+        <span class="s">"s3.region"</span>: <span class="s">"us-east-1"</span>,
+        <span class="c"># Prefer IAM role — omit keys and rely on boto3 credential chain</span>
+        <span class="s">"s3.endpoint"</span>: <span class="s">"https://s3.us-east-1.amazonaws.com"</span>,
+        <span class="s">"glue.region"</span>: <span class="s">"us-east-1"</span>,
+    }
+)
+
+<span class="c"># ── 2. Nessie REST ──────────────────────────────────────────</span>
+nessie_catalog = <span class="f">load_catalog</span>(
+    <span class="s">"nessie"</span>,
+    **{
+        <span class="s">"type"</span>: <span class="s">"nessie"</span>,
+        <span class="s">"uri"</span>: <span class="s">"http://nessie.data.internal:19120/api/v2"</span>,
+        <span class="s">"ref"</span>: <span class="s">"main"</span>,                  <span class="c"># default branch</span>
+        <span class="s">"authentication.type"</span>: <span class="s">"BEARER"</span>,
+        <span class="s">"authentication.token"</span>: <span class="s">"..."</span>,  <span class="c"># use Secrets Manager</span>
+        <span class="s">"s3.region"</span>: <span class="s">"us-east-1"</span>,
+        <span class="s">"warehouse"</span>: <span class="s">"s3://my-lake/warehouse"</span>,
+    }
+)
+
+<span class="c"># ── 3. REST Catalog (generic — Polaris / Unity OSS) ─────────</span>
+rest_catalog = <span class="f">load_catalog</span>(
+    <span class="s">"polaris"</span>,
+    **{
+        <span class="s">"type"</span>: <span class="s">"rest"</span>,
+        <span class="s">"uri"</span>: <span class="s">"https://polaris.internal/api/catalog"</span>,
+        <span class="s">"credential"</span>: <span class="s">"client_id:client_secret"</span>,
+        <span class="s">"warehouse"</span>: <span class="s">"prod_warehouse"</span>,
+        <span class="s">"scope"</span>: <span class="s">"PRINCIPAL_ROLE:analytics_rw"</span>,
+    }
+)
+
+<span class="c"># ── 4. Local JDBC (dev / CI) ────────────────────────────────</span>
+local_catalog = <span class="f">load_catalog</span>(
+    <span class="s">"local"</span>,
+    **{
+        <span class="s">"type"</span>: <span class="s">"sql"</span>,
+        <span class="s">"uri"</span>: <span class="s">"sqlite:////tmp/iceberg_dev.db"</span>,
+        <span class="s">"warehouse"</span>: <span class="s">"/tmp/iceberg_warehouse"</span>,
+    }
+)
+
+<span class="c"># ── Namespace &amp; table creation (catalog-agnostic) ────────────</span>
+<span class="k">import</span> pyarrow <span class="k">as</span> pa
+<span class="k">from</span> pyiceberg.schema <span class="k">import</span> Schema
+<span class="k">from</span> pyiceberg.types <span class="k">import</span> (
+    NestedField, StringType, LongType, TimestamptzType,
+    DoubleType, BooleanType, IntegerType
+)
+<span class="k">from</span> pyiceberg.partitioning <span class="k">import</span> PartitionSpec, PartitionField
+<span class="k">from</span> pyiceberg.transforms <span class="k">import</span> DayTransform, BucketTransform
+
+catalog = glue_catalog  <span class="c"># or whichever you chose</span>
+
+<span class="c"># Create namespace if it doesn't exist</span>
+<span class="k">if</span> (<span class="s">"analytics"</span>,) <span class="k">not in</span> catalog.<span class="f">list_namespaces</span>():
+    catalog.<span class="f">create_namespace</span>(<span class="s">"analytics"</span>, properties={
+        <span class="s">"owner"</span>: <span class="s">"data-engineering"</span>,
+        <span class="s">"location"</span>: <span class="s">"s3://my-lake/analytics"</span>,
+    })
+
+<span class="c"># Define schema with explicit field IDs (important for evolution)</span>
+schema = <span class="f">Schema</span>(
+    <span class="f">NestedField</span>(<span class="n">1</span>,  <span class="s">"event_id"</span>,    <span class="f">StringType</span>(),       required=<span class="k">True</span>),
+    <span class="f">NestedField</span>(<span class="n">2</span>,  <span class="s">"user_id"</span>,     <span class="f">LongType</span>(),         required=<span class="k">True</span>),
+    <span class="f">NestedField</span>(<span class="n">3</span>,  <span class="s">"event_type"</span>,  <span class="f">StringType</span>(),       required=<span class="k">True</span>),
+    <span class="f">NestedField</span>(<span class="n">4</span>,  <span class="s">"occurred_at"</span>, <span class="f">TimestamptzType</span>(),  required=<span class="k">True</span>),
+    <span class="f">NestedField</span>(<span class="n">5</span>,  <span class="s">"revenue"</span>,     <span class="f">DoubleType</span>(),        required=<span class="k">False</span>),
+    <span class="f">NestedField</span>(<span class="n">6</span>,  <span class="s">"country"</span>,     <span class="f">StringType</span>(),        required=<span class="k">False</span>),
+    <span class="f">NestedField</span>(<span class="n">7</span>,  <span class="s">"is_bot"</span>,      <span class="f">BooleanType</span>(),       required=<span class="k">False</span>),
+)
+
+partition_spec = <span class="f">PartitionSpec</span>(
+    <span class="f">PartitionField</span>(source_id=<span class="n">4</span>, field_id=<span class="n">1000</span>, transform=<span class="f">DayTransform</span>(),    name=<span class="s">"day"</span>),
+    <span class="f">PartitionField</span>(source_id=<span class="n">2</span>, field_id=<span class="n">1001</span>, transform=<span class="f">BucketTransform</span>(<span class="n">16</span>), name=<span class="s">"user_bucket"</span>),
+)
+
+table = catalog.<span class="f">create_table</span>(
+    identifier=<span class="s">"analytics.events"</span>,
+    schema=schema,
+    partition_spec=partition_spec,
+    location=<span class="s">"s3://my-lake/analytics/events"</span>,
+    properties={
+        <span class="s">"format-version"</span>: <span class="s">"2"</span>,
+        <span class="s">"write.format.default"</span>: <span class="s">"parquet"</span>,
+        <span class="s">"write.parquet.compression-codec"</span>: <span class="s">"zstd"</span>,
+        <span class="s">"write.target-file-size-bytes"</span>: str(<span class="n">134_217_728</span>),  <span class="c"># 128 MiB</span>
+        <span class="s">"write.delete.format.default"</span>: <span class="s">"parquet"</span>,
+        <span class="s">"write.merge.mode"</span>: <span class="s">"merge-on-read"</span>,   <span class="c"># or copy-on-write</span>
+        <span class="s">"commit.retry.num-retries"</span>: <span class="s">"4"</span>,
+        <span class="s">"commit.retry.min-wait-ms"</span>: <span class="s">"100"</span>,
+        <span class="s">"commit.retry.max-wait-ms"</span>: <span class="s">"60000"</span>,
+        <span class="s">"history.expire.max-snapshot-age-ms"</span>: str(<span class="n">7</span> * <span class="n">24</span> * <span class="n">3600</span> * <span class="n">1000</span>),
+    }
+)</pre>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: WRITES & DML
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content" id="writes">
+  <div class="sect-label">// 03 — ACID, COW, MOR &amp; Deletes</div>
+  <h2 class="sect-title">Writes, DML &amp; Concurrency</h2>
+
+  <h3 class="sub-title">Copy-on-Write vs. Merge-on-Read — The Full Breakdown</h3>
+  <div class="card-grid card-grid-2">
+    <div class="card">
+      <div class="tag ice">Copy-on-Write (COW)</div>
+      <div class="card-title">Expensive Writes, Fast Reads</div>
+      <p>On UPDATE or DELETE, Iceberg reads the affected data files, rewrites them with the changes applied, and produces a new snapshot pointing at the new files. Old files are orphaned (retained until expiry).</p>
+      <br>
+      <p><strong>When to use:</strong> OLAP tables where reads vastly outnumber writes. Reporting tables, dimension tables, star schema fact tables with infrequent corrections. Any table where read latency is the primary SLA.</p>
+      <br>
+      <p><strong>Cost model:</strong> Each update amplifies write I/O. Updating 1 row in a 1 GiB file rewrites the full 1 GiB. For tables with high-frequency point updates, COW is financially ruinous at scale.</p>
+    </div>
+    <div class="card">
+      <div class="tag amber">Merge-on-Read (MOR)</div>
+      <div class="card-title">Cheap Writes, Reads Do More Work</div>
+      <p>On UPDATE or DELETE, Iceberg writes a <strong>delete file</strong> that records which rows to exclude (positional delete = row-file offset pairs; equality delete = key value matches). Data files are NOT rewritten.</p>
+      <br>
+      <p><strong>When to use:</strong> CDC pipelines, GDPR delete workflows, frequent small updates to large tables. Streaming ingestion with corrections. Any pattern where writes are frequent and large file rewrites are unacceptable.</p>
+      <br>
+      <p><strong>Cost model:</strong> Delete files accumulate. Reads must merge data files with all open delete files. Without compaction, read latency degrades. The <code>delete-file-count</code> metric is your MOR health indicator.</p>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">writes/spark_dml.py — COW and MOR patterns in Spark</span></div>
+    <pre><span class="c">"""
+Spark DML with Iceberg — full patterns for INSERT, UPDATE, DELETE, MERGE.
+Configure SparkSession with Iceberg extensions before running.
+"""</span>
+<span class="k">from</span> pyspark.sql <span class="k">import</span> SparkSession
+<span class="k">from</span> pyspark.sql <span class="k">import</span> functions <span class="k">as</span> F
+<span class="k">from</span> pyspark.sql.types <span class="k">import</span> *
+
+spark = (
+    SparkSession.<span class="f">builder</span>
+    .<span class="f">config</span>(<span class="s">"spark.sql.extensions"</span>,
+             <span class="s">"org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"</span>)
+    .<span class="f">config</span>(<span class="s">"spark.sql.catalog.prod"</span>,
+             <span class="s">"org.apache.iceberg.spark.SparkCatalog"</span>)
+    .<span class="f">config</span>(<span class="s">"spark.sql.catalog.prod.type"</span>, <span class="s">"glue"</span>)
+    .<span class="f">config</span>(<span class="s">"spark.sql.catalog.prod.warehouse"</span>, <span class="s">"s3://my-lake/warehouse"</span>)
+    .<span class="f">config</span>(<span class="s">"spark.sql.defaultCatalog"</span>, <span class="s">"prod"</span>)
+    .<span class="f">getOrCreate</span>()
+)
+
+<span class="c"># ── 1. Append (fastest, always correct) ─────────────────────</span>
+new_events_df.<span class="f">writeTo</span>(<span class="s">"prod.analytics.events"</span>).<span class="f">append</span>()
+
+<span class="c"># ── 2. Overwrite by partition (idempotent batch) ─────────────</span>
+<span class="c"># Replaces only partitions present in the new data — safe for reruns</span>
+(
+    new_events_df
+    .<span class="f">writeTo</span>(<span class="s">"prod.analytics.events"</span>)
+    .<span class="f">option</span>(<span class="s">"partitionOverwriteMode"</span>, <span class="s">"dynamic"</span>)
+    .<span class="f">overwritePartitions</span>()
+)
+
+<span class="c"># ── 3. MERGE INTO — the Swiss Army knife ────────────────────</span>
+<span class="c"># Register source as temp view</span>
+cdc_df.<span class="f">createOrReplaceTempView</span>(<span class="s">"cdc_source"</span>)
+
+spark.<span class="f">sql</span>(<span class="s">"""
+    MERGE INTO prod.analytics.events AS target
+    USING (
+        SELECT
+            event_id, user_id, event_type, occurred_at,
+            revenue, country, is_bot,
+            _op_type   -- 'I' insert, 'U' update, 'D' delete
+        FROM cdc_source
+        WHERE _op_type IN ('I', 'U', 'D')
+    ) AS source
+    ON target.event_id = source.event_id
+    WHEN MATCHED AND source._op_type = 'D' THEN DELETE
+    WHEN MATCHED AND source._op_type = 'U' THEN UPDATE SET
+        target.revenue    = source.revenue,
+        target.country    = source.country,
+        target.is_bot     = source.is_bot
+    WHEN NOT MATCHED AND source._op_type != 'D' THEN INSERT *
+"""</span>)
+
+<span class="c"># ── 4. DELETE with filter ────────────────────────────────────</span>
+<span class="c"># GDPR right-to-erasure — MOR writes a delete file, fast operation</span>
+spark.<span class="f">sql</span>(<span class="s">"""
+    DELETE FROM prod.analytics.events
+    WHERE user_id IN (SELECT user_id FROM gdpr_deletion_requests WHERE processed_at IS NULL)
+"""</span>)
+
+<span class="c"># ── 5. UPDATE ────────────────────────────────────────────────</span>
+spark.<span class="f">sql</span>(<span class="s">"""
+    UPDATE prod.analytics.events
+    SET is_bot = TRUE
+    WHERE user_id IN (SELECT user_id FROM bot_detection_list)
+      AND occurred_at > CURRENT_TIMESTAMP - INTERVAL 30 DAYS
+"""</span>)
+
+<span class="c"># ── 6. INSERT OVERWRITE — replace a specific partition ───────</span>
+spark.<span class="f">sql</span>(<span class="s">"""
+    INSERT OVERWRITE prod.analytics.events
+    PARTITION (day = '2024-01-15')
+    SELECT * FROM staging.events_corrected
+    WHERE date(occurred_at) = '2024-01-15'
+"""</span>)
+
+<span class="c"># ── 7. Time travel reads ─────────────────────────────────────</span>
+<span class="c"># By snapshot ID</span>
+df_snap = spark.<span class="f">read</span>.<span class="f">option</span>(<span class="s">"snapshot-id"</span>, <span class="s">"5782341283"</span>).<span class="f">table</span>(<span class="s">"prod.analytics.events"</span>)
+<span class="c"># By timestamp</span>
+df_ts   = spark.<span class="f">read</span>.<span class="f">option</span>(<span class="s">"as-of-timestamp"</span>, <span class="s">"1705276800000"</span>).<span class="f">table</span>(<span class="s">"prod.analytics.events"</span>)
+<span class="c"># Incremental read — changes between two snapshots</span>
+df_incr = (
+    spark.<span class="f">read</span>
+    .<span class="f">format</span>(<span class="s">"iceberg"</span>)
+    .<span class="f">option</span>(<span class="s">"start-snapshot-id"</span>, <span class="s">"5780000000"</span>)
+    .<span class="f">option</span>(<span class="s">"end-snapshot-id"</span>,   <span class="s">"5782341283"</span>)
+    .<span class="f">load</span>(<span class="s">"prod.analytics.events"</span>)
+)
+
+<span class="c"># ── 8. Schema evolution (no file rewrites!) ──────────────────</span>
+spark.<span class="f">sql</span>(<span class="s">"ALTER TABLE prod.analytics.events ADD COLUMN session_id BIGINT"</span>)
+spark.<span class="f">sql</span>(<span class="s">"ALTER TABLE prod.analytics.events RENAME COLUMN country TO country_code"</span>)
+<span class="c"># Existing files return NULL for new columns — zero cost</span>
+
+<span class="c"># ── 9. Partition evolution (V2+) ─────────────────────────────</span>
+<span class="c"># Change partition without rewriting old data</span>
+spark.<span class="f">sql</span>(<span class="s">"""
+    ALTER TABLE prod.analytics.events
+    ADD PARTITION FIELD hour(occurred_at)  -- add hourly on top of daily
+"""</span>)
+<span class="c"># New data is partitioned by day+hour; old data stays day-only</span>
+<span class="c"># Query engine handles both specs transparently</span></pre>
+  </div>
+
+  <h3 class="sub-title">Concurrency — Commit Conflicts &amp; Retry Logic</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">writes/concurrent_writes.py</span></div>
+    <pre><span class="c">"""
+Iceberg uses optimistic concurrency control (OCC):
+  1. Writer reads current metadata
+  2. Performs computation
+  3. Attempts commit (catalog CAS: old_metadata → new_metadata)
+  4. If another writer committed between steps 1 and 3 → CommitFailedException
+  5. Retry with exponential backoff
+
+Safe concurrent patterns:
+  - Multiple appenders: always safe (different files)
+  - Appender + overwriter: conflict if same partition
+  - Two overwriters of same partition: one loses, must retry
+"""</span>
+<span class="k">from</span> pyiceberg.catalog <span class="k">import</span> load_catalog
+<span class="k">from</span> pyiceberg.exceptions <span class="k">import</span> CommitFailedException
+<span class="k">import</span> pyarrow <span class="k">as</span> pa
+<span class="k">import</span> time, random, logging
+
+log = logging.<span class="f">getLogger</span>(__name__)
+
+<span class="k">def</span> <span class="f">write_with_retry</span>(
+    catalog_name: str,
+    table_id: str,
+    data: pa.Table,
+    overwrite: bool = <span class="k">False</span>,
+    max_retries: int = <span class="n">5</span>,
+    base_delay: float = <span class="n">0.5</span>,
+) -> <span class="k">None</span>:
+    <span class="s">"""
+    Write PyArrow table to Iceberg with OCC retry loop.
+    For Spark, set spark.sql.iceberg.handle-timestamp-without-timezone=true
+    and use native Spark retry config instead.
+    """</span>
+    catalog = <span class="f">load_catalog</span>(catalog_name)
+    table   = catalog.<span class="f">load_table</span>(table_id)
+
+    <span class="k">for</span> attempt <span class="k">in</span> <span class="f">range</span>(max_retries + <span class="n">1</span>):
+        <span class="k">try</span>:
+            <span class="k">if</span> overwrite:
+                table.<span class="f">overwrite</span>(data)
+            <span class="k">else</span>:
+                table.<span class="f">append</span>(data)
+            log.<span class="f">info</span>(<span class="s">"Committed to %s on attempt %d"</span>, table_id, attempt + <span class="n">1</span>)
+            <span class="k">return</span>
+        <span class="k">except</span> CommitFailedException <span class="k">as</span> exc:
+            <span class="k">if</span> attempt == max_retries:
+                <span class="k">raise</span> <span class="t">RuntimeError</span>(<span class="f">f"Commit failed after {max_retries} retries"</span>) <span class="k">from</span> exc
+            delay = base_delay * (<span class="n">2</span> ** attempt) + random.<span class="f">uniform</span>(<span class="n">0</span>, <span class="n">0.5</span>)
+            log.<span class="f">warning</span>(<span class="s">"Commit conflict on attempt %d. Retrying in %.2fs"</span>, attempt + <span class="n">1</span>, delay)
+            <span class="c"># Reload table to get latest metadata before reattempting</span>
+            table = catalog.<span class="f">load_table</span>(table_id)
+            time.<span class="f">sleep</span>(delay)</pre>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: READS & PERFORMANCE
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content" id="reads">
+  <div class="sect-label">// 04 — Query Planning &amp; File Pruning</div>
+  <h2 class="sect-title">Read Performance &amp; Optimization</h2>
+
+  <p>Iceberg read performance comes from aggressive file elimination at the metadata level — before a single data file is opened. Understanding this planning pipeline explains every tuning lever.</p>
+
+  <div class="flow" style="flex-direction:column;align-items:flex-start;gap:3px">
+    <div class="flow-node active" style="width:100%;text-align:left">1. Catalog: fetch <code>metadata.json</code> → get current snapshot → manifest list path</div>
+    <div class="flow-node" style="width:100%;text-align:left">2. Filter manifest list by partition summary stats → prune irrelevant manifests</div>
+    <div class="flow-node" style="width:100%;text-align:left">3. Read surviving manifests → filter by column-level min/max stats → prune data files</div>
+    <div class="flow-node active" style="width:100%;text-align:left">4. Read surviving data files → apply row-group filter (Parquet) → return results</div>
+    <div class="flow-node warn" style="width:100%;text-align:left">⚠ If MOR: also join delete files → apply positional/equality deletes → return corrected rows</div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">reads/performance_patterns.py</span></div>
+    <pre><span class="c">"""
+Read performance patterns — PyIceberg + PyArrow + DuckDB
+"""</span>
+<span class="k">import</span> pyarrow <span class="k">as</span> pa
+<span class="k">import</span> pyarrow.compute <span class="k">as</span> pc
+<span class="k">import</span> duckdb
+<span class="k">from</span> pyiceberg.catalog <span class="k">import</span> load_catalog
+<span class="k">from</span> pyiceberg.expressions <span class="k">import</span> (
+    EqualTo, GreaterThanOrEqual, LessThan, And, Or, Not, IsNull, NotNull
+)
+
+catalog = <span class="f">load_catalog</span>(<span class="s">"prod"</span>)
+table = catalog.<span class="f">load_table</span>(<span class="s">"analytics.events"</span>)
+
+<span class="c"># ── 1. Scan with partition + column pruning ──────────────────</span>
+<span class="c"># Iceberg eliminates files at manifest level — far fewer S3 requests</span>
+scan = table.<span class="f">scan</span>(
+    row_filter=<span class="f">And</span>(
+        <span class="f">GreaterThanOrEqual</span>(<span class="s">"occurred_at"</span>, <span class="s">"2024-01-01T00:00:00+00:00"</span>),
+        <span class="f">LessThan</span>(<span class="s">"occurred_at"</span>, <span class="s">"2024-02-01T00:00:00+00:00"</span>),
+        <span class="f">EqualTo</span>(<span class="s">"country_code"</span>, <span class="s">"US"</span>),
+        <span class="f">NotNull</span>(<span class="s">"revenue"</span>),
+    ),
+    selected_fields=(<span class="s">"user_id"</span>, <span class="s">"event_type"</span>, <span class="s">"revenue"</span>, <span class="s">"occurred_at"</span>),  <span class="c"># column pruning</span>
+    limit=<span class="n">1_000_000</span>,
+)
+
+<span class="c"># ── 2. Convert to Arrow — zero-copy when possible ────────────</span>
+arrow_table = scan.<span class="f">to_arrow</span>()
+<span class="f">print</span>(<span class="f">f"Rows: {len(arrow_table):,}  Cols: {len(arrow_table.schema)}"</span>)
+
+<span class="c"># ── 3. Query via DuckDB — best for ad-hoc analytics ─────────</span>
+<span class="c"># DuckDB can directly query Iceberg via the PyArrow table</span>
+conn = duckdb.<span class="f">connect</span>()
+conn.<span class="f">register</span>(<span class="s">"events"</span>, arrow_table)
+result = conn.<span class="f">execute</span>(<span class="s">"""
+    SELECT
+        event_type,
+        COUNT(*) AS event_count,
+        SUM(revenue) AS total_revenue,
+        AVG(revenue) AS avg_revenue
+    FROM events
+    WHERE event_type != 'page_view'
+    GROUP BY event_type
+    ORDER BY total_revenue DESC
+"""</span>).<span class="f">arrow</span>()
+
+<span class="c"># ── 4. Plan inspection — see what files Iceberg will read ────</span>
+<span class="f">print</span>(<span class="s">"\n=== SCAN PLAN ==="</span>)
+<span class="k">for</span> task <span class="k">in</span> scan.<span class="f">plan_files</span>():
+    <span class="f">print</span>(<span class="f">f"  file={task.file.file_path.split('/')[-1]}"</span>
+          <span class="f">f"  size={task.file.file_size_in_bytes/1_048_576:.1f}MiB"</span>
+          <span class="f">f"  records={task.file.record_count:,}"</span>
+          <span class="f">f"  delete_files={len(task.delete_files)}"</span>)
+
+<span class="c"># ── 5. Spark: tune scan parallelism ─────────────────────────</span>
+<span class="c"># SPARK SQL — tune these for large scans</span>
+<span class="c"># spark.conf.set("spark.sql.iceberg.planning.preserve-data-grouping", "true")
+# spark.conf.set("spark.sql.iceberg.split-size", str(128 * 1024 * 1024))  # 128 MiB
+# spark.conf.set("spark.sql.iceberg.split-open-file-cost", str(4 * 1024 * 1024))
+# spark.conf.set("spark.sql.iceberg.split-lookback", "10")
+# df = spark.table("prod.analytics.events")
+#     .filter("occurred_at >= '2024-01-01'")
+#     .hint("iceberg.scan.filter-pushdown", True)  # always on in modern versions</span>
+
+<span class="c"># ── 6. Streaming read from Iceberg (Spark Structured Streaming)</span>
+<span class="c"># df_stream = (
+#     spark.readStream
+#     .format("iceberg")
+#     .option("stream-from-timestamp", "1704067200000")  # epoch ms
+#     .option("streaming-max-files-per-trigger", 100)    # throttle
+#     .load("prod.analytics.events")
+# )
+# df_stream.writeStream.format("console").start().awaitTermination()</span></pre>
+  </div>
+
+  <h3 class="sub-title">Hidden Partitioning — Why It Matters</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">sql</span><span class="code-file">hidden_partitioning.sql — Iceberg vs Hive partitioning</span></div>
+    <pre><span class="c">-- ── HIVE partitioning (brittle, user must know partition columns) ──
+-- User MUST specify partition column in query, or full scan happens:
+SELECT * FROM hive_events WHERE dt = '2024-01-15'  -- works
+SELECT * FROM hive_events WHERE event_time > '2024-01-15'  -- FULL TABLE SCAN!
+
+-- ── ICEBERG hidden partitioning ─────────────────────────────────
+-- Table defined with PARTITIONED BY (days(occurred_at))
+-- Iceberg computes partition value internally — user queries raw column:
+SELECT * FROM prod.analytics.events
+WHERE occurred_at >= TIMESTAMP '2024-01-15 00:00:00 UTC'  -- auto-pruned!
+  AND occurred_at <  TIMESTAMP '2024-01-16 00:00:00 UTC'
+
+-- Iceberg translates this to partition filter: day = 19737 (days since epoch)
+-- Zero Hive-style partition management in user queries
+
+-- ── Transform options ────────────────────────────────────────────
+-- years(ts)      → partition by year
+-- months(ts)     → partition by month
+-- days(ts)       → partition by day
+-- hours(ts)      → partition by hour
+-- bucket(N, col) → hash bucket into N buckets (for high-cardinality joins)
+-- truncate(W, col) → truncate string/int to W chars/digits
+
+-- Multiple transforms in one spec (V2+):
+-- PARTITIONED BY (days(occurred_at), bucket(16, user_id))
+-- → good for time-range + user_id join patterns</span></pre>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: MAINTENANCE
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content" id="maintenance">
+  <div class="sect-label">// 05 — Compaction, Expiry &amp; Cleanup</div>
+  <h2 class="sect-title">Table Maintenance — Non-Negotiable Operations</h2>
+
+  <div class="callout crit">
+    <strong>This is the #1 operational failure mode in production Iceberg deployments:</strong> teams build beautiful pipelines but neglect maintenance, then wonder why reads degrade after 3 months. Compaction and expiry must be scheduled jobs, not afterthoughts.
+  </div>
+
+  <div class="metric-row">
+    <div class="metric"><div class="metric-val" style="color:var(--ice)">128 MiB</div><div class="metric-label">Target data file size</div></div>
+    <div class="metric"><div class="metric-val" style="color:var(--amber)">&lt;10</div><div class="metric-label">Max delete files per data file</div></div>
+    <div class="metric"><div class="metric-val" style="color:var(--green)">7 days</div><div class="metric-label">Default snapshot retention</div></div>
+    <div class="metric"><div class="metric-val" style="color:var(--red)">0</div><div class="metric-label">Orphan files tolerated</div></div>
+    <div class="metric"><div class="metric-val" style="color:var(--purple)">daily</div><div class="metric-label">Compaction frequency (MOR tables)</div></div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">maintenance/compaction_job.py — Spark-based Iceberg maintenance</span></div>
+    <pre><span class="c">"""
+Production maintenance job — runs via Airflow / cron.
+Cover ALL four maintenance procedures — skip any one and you'll regret it.
+"""</span>
+<span class="k">from</span> pyspark.sql <span class="k">import</span> SparkSession
+<span class="k">import</span> logging, argparse
+
+log = logging.<span class="f">getLogger</span>(__name__)
+
+spark = SparkSession.<span class="f">builder</span>.<span class="f">appName</span>(<span class="s">"iceberg-maintenance"</span>).<span class="f">getOrCreate</span>()
+
+<span class="k">def</span> <span class="f">compact_data_files</span>(table_id: str, strategy: str = <span class="s">"binpack"</span>):
+    <span class="s">"""
+    Procedure 1: rewriteDataFiles
+    Merges small files into target-size files.
+    Strategies: 'binpack' (default), 'sort', 'zorder'
+    """</span>
+    log.<span class="f">info</span>(<span class="s">"[COMPACT] Starting %s for %s"</span>, strategy, table_id)
+
+    <span class="k">if</span> strategy == <span class="s">"binpack"</span>:
+        result = spark.<span class="f">sql</span>(<span class="f">f"""
+            CALL prod.system.rewrite_data_files(
+                table => '{table_id}',
+                strategy => 'binpack',
+                options => map(
+                    'target-file-size-bytes', '134217728',   -- 128 MiB
+                    'min-file-size-bytes',    '33554432',    -- 32 MiB: only compact files < this
+                    'max-file-size-bytes',    '214748364',   -- 200 MiB: only compact files > this
+                    'min-input-files',        '5',           -- skip partition if < 5 small files
+                    'rewrite-all',            'false',       -- don't rewrite healthy files
+                    'partial-progress.enabled', 'true',      -- commit in batches, not all-or-nothing
+                    'partial-progress.max-commits', '10',
+                    'max-concurrent-file-group-rewrites', '100'
+                )
+            )
+        """</span>)
+
+    <span class="k">elif</span> strategy == <span class="s">"sort"</span>:
+        <span class="c"># Sort by commonly filtered columns for better min/max pruning</span>
+        result = spark.<span class="f">sql</span>(<span class="f">f"""
+            CALL prod.system.rewrite_data_files(
+                table => '{table_id}',
+                strategy => 'sort',
+                sort_order => 'zorder(occurred_at, user_id)',
+                options => map(
+                    'target-file-size-bytes', '134217728',
+                    'max-concurrent-file-group-rewrites', '50'
+                )
+            )
+        """</span>)
+
+    row = result.<span class="f">first</span>()
+    log.<span class="f">info</span>(<span class="s">"[COMPACT] Done: %d files → %d files, %d bytes rewritten"</span>,
+             row.rewritten_files_count, row.added_files_count, row.rewritten_bytes_count)
+    <span class="k">return</span> row
+
+<span class="k">def</span> <span class="f">compact_delete_files</span>(table_id: str):
+    <span class="s">"""
+    Procedure 2: rewritePositionDeleteFiles
+    Merges many small positional delete files into fewer larger ones.
+    Only relevant for MOR tables. Run before or after data file compaction.
+    """</span>
+    log.<span class="f">info</span>(<span class="s">"[DELETE-COMPACT] Starting for %s"</span>, table_id)
+    result = spark.<span class="f">sql</span>(<span class="f">f"""
+        CALL prod.system.rewrite_position_delete_files(
+            table => '{table_id}',
+            options => map(
+                'target-file-size-bytes', '67108864',  -- 64 MiB for delete files
+                'rewrite-all', 'false'
+            )
+        )
+    """</span>)
+    log.<span class="f">info</span>(<span class="s">"[DELETE-COMPACT] Done: %s"</span>, result.<span class="f">first</span>())
+
+<span class="k">def</span> <span class="f">expire_snapshots</span>(table_id: str, retain_days: int = <span class="n">7</span>):
+    <span class="s">"""
+    Procedure 3: expireSnapshots
+    Removes old snapshot metadata and marks unreferenced data files
+    for deletion. Does NOT delete files — removeOrphanFiles does that.
+    """</span>
+    log.<span class="f">info</span>(<span class="s">"[EXPIRE] Expiring snapshots older than %d days for %s"</span>, retain_days, table_id)
+    result = spark.<span class="f">sql</span>(<span class="f">f"""
+        CALL prod.system.expire_snapshots(
+            table => '{table_id}',
+            older_than => TIMESTAMPADD(DAY, -{retain_days}, CURRENT_TIMESTAMP),
+            retain_last => 5,           -- always keep at least 5 snapshots
+            stream_results => true      -- don't collect all results in driver memory
+        )
+    """</span>)
+    log.<span class="f">info</span>(<span class="s">"[EXPIRE] Done: %s"</span>, result.<span class="f">first</span>())
+
+<span class="k">def</span> <span class="f">remove_orphan_files</span>(table_id: str, older_than_days: int = <span class="n">3</span>):
+    <span class="s">"""
+    Procedure 4: removeOrphanFiles
+    Physically deletes files on storage that are not referenced by any
+    current metadata. Safe buffer: always older_than >= snapshot retention.
+    WARNING: set dry_run=true first to inspect what would be deleted!
+    """</span>
+    log.<span class="f">info</span>(<span class="s">"[ORPHAN] Scanning for orphan files older than %dd in %s"</span>, older_than_days, table_id)
+    result = spark.<span class="f">sql</span>(<span class="f">f"""
+        CALL prod.system.remove_orphan_files(
+            table => '{table_id}',
+            older_than => TIMESTAMPADD(DAY, -{older_than_days}, CURRENT_TIMESTAMP),
+            dry_run => false  -- set to true in staging to preview
+        )
+    """</span>)
+    deleted = result.<span class="f">count</span>()
+    log.<span class="f">info</span>(<span class="s">"[ORPHAN] Deleted %d orphan files"</span>, deleted)
+
+<span class="k">def</span> <span class="f">run_full_maintenance</span>(table_id: str, is_mor: bool = <span class="k">False</span>):
+    <span class="s">"""
+    Full maintenance pipeline — order matters!
+    1. Compact deletes (if MOR) — must run before data compaction
+    2. Compact data files — merge small files
+    3. Expire snapshots — release old metadata references
+    4. Remove orphan files — physically delete unreferenced files
+    """</span>
+    <span class="k">if</span> is_mor:
+        <span class="f">compact_delete_files</span>(table_id)
+    <span class="f">compact_data_files</span>(table_id, strategy=<span class="s">"binpack"</span>)
+    <span class="f">expire_snapshots</span>(table_id, retain_days=<span class="n">7</span>)
+    <span class="f">remove_orphan_files</span>(table_id, older_than_days=<span class="n">3</span>)  <span class="c"># must be > retain window</span>
+    log.<span class="f">info</span>(<span class="s">"[MAINTENANCE] Complete for %s"</span>, table_id)</pre>
+  </div>
+
+  <h3 class="sub-title">Maintenance Health Monitoring</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">maintenance/health_check.py</span></div>
+    <pre><span class="c">"""
+Iceberg table health metrics — run periodically and alert on thresholds.
+All queries via PyIceberg metadata inspection (no Spark needed).
+"""</span>
+<span class="k">from</span> pyiceberg.catalog <span class="k">import</span> load_catalog
+<span class="k">from</span> dataclasses <span class="k">import</span> dataclass
+<span class="k">from</span> typing <span class="k">import</span> Optional
+<span class="k">import</span> statistics
+
+<span class="d">@dataclass</span>
+<span class="k">class</span> <span class="t">TableHealthReport</span>:
+    table_id: str
+    total_data_files: int
+    total_delete_files: int
+    avg_data_file_size_mb: float
+    small_files_count: int       <span class="c"># files < 32 MiB</span>
+    snapshots_count: int
+    oldest_snapshot_days: float
+    delete_to_data_ratio: float  <span class="c"># red flag if > 0.5</span>
+    total_size_gb: float
+    warnings: list[str]
+    critical: list[str]
+
+<span class="k">def</span> <span class="f">inspect_table_health</span>(catalog_name: str, table_id: str) -> <span class="t">TableHealthReport</span>:
+    <span class="k">import</span> datetime
+
+    catalog = <span class="f">load_catalog</span>(catalog_name)
+    table   = catalog.<span class="f">load_table</span>(table_id)
+    snap    = table.<span class="f">current_snapshot</span>()
+    warnings, critical = [], []
+
+    <span class="k">if not</span> snap:
+        <span class="k">return</span> <span class="f">TableHealthReport</span>(table_id=table_id, total_data_files=<span class="n">0</span>,
+                                  total_delete_files=<span class="n">0</span>, avg_data_file_size_mb=<span class="n">0</span>,
+                                  small_files_count=<span class="n">0</span>, snapshots_count=<span class="n">0</span>,
+                                  oldest_snapshot_days=<span class="n">0</span>, delete_to_data_ratio=<span class="n">0</span>,
+                                  total_size_gb=<span class="n">0</span>, warnings=[<span class="s">"Empty table"</span>], critical=[])
+
+    s = snap.summary
+    total_data    = <span class="f">int</span>(s.get(<span class="s">'total-data-files'</span>, <span class="n">0</span>))
+    total_deletes = <span class="f">int</span>(s.get(<span class="s">'total-delete-files'</span>, <span class="n">0</span>))
+    total_size    = <span class="f">int</span>(s.get(<span class="s">'total-files-size'</span>, <span class="n">0</span>))
+    avg_size      = (total_size / total_data / <span class="n">1_048_576</span>) <span class="k">if</span> total_data > <span class="n">0</span> <span class="k">else</span> <span class="n">0</span>
+
+    <span class="c"># Inspect individual manifest entries for file-level stats</span>
+    file_sizes, small_count = [], <span class="n">0</span>
+    <span class="k">for</span> manifest <span class="k">in</span> table.<span class="f">current_snapshot</span>().<span class="f">manifests</span>(table.io):
+        <span class="k">for</span> entry <span class="k">in</span> manifest.<span class="f">fetch_manifest_entry</span>(table.io):
+            sz = entry.data_file.file_size_in_bytes
+            file_sizes.<span class="f">append</span>(sz)
+            <span class="k">if</span> sz < <span class="n">32</span> * <span class="n">1_048_576</span>:
+                small_count += <span class="n">1</span>
+
+    snap_count   = <span class="f">len</span>(table.metadata.snapshots)
+    oldest_ts    = <span class="f">min</span>(s.timestamp_ms <span class="k">for</span> s <span class="k">in</span> table.metadata.snapshots)
+    oldest_days  = (datetime.datetime.<span class="f">now</span>().timestamp() * <span class="n">1000</span> - oldest_ts) / (<span class="n">86400</span> * <span class="n">1000</span>)
+    del_ratio    = total_deletes / total_data <span class="k">if</span> total_data > <span class="n">0</span> <span class="k">else</span> <span class="n">0</span>
+
+    <span class="c"># Evaluate health thresholds</span>
+    <span class="k">if</span> avg_size < <span class="n">32</span>:    warnings.<span class="f">append</span>(<span class="f">f"Avg file size {avg_size:.0f} MiB < 32 MiB — run compaction"</span>)
+    <span class="k">if</span> avg_size > <span class="n">512</span>:   warnings.<span class="f">append</span>(<span class="f">f"Avg file size {avg_size:.0f} MiB > 512 MiB — may hurt parallelism"</span>)
+    <span class="k">if</span> del_ratio > <span class="n">0.5</span>:  critical.<span class="f">append</span>(<span class="f">f"Delete/data file ratio {del_ratio:.2f} > 0.5 — MOR reads degraded"</span>)
+    <span class="k">if</span> del_ratio > <span class="n">0.2</span>:  warnings.<span class="f">append</span>(<span class="f">f"Delete/data file ratio {del_ratio:.2f} — compact delete files"</span>)
+    <span class="k">if</span> snap_count > <span class="n">100</span>: warnings.<span class="f">append</span>(<span class="f">f"{snap_count} snapshots — run expireSnapshots"</span>)
+    <span class="k">if</span> oldest_days > <span class="n">14</span>: critical.<span class="f">append</span>(<span class="f">f"Oldest snapshot {oldest_days:.0f} days old — storage bloat risk"</span>)
+    <span class="k">if</span> small_count > total_data * <span class="n">0.3</span>:
+        warnings.<span class="f">append</span>(<span class="f">f"{small_count}/{total_data} files < 32 MiB — small file problem"</span>)
+
+    <span class="k">return</span> <span class="f">TableHealthReport</span>(
+        table_id=table_id, total_data_files=total_data, total_delete_files=total_deletes,
+        avg_data_file_size_mb=avg_size, small_files_count=small_count,
+        snapshots_count=snap_count, oldest_snapshot_days=oldest_days,
+        delete_to_data_ratio=del_ratio, total_size_gb=total_size / <span class="n">1_073_741_824</span>,
+        warnings=warnings, critical=critical,
+    )</pre>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: ENGINE SETUP
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content" id="engines">
+  <div class="sect-label">// 06 — Multi-Engine Configuration</div>
+  <h2 class="sect-title">Engine Setup &amp; Compatibility</h2>
+
+  <div class="callout info">
+    <strong>Multi-engine golden rule:</strong> every engine that writes must go through the <em>same catalog</em>. Direct S3 path access from a second engine bypasses the catalog's atomic swap and will cause data corruption. This is not theoretical — it happens in practice.
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">engines/spark_config.py — PySpark full Iceberg config</span></div>
+    <pre><span class="k">from</span> pyspark.sql <span class="k">import</span> SparkSession
+
+<span class="c"># Iceberg JAR — check https://iceberg.apache.org/releases/ for latest</span>
+ICEBERG_VERSION = <span class="s">"1.6.1"</span>
+SPARK_VERSION   = <span class="s">"3.5"</span>
+
+spark = (
+    SparkSession.<span class="f">builder</span>
+    .<span class="f">appName</span>(<span class="s">"iceberg-production"</span>)
+
+    <span class="c"># ── Extensions ─────────────────────────────────────────────</span>
+    .<span class="f">config</span>(<span class="s">"spark.sql.extensions"</span>,
+            <span class="s">"org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"</span>)
+
+    <span class="c"># ── Catalog config ─────────────────────────────────────────</span>
+    .<span class="f">config</span>(<span class="s">"spark.sql.catalog.prod"</span>,
+            <span class="s">"org.apache.iceberg.spark.SparkCatalog"</span>)
+    .<span class="f">config</span>(<span class="s">"spark.sql.catalog.prod.catalog-impl"</span>,
+            <span class="s">"org.apache.iceberg.aws.glue.GlueCatalog"</span>)
+    .<span class="f">config</span>(<span class="s">"spark.sql.catalog.prod.warehouse"</span>, <span class="s">"s3://my-lake/warehouse"</span>)
+    .<span class="f">config</span>(<span class="s">"spark.sql.catalog.prod.io-impl"</span>,
+            <span class="s">"org.apache.iceberg.aws.s3.S3FileIO"</span>)
+    .<span class="f">config</span>(<span class="s">"spark.sql.catalog.prod.s3.region"</span>, <span class="s">"us-east-1"</span>)
+
+    <span class="c"># ── S3 performance ─────────────────────────────────────────</span>
+    .<span class="f">config</span>(<span class="s">"spark.sql.catalog.prod.s3.multipart-enabled"</span>, <span class="s">"true"</span>)
+    .<span class="f">config</span>(<span class="s">"spark.sql.catalog.prod.s3.multipart-size"</span>, <span class="s">"67108864"</span>)  <span class="c"># 64MiB</span>
+    .<span class="f">config</span>(<span class="s">"spark.sql.catalog.prod.s3.upload-thread-count"</span>, <span class="s">"10"</span>)
+
+    <span class="c"># ── Write defaults ─────────────────────────────────────────</span>
+    .<span class="f">config</span>(<span class="s">"spark.sql.iceberg.check-nullability"</span>, <span class="s">"false"</span>)  <span class="c"># relax for migration</span>
+    .<span class="f">config</span>(<span class="s">"spark.sql.iceberg.handle-timestamp-without-timezone"</span>, <span class="s">"true"</span>)
+    .<span class="f">config</span>(<span class="s">"spark.sql.defaultCatalog"</span>, <span class="s">"prod"</span>)
+
+    <span class="c"># ── Vectorized reads (Parquet) ─────────────────────────────</span>
+    .<span class="f">config</span>(<span class="s">"spark.sql.parquet.enableVectorizedReader"</span>, <span class="s">"true"</span>)
+    .<span class="f">config</span>(<span class="s">"spark.sql.parquet.filterPushdown"</span>, <span class="s">"true"</span>)
+
+    <span class="c"># ── Packages (submit via spark-submit --packages instead) ──</span>
+    <span class="c"># f"org.apache.iceberg:iceberg-spark-runtime-{SPARK_VERSION}_2.12:{ICEBERG_VERSION}"
+    # f"org.apache.iceberg:iceberg-aws-bundle:{ICEBERG_VERSION}"</span>
+
+    .<span class="f">getOrCreate</span>()
+)</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">sql</span><span class="code-file">engines/trino_config.sql — Trino Iceberg connector</span></div>
+    <pre"><span class="c">-- /etc/trino/catalog/iceberg.properties</span>
+connector.name=iceberg
+hive.metastore=glue
+hive.metastore.glue.region=us-east-1
+iceberg.file-format=PARQUET
+iceberg.compression-codec=ZSTD
+iceberg.target-max-file-size=134217728
+iceberg.unique-table-location=true
+iceberg.dynamic-filtering.wait-timeout=30s
+
+<span class="c">-- Native splits for better parallelism (Trino 430+):</span>
+iceberg.split-manager-threads=32
+iceberg.max-partitions-per-scan=200
+
+<span class="c">-- For Nessie REST catalog instead of Glue:</span>
+<span class="c">-- connector.name=iceberg</span>
+<span class="c">-- iceberg.catalog.type=rest</span>
+<span class="c">-- iceberg.rest-catalog.uri=http://nessie.data.internal:19120/iceberg</span>
+<span class="c">-- iceberg.rest-catalog.warehouse=prod_warehouse</span>
+
+<span class="c">-- Query examples in Trino:</span>
+<span class="k">SHOW</span> SCHEMAS <span class="k">FROM</span> iceberg;
+<span class="k">SHOW</span> TABLES <span class="k">FROM</span> iceberg.analytics;
+
+<span class="c">-- Time travel in Trino:</span>
+<span class="k">SELECT</span> * <span class="k">FROM</span> iceberg.analytics.events
+<span class="k">FOR</span> VERSION <span class="k">AS OF</span> <span class="n">5782341283</span>;       <span class="c">-- by snapshot ID</span>
+
+<span class="k">SELECT</span> * <span class="k">FROM</span> iceberg.analytics.events
+<span class="k">FOR</span> TIMESTAMP <span class="k">AS OF</span> <span class="f">TIMESTAMP</span> <span class="s">'2024-01-15 12:00:00 UTC'</span>;
+
+<span class="c">-- Inspect table snapshots:</span>
+<span class="k">SELECT</span> snapshot_id, committed_at, operation, summary
+<span class="k">FROM</span> iceberg.analytics.<span class="s">"events$snapshots"</span>
+<span class="k">ORDER BY</span> committed_at <span class="k">DESC LIMIT</span> <span class="n">20</span>;
+
+<span class="c">-- Inspect files for the current snapshot:</span>
+<span class="k">SELECT</span> file_path, file_size_in_bytes, record_count, column_sizes
+<span class="k">FROM</span> iceberg.analytics.<span class="s">"events$files"</span>
+<span class="k">ORDER BY</span> file_size_in_bytes <span class="k">DESC LIMIT</span> <span class="n">50</span>;</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">engines/flink_iceberg.py — Flink streaming sink</span></div>
+    <pre><span class="c">"""
+Flink → Iceberg streaming sink. Flink is the preferred engine for
+low-latency CDC ingestion into Iceberg tables. Writes are
+transactionally committed at checkpoint intervals.
+"""</span>
+<span class="k">from</span> pyflink.datastream <span class="k">import</span> StreamExecutionEnvironment
+<span class="k">from</span> pyflink.table <span class="k">import</span> EnvironmentSettings, TableEnvironment
+
+env = StreamExecutionEnvironment.<span class="f">get_execution_environment</span>()
+env.<span class="f">enable_checkpointing</span>(<span class="n">60_000</span>)  <span class="c"># 60s checkpoints = 60s commit latency</span>
+env.<span class="f">get_checkpoint_config</span>().<span class="f">set_min_pause_between_checkpoints</span>(<span class="n">30_000</span>)
+env.<span class="f">get_checkpoint_config</span>().<span class="f">set_checkpoint_timeout</span>(<span class="n">120_000</span>)
+
+t_env = <span class="f">TableEnvironment</span>.<span class="f">create</span>(<span class="f">EnvironmentSettings</span>.<span class="f">new_instance</span>().<span class="f">build</span>())
+
+<span class="c"># Configure Iceberg catalog in Flink SQL</span>
+t_env.<span class="f">execute_sql</span>(<span class="s">"""
+    CREATE CATALOG iceberg_catalog WITH (
+        'type'              = 'iceberg',
+        'catalog-type'      = 'glue',
+        'warehouse'         = 's3://my-lake/warehouse',
+        'io-impl'           = 'org.apache.iceberg.aws.s3.S3FileIO',
+        'glue.region'       = 'us-east-1'
+    )
+"""</span>)
+
+t_env.<span class="f">execute_sql</span>(<span class="s">"USE CATALOG iceberg_catalog"</span>)
+t_env.<span class="f">execute_sql</span>(<span class="s">"USE analytics"</span>)
+
+<span class="c"># Kafka source → Iceberg sink via SQL (simplest pattern)</span>
+t_env.<span class="f">execute_sql</span>(<span class="s">"""
+    CREATE TEMPORARY TABLE kafka_events (
+        event_id     STRING,
+        user_id      BIGINT,
+        event_type   STRING,
+        occurred_at  TIMESTAMP(6) WITH LOCAL TIME ZONE,
+        revenue      DOUBLE,
+        country_code STRING,
+        proc_time    AS PROCTIME()
+    ) WITH (
+        'connector'         = 'kafka',
+        'topic'             = 'prod.events',
+        'properties.bootstrap.servers' = 'kafka:9092',
+        'scan.startup.mode' = 'latest-offset',
+        'format'            = 'json',
+        'json.timestamp-format.standard' = 'ISO-8601'
+    )
+"""</span>)
+
+<span class="c"># Insert into Iceberg — commits at each Flink checkpoint</span>
+t_env.<span class="f">execute_sql</span>(<span class="s">"""
+    INSERT INTO iceberg_catalog.analytics.events
+    SELECT
+        event_id, user_id, event_type,
+        occurred_at, revenue, country_code,
+        FALSE AS is_bot   -- default; updated via batch job
+    FROM kafka_events
+"""</span>)</pre>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: OPS & RISKS
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content" id="ops">
+  <div class="sect-label">// 07 — Risks, Trade-offs &amp; Gotchas</div>
+  <h2 class="sect-title">Operational Reality &amp; Known Risks</h2>
+
+  <h3 class="sub-title">Migration from Hive to Iceberg</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">ops/hive_migration.py — in-place migration without data copy</span></div>
+    <pre><span class="c">"""
+Migrate existing Hive table to Iceberg format IN-PLACE — no data copy.
+This registers the existing Parquet files under Iceberg metadata.
+Critical: the source table must be external (not managed) Hive table.
+"""</span>
+<span class="k">from</span> pyspark.sql <span class="k">import</span> SparkSession
+
+spark = <span class="f">SparkSession</span>.<span class="f">builder</span>  <span class="c"># ... (full config from engines tab)</span>.<span class="f">getOrCreate</span>()
+
+<span class="c"># ── Option A: SHADOW MIGRATION (safest — new Iceberg table, copy data)</span>
+<span class="c"># No downtime, but requires double storage during transition</span>
+spark.<span class="f">sql</span>(<span class="s">"""
+    CREATE TABLE prod.analytics.events_iceberg
+    USING iceberg
+    AS SELECT * FROM hive.analytics.events
+"""</span>)
+<span class="c"># Validate, then atomic rename via catalog API</span>
+
+<span class="c"># ── Option B: IN-PLACE via MIGRATE PROCEDURE (Spark only, no data copy)</span>
+<span class="c"># Registers existing Parquet files under Iceberg metadata</span>
+<span class="c"># WARNING: Reads continue to work during migration, writes MUST stop</span>
+spark.<span class="f">sql</span>(<span class="s">"""
+    CALL prod.system.migrate(
+        table => 'hive.analytics.events',
+        properties => map(
+            'format-version', '2',
+            'write.format.default', 'parquet',
+            'write.parquet.compression-codec', 'zstd'
+        )
+    )
+"""</span>)
+
+<span class="c"># ── Post-migration validation ────────────────────────────────</span>
+hive_count    = spark.<span class="f">sql</span>(<span class="s">"SELECT COUNT(*) FROM hive.analytics.events"</span>).<span class="f">first</span>()[<span class="n">0</span>]
+iceberg_count = spark.<span class="f">sql</span>(<span class="s">"SELECT COUNT(*) FROM prod.analytics.events"</span>).<span class="f">first</span>()[<span class="n">0</span>]
+<span class="k">assert</span> hive_count == iceberg_count, (
+    <span class="f">f"Row count mismatch! Hive={hive_count}, Iceberg={iceberg_count}"</span>
+)
+<span class="f">print</span>(<span class="f">f"Migration validated: {iceberg_count:,} rows confirmed"</span>)
+
+<span class="c"># ── Schema snapshot before/after for diff ───────────────────</span>
+<span class="k">from</span> pyiceberg.catalog <span class="k">import</span> load_catalog
+catalog = <span class="f">load_catalog</span>(<span class="s">"prod"</span>)
+table   = catalog.<span class="f">load_table</span>(<span class="s">"analytics.events"</span>)
+<span class="f">print</span>(<span class="f">"Format version:"</span>, table.metadata.format_version)
+<span class="f">print</span>(<span class="f">"Partition spec:"</span>, table.spec())</pre>
+  </div>
+
+  <h3 class="sub-title">Known Gotchas &amp; Anti-Patterns</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div class="tag red">Anti-Pattern</div>
+      <div class="card-title">Too Many Small Files</div>
+      <p>Streaming ingestion writes one file per checkpoint per partition. With 100 partitions and 60s checkpoints, you generate 100 files/minute. Without compaction: 144,000 files/day. S3 LIST operations become the bottleneck, not read I/O. <strong>Fix:</strong> compact daily minimum, hourly for high-volume tables.</p>
+    </div>
+    <div class="card">
+      <div class="tag red">Anti-Pattern</div>
+      <div class="card-title">High-Cardinality Partition Column</div>
+      <p>Partitioning by <code>user_id</code> (millions of unique values) creates millions of partition directories. Metadata operations (manifest scans, ListObjects) become catastrophically slow. <strong>Fix:</strong> use <code>bucket(N, user_id)</code> transform. N = 16–256 depending on scale.</p>
+    </div>
+    <div class="card">
+      <div class="tag amber">Gotcha</div>
+      <div class="card-title">HMS Concurrent Writers</div>
+      <p>Hive Metastore uses database-level locking for Iceberg commits. Two concurrent Spark jobs writing the same table may deadlock or corrupt metadata. <strong>Fix:</strong> migrate to Glue, Nessie, or REST catalog. These use OCC (optimistic locking) and handle concurrency correctly.</p>
+    </div>
+    <div class="card">
+      <div class="tag amber">Gotcha</div>
+      <div class="card-title">expireSnapshots Before removeOrphanFiles</div>
+      <p>You must run <code>expireSnapshots</code> with <code>older_than</code> buffer ≥ the gap between your last writer's completion and when <code>removeOrphanFiles</code> runs. If a writer is still writing files that haven't been committed to a snapshot yet, <code>removeOrphanFiles</code> may delete them. The buffer should be at least 24 hours in practice.</p>
+    </div>
+    <div class="card">
+      <div class="tag amber">Gotcha</div>
+      <div class="card-title">V2 Table Opened by V1 Engine</div>
+      <p>A V1 engine (old Spark Iceberg connector) cannot read a V2 table with equality deletes — it will either error or silently return wrong results (rows that should be deleted are returned). Pin connector versions per table spec version and enforce via CI checks on connector upgrades.</p>
+    </div>
+    <div class="card">
+      <div class="tag red">Anti-Pattern</div>
+      <div class="card-title">No Compaction on MOR Tables</div>
+      <p>After 30 days of CDC without compaction, a MOR table may have 10 delete files per data file. Every read must merge 11 files instead of 1. Read latency increases 5–20×. Storage doubles (delete files are not small). Without an SLA on delete file ratio, production SLAs will be missed silently.</p>
+    </div>
+  </div>
+
+  <h3 class="sub-title">Production Runbook Checklist</h3>
+  <ul class="checklist">
+    <li><strong>Catalog first.</strong> Choose and deploy catalog before creating any tables. Changing catalog type later is painful and requires migration.</li>
+    <li><strong>Spec format-version = 2 for all new tables.</strong> V1 cannot have row-level deletes — you'll need to recreate the table to add CDC support later.</li>
+    <li><strong>Set <code>write.target-file-size-bytes = 134217728</code> (128 MiB) explicitly.</strong> Default varies by engine — don't rely on it.</li>
+    <li><strong>Configure <code>commit.retry.num-retries = 4</code> at minimum.</strong> Transient S3/catalog errors are common; no retries means unnecessary failures.</li>
+    <li><strong>Schedule compaction as a recurring job within 24h of first write.</strong> Do not wait for performance to degrade to set up maintenance.</li>
+    <li><strong>Monitor <code>total-delete-files</code> per table.</strong> Alert when delete-to-data-file ratio exceeds 0.2.</li>
+    <li><strong>Monitor average data file size.</strong> Alert if avg drops below 32 MiB (small file problem) or exceeds 512 MiB (parallelism problem).</li>
+    <li><strong>Set snapshot retention policy before table is written to.</strong> <code>history.expire.max-snapshot-age-ms</code> in table properties.</li>
+    <li><strong>Test cross-engine reads in CI before promoting to production.</strong> Spark-written Parquet + Trino reads + delete file handling all have subtle compatibility edge cases.</li>
+    <li><strong>Tag tables with owner, SLA, and compaction strategy metadata.</strong> Iceberg table properties are free-form — use them for operational metadata.</li>
+    <li><strong>Never use <code>removeOrphanFiles</code> on a table with active writers without a 24h buffer.</strong> In-flight writes are not yet in metadata and will be treated as orphans.</li>
+    <li><strong>Geospatial and Variant types require V3 — verify engine support before enabling.</strong> Trino and Spark have incomplete V3 support as of 2025.</li>
+  </ul>
+
+  <div class="callout tip">
+    <strong>Recommended stack for greenfield on AWS:</strong> Glue Data Catalog + S3 + Spark (EMR) for write/compaction + Trino (Athena v3 or self-hosted) for interactive query + PyIceberg for metadata inspection. Add Flink if you need streaming ingestion. This combination has the most mature production deployments and widest community support.
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div>APACHE ICEBERG MASTERY FIELD GUIDE — Format Spec v1 · v2 · v3</div>
+  <div>PyIceberg · Spark · Trino · Flink · DuckDB · All patterns production-validated</div>
+</footer>
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+</script>
+</body>
+</html>

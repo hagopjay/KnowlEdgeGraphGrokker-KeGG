@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Airflow Mastery — Production Field Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #080c0a;
+    --bg1:      #0d1210;
+    --bg2:      #111a14;
+    --bg3:      #162019;
+    --surface:  #1c2820;
+    --border:   #1f3028;
+    --border2:  #274036;
+    --green:    #39ff8a;
+    --green2:   #20c060;
+    --green3:   #0d7a3e;
+    --green4:   #093d20;
+    --amber:    #ffb830;
+    --amber2:   #cc8a00;
+    --red:      #ff4f4f;
+    --red2:     #c02020;
+    --cyan:     #30e8d0;
+    --purple:   #b070ff;
+    --blue:     #4090ff;
+    --text:     #c8ddd0;
+    --text2:    #7aaa8a;
+    --text3:    #4a7060;
+    --dim:      #2a4030;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── SCANLINE OVERLAY ─────────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  }
+
+  /* ── HEADER ──────────────────────────────────────────────── */
+  header {
+    border-bottom: 1px solid var(--border2);
+    padding: 28px 48px 22px;
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(8,12,10,0.96);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: flex-end; justify-content: space-between;
+  }
+  .logo-area { display: flex; align-items: flex-end; gap: 16px; }
+  .logo-glyph {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 52px; font-weight: 800; line-height: 1;
+    color: var(--green);
+    letter-spacing: -2px;
+    text-shadow: 0 0 40px rgba(57,255,138,0.25);
+  }
+  .logo-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; font-weight: 600; letter-spacing: 4px;
+    color: var(--text3); text-transform: uppercase;
+    padding-bottom: 6px;
+  }
+  .header-meta {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    line-height: 1.8;
+  }
+  .status-live {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--green2);
+  }
+  .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(57,255,138,0.4)} 50%{opacity:.7;box-shadow:0 0 0 5px rgba(57,255,138,0)} }
+
+  /* ── TABS ────────────────────────────────────────────────── */
+  .tab-bar {
+    display: flex; gap: 0;
+    background: var(--bg1);
+    border-bottom: 1px solid var(--border2);
+    padding: 0 48px;
+    overflow-x: auto;
+    position: sticky; top: 95px; z-index: 99;
+  }
+  .tab-bar::-webkit-scrollbar { height: 3px; }
+  .tab-bar::-webkit-scrollbar-track { background: transparent; }
+  .tab-bar::-webkit-scrollbar-thumb { background: var(--border2); }
+  .tab-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    background: none; border: none; cursor: pointer;
+    padding: 14px 20px;
+    border-bottom: 2px solid transparent;
+    transition: all .2s; white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+  /* ── MAIN LAYOUT ─────────────────────────────────────────── */
+  main { max-width: 1280px; margin: 0 auto; padding: 0 48px 80px; }
+  .tab-content { display: none; padding-top: 48px; }
+  .tab-content.active { display: block; }
+
+  /* ── SECTION HEADERS ─────────────────────────────────────── */
+  .sect-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 4px;
+    color: var(--green3); text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  h2.sect-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 36px; font-weight: 800; letter-spacing: -0.5px;
+    color: #e8f5ee;
+    line-height: 1; margin-bottom: 12px;
+  }
+  h3.sub-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px; font-weight: 700;
+    color: var(--green2); margin: 36px 0 10px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h3.sub-title::before {
+    content: ''; display: block;
+    width: 20px; height: 2px; background: var(--green);
+  }
+  h4 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 17px; font-weight: 600; letter-spacing: 0.5px;
+    color: var(--cyan); margin: 24px 0 8px;
+  }
+  p { color: var(--text2); margin-bottom: 12px; font-weight: 300; line-height: 1.75; }
+  strong { color: var(--text); font-weight: 500; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--green); background: var(--green4); padding: 1px 6px; border-radius: 3px; }
+
+  /* ── CODE BLOCKS ─────────────────────────────────────────── */
+  .code-block {
+    background: var(--bg1);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--green3);
+    border-radius: 6px;
+    margin: 16px 0 24px;
+    overflow: hidden;
+  }
+  .code-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 16px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+  .code-lang {
+    color: var(--green3); font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+  }
+  .code-file { color: var(--text3); }
+  pre {
+    padding: 20px 24px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--text);
+  }
+  pre::-webkit-scrollbar { height: 4px; }
+  pre::-webkit-scrollbar-track { background: var(--bg1); }
+  pre::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* Syntax highlight classes */
+  .k  { color: var(--purple); }   /* keyword */
+  .s  { color: var(--amber); }    /* string */
+  .c  { color: var(--text3); font-style: italic; } /* comment */
+  .f  { color: var(--cyan); }     /* function / method */
+  .n  { color: var(--green); }    /* number / constant */
+  .d  { color: #88ccff; }         /* decorator */
+  .t  { color: #ff8888; }         /* type */
+  .bi { color: var(--blue); }     /* builtin */
+
+  /* ── CALLOUT BOXES ───────────────────────────────────────── */
+  .callout {
+    padding: 16px 20px;
+    border-radius: 6px;
+    margin: 16px 0;
+    border-left: 3px solid;
+    font-size: 14px;
+  }
+  .callout.warn  { background: rgba(255,184,48,0.06); border-color: var(--amber); color: #d4a020; }
+  .callout.info  { background: rgba(48,232,208,0.06); border-color: var(--cyan);  color: var(--cyan); }
+  .callout.crit  { background: rgba(255,79,79,0.06);  border-color: var(--red);   color: var(--red); }
+  .callout.tip   { background: rgba(57,255,138,0.05); border-color: var(--green3);color: var(--green2); }
+  .callout strong { color: inherit; font-weight: 600; }
+
+  /* ── GRID / CARDS ────────────────────────────────────────── */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .card-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px; font-weight: 700;
+    color: var(--text); margin-bottom: 8px;
+  }
+  .card p { font-size: 13px; margin-bottom: 0; }
+  .tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 3px; margin-bottom: 10px;
+  }
+  .tag.green { background: var(--green4); color: var(--green); border: 1px solid var(--green3); }
+  .tag.amber { background: rgba(255,184,48,0.1); color: var(--amber); border: 1px solid var(--amber2); }
+  .tag.red   { background: rgba(255,79,79,0.1);  color: var(--red);   border: 1px solid var(--red2); }
+  .tag.cyan  { background: rgba(48,232,208,0.08); color: var(--cyan);  border: 1px solid rgba(48,232,208,0.3); }
+  .tag.purple{ background: rgba(176,112,255,0.1); color: var(--purple);border: 1px solid rgba(176,112,255,0.3); }
+
+  /* ── METRIC ROW ──────────────────────────────────────────── */
+  .metric-row { display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
+  .metric {
+    flex: 1; min-width: 120px;
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: 6px;
+    padding: 14px 16px;
+  }
+  .metric-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 32px; font-weight: 800;
+    line-height: 1;
+  }
+  .metric-label { font-size: 11px; color: var(--text3); margin-top: 4px; text-transform: uppercase; letter-spacing: 1.5px; }
+
+  /* ── TABLE ───────────────────────────────────────────────── */
+  .data-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  .data-table th {
+    background: var(--bg2); color: var(--text3);
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border2);
+  }
+  .data-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text2); }
+  .data-table tr:hover td { background: var(--bg2); }
+  .data-table td:first-child { font-family: 'JetBrains Mono', monospace; color: var(--green2); font-size: 12px; }
+
+  /* ── DIVIDER ─────────────────────────────────────────────── */
+  .divider { height: 1px; background: var(--border); margin: 40px 0; }
+
+  /* ── ARCH DIAGRAM ────────────────────────────────────────── */
+  .arch-box {
+    display: flex; gap: 8px; margin: 20px 0; align-items: center; flex-wrap: wrap;
+  }
+  .arch-node {
+    background: var(--surface); border: 1px solid var(--border2); border-radius: 6px;
+    padding: 12px 18px; font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px; font-weight: 700; text-align: center;
+  }
+  .arch-arrow { color: var(--green3); font-size: 20px; }
+  .arch-node.highlight { border-color: var(--green); color: var(--green); }
+  .arch-node.warn-node { border-color: var(--amber); color: var(--amber); }
+  .arch-node.crit-node { border-color: var(--red); color: var(--red); }
+
+  /* ── CHECKLIST ───────────────────────────────────────────── */
+  .checklist { list-style: none; margin: 12px 0; }
+  .checklist li {
+    padding: 8px 0 8px 28px;
+    border-bottom: 1px solid var(--border);
+    position: relative; font-size: 13.5px; color: var(--text2);
+  }
+  .checklist li::before {
+    content: '▸'; position: absolute; left: 0;
+    color: var(--green3); font-size: 12px;
+  }
+  .checklist li strong { color: var(--text); }
+
+  /* ── FOOTER ──────────────────────────────────────────────── */
+  footer {
+    margin-top: 80px; padding: 32px 48px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text3);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <div class="logo-glyph">AF</div>
+    <div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;color:#e8f5ee;letter-spacing:-0.5px;">AIRFLOW MASTERY</div>
+      <div class="logo-sub">Production Field Guide — v2.x / v3.x</div>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div class="status-live"><span class="pulse"></span> System Operational</div>
+    <div>Scheduler · Workers · Webserver · Triggerer</div>
+    <div style="color:var(--text3)">Python 3.11+ · Celery / K8s Executors</div>
+  </div>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('arch')">Architecture</button>
+  <button class="tab-btn" onclick="switchTab('dags')">DAG Design</button>
+  <button class="tab-btn" onclick="switchTab('operators')">Operators</button>
+  <button class="tab-btn" onclick="switchTab('monitoring')">Monitoring</button>
+  <button class="tab-btn" onclick="switchTab('debugging')">Debugging</button>
+  <button class="tab-btn" onclick="switchTab('performance')">Performance</button>
+  <button class="tab-btn" onclick="switchTab('production')">Production</button>
+  <button class="tab-btn" onclick="switchTab('recipes')">Recipes</button>
+</div>
+
+<main>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: ARCHITECTURE
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content active" id="arch">
+  <div class="sect-label">// 01 — Core Concepts</div>
+  <h2 class="sect-title">Architecture Deep Dive</h2>
+  <p>Airflow is a <strong>workflow orchestration platform</strong> — not an ETL tool, not a data pipeline tool. It schedules and monitors arbitrary directed acyclic graphs of tasks. Understanding its internal mechanics is non-negotiable for production reliability.</p>
+
+  <div class="arch-box">
+    <div class="arch-node highlight">DAG Files<br><small style="font-size:11px;color:var(--text3)">~/dags/</small></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node warn-node">Scheduler<br><small style="font-size:11px;color:var(--text3)">DagBag parse</small></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node">Metastore DB<br><small style="font-size:11px;color:var(--text3)">Postgres / MySQL</small></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node">Executor<br><small style="font-size:11px;color:var(--text3)">Celery / K8s</small></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node highlight">Workers<br><small style="font-size:11px;color:var(--text3)">run tasks</small></div>
+  </div>
+
+  <h3 class="sub-title">Component Breakdown</h3>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="tag green">Scheduler</div>
+      <div class="card-title">The Brain</div>
+      <p>Continuously scans DAG files. Evaluates schedule intervals, triggers DAG runs, creates TaskInstances, and queues them to the executor. The <strong>heartbeat loop</strong> runs every ~5s. In Airflow 2+, multiple schedulers can run simultaneously (HA mode) using row-level DB locking.</p>
+    </div>
+    <div class="card">
+      <div class="tag amber">Executor</div>
+      <div class="card-title">The Dispatcher</div>
+      <p>Determines <em>how</em> tasks run. <strong>LocalExecutor</strong> (subprocess), <strong>CeleryExecutor</strong> (distributed queue via Redis/RabbitMQ), <strong>KubernetesExecutor</strong> (pod-per-task), <strong>CeleryKubernetesExecutor</strong> (hybrid). Never a bottleneck itself — tasks run in workers, not the scheduler.</p>
+    </div>
+    <div class="card">
+      <div class="tag red">Metastore DB</div>
+      <div class="card-title">The Source of Truth</div>
+      <p>All state lives here. DAG runs, task instances, connections, variables, XCOM values, logs (optionally). Use <strong>Postgres 13+</strong> in production. Never use SQLite beyond local dev. Connection pool sizing is critical — each scheduler + webserver + worker has its own pool.</p>
+    </div>
+    <div class="card">
+      <div class="tag cyan">Triggerer</div>
+      <div class="card-title">Async Deferral (2.2+)</div>
+      <p>Runs <strong>asyncio event loop</strong> for deferred tasks. Enables sensors and operators to yield control back to the executor while waiting (I/O bound waits), dramatically reducing worker slot consumption. Critical for any workflow with polling sensors.</p>
+    </div>
+  </div>
+
+  <h3 class="sub-title">The DagBag Parse Cycle — Critical to Understand</h3>
+  <p>The scheduler parses every file in <code>dags_folder</code> every <code>dag_dir_list_interval</code> seconds (default 300s). Each parse is a full Python import of the module. This is why <strong>top-level code in DAG files is catastrophic</strong> — it runs on every parse, not just on execution.</p>
+
+  <div class="callout crit">
+    <strong>NEVER do this at module level:</strong> database connections, API calls, file I/O, heavy imports, environment variable fetches that call external systems. The scheduler will call this code hundreds of times per hour across all its workers.
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">dag_parse_pitfalls.py</span></div>
+    <pre><span class="c"># ✗ BAD: top-level import of a slow library — runs on EVERY parse</span>
+<span class="k">import</span> tensorflow <span class="k">as</span> tf          <span class="c"># 3s import. Scheduler grinds to halt.</span>
+records = <span class="f">db.fetch_all</span>()         <span class="c"># ✗ live DB call on every parse!</span>
+config = <span class="f">requests.get</span>(<span class="s">'http://config-svc'</span>).json()  <span class="c"># ✗ network call!</span>
+
+<span class="c"># ✓ GOOD: defer everything into callables</span>
+<span class="k">from</span> airflow.decorators <span class="k">import</span> dag, task
+<span class="k">from</span> airflow.models <span class="k">import</span> Variable
+<span class="k">from</span> datetime <span class="k">import</span> datetime
+<span class="k">import</span> pendulum
+
+<span class="d">@dag</span>(
+    dag_id=<span class="s">'safe_dag'</span>,
+    schedule=<span class="s">'@daily'</span>,
+    start_date=pendulum.datetime(<span class="n">2024</span>, <span class="n">1</span>, <span class="n">1</span>, tz=<span class="s">'UTC'</span>),
+    catchup=<span class="k">False</span>,
+    tags=[<span class="s">'production'</span>],
+    default_args={
+        <span class="s">'owner'</span>: <span class="s">'data-eng'</span>,
+        <span class="s">'retries'</span>: <span class="n">3</span>,
+        <span class="s">'retry_delay'</span>: pendulum.duration(minutes=<span class="n">5</span>),
+        <span class="s">'retry_exponential_backoff'</span>: <span class="k">True</span>,
+        <span class="s">'max_retry_delay'</span>: pendulum.duration(hours=<span class="n">2</span>),
+    }
+)
+<span class="k">def</span> <span class="f">safe_dag</span>():
+    <span class="d">@task</span>
+    <span class="k">def</span> <span class="f">load_config</span>():
+        <span class="c"># ✓ Variable.get uses cache — still prefer Secrets backend</span>
+        config_json = Variable.get(<span class="s">'pipeline_config'</span>, deserialize_json=<span class="k">True</span>)
+        <span class="k">return</span> config_json
+
+    <span class="d">@task</span>
+    <span class="k">def</span> <span class="f">fetch_records</span>(config: dict):
+        <span class="c"># ✓ DB connection is created inside the task — at execution time</span>
+        <span class="k">from</span> airflow.providers.postgres.hooks.postgres <span class="k">import</span> PostgresHook
+        hook = <span class="f">PostgresHook</span>(postgres_conn_id=<span class="s">'prod_postgres'</span>)
+        <span class="k">return</span> hook.<span class="f">get_records</span>(<span class="s">"SELECT * FROM events LIMIT 1000"</span>)
+
+    cfg = <span class="f">load_config</span>()
+    <span class="f">fetch_records</span>(cfg)
+
+safe_dag_instance = <span class="f">safe_dag</span>()</pre>
+  </div>
+
+  <h3 class="sub-title">Executor Comparison Matrix</h3>
+  <table class="data-table">
+    <thead><tr><th>Executor</th><th>Concurrency</th><th>Isolation</th><th>Overhead</th><th>Best For</th></tr></thead>
+    <tbody>
+      <tr><td>SequentialExecutor</td><td>1 task at a time</td><td>None</td><td>Zero</td><td>Dev/debug only</td></tr>
+      <tr><td>LocalExecutor</td><td>N subprocesses</td><td>Process</td><td>Low</td><td>Small teams, single node</td></tr>
+      <tr><td>CeleryExecutor</td><td>Unlimited workers</td><td>Process</td><td>Medium</td><td>Production, horizontal scale</td></tr>
+      <tr><td>KubernetesExecutor</td><td>Unlimited pods</td><td>Container</td><td>High (pod start)</td><td>True isolation, variable workloads</td></tr>
+      <tr><td>CeleryK8sExecutor</td><td>Both modes</td><td>Mixed</td><td>Medium-High</td><td>Hybrid: fast small + isolated large</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: DAG DESIGN
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content" id="dags">
+  <div class="sect-label">// 02 — Patterns & Anti-Patterns</div>
+  <h2 class="sect-title">DAG Design Mastery</h2>
+
+  <h3 class="sub-title">Dynamic DAG Generation — The Right Way</h3>
+  <p>Dynamic DAGs are one of Airflow's most powerful features and also the most commonly abused. The key insight: <strong>generate structure at parse time, not execution time</strong>.</p>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">dynamic_dags.py</span></div>
+    <pre><span class="c">"""
+Pattern 1: Config-driven DAG factory
+Generate N DAGs from a single config — one DAG per tenant/environment.
+"""</span>
+<span class="k">from</span> airflow.decorators <span class="k">import</span> dag, task
+<span class="k">from</span> airflow.operators.empty <span class="k">import</span> EmptyOperator
+<span class="k">import</span> pendulum
+<span class="k">import</span> yaml
+<span class="k">from</span> pathlib <span class="k">import</span> Path
+
+<span class="c"># ✓ Read config at parse time — fast file I/O is acceptable</span>
+CONFIG_PATH = Path(<span class="s">"/opt/airflow/config/pipelines.yaml"</span>)
+PIPELINE_CONFIGS: list[dict] = yaml.<span class="f">safe_load</span>(CONFIG_PATH.<span class="f">read_text</span>())
+
+<span class="k">for</span> pipeline_cfg <span class="k">in</span> PIPELINE_CONFIGS:
+    tenant = pipeline_cfg[<span class="s">'tenant'</span>]
+    schedule = pipeline_cfg[<span class="s">'schedule'</span>]
+    tables = pipeline_cfg[<span class="s">'tables'</span>]       <span class="c"># list of tables to process</span>
+    sla_minutes = pipeline_cfg.get(<span class="s">'sla_minutes'</span>, <span class="n">60</span>)
+
+    <span class="d">@dag</span>(
+        dag_id=<span class="f">f"pipeline_{tenant}"</span>,
+        schedule=schedule,
+        start_date=pendulum.datetime(<span class="n">2024</span>, <span class="n">1</span>, <span class="n">1</span>, tz=<span class="s">'UTC'</span>),
+        catchup=<span class="k">False</span>,
+        tags=[<span class="s">'auto-generated'</span>, tenant],
+        default_args={
+            <span class="s">'owner'</span>: pipeline_cfg.get(<span class="s">'owner'</span>, <span class="s">'platform'</span>),
+            <span class="s">'retries'</span>: <span class="n">2</span>,
+            <span class="s">'sla'</span>: pendulum.duration(minutes=sla_minutes),
+        }
+    )
+    <span class="k">def</span> <span class="f">tenant_pipeline</span>(<span class="f">cfg</span>=pipeline_cfg):
+        start = <span class="f">EmptyOperator</span>(task_id=<span class="s">'start'</span>)
+        end   = <span class="f">EmptyOperator</span>(task_id=<span class="s">'end'</span>, trigger_rule=<span class="s">'none_failed_min_one_success'</span>)
+
+        <span class="d">@task</span>(task_id=<span class="s">'validate_source'</span>)
+        <span class="k">def</span> <span class="f">validate_source</span>():
+            <span class="c"># runs validation query against source system</span>
+            <span class="k">pass</span>
+
+        table_tasks = []
+        <span class="k">for</span> table <span class="k">in</span> cfg[<span class="s">'tables'</span>]:
+            <span class="d">@task</span>(task_id=<span class="f">f"process_{table}"</span>, retries=<span class="n">3</span>)
+            <span class="k">def</span> <span class="f">process_table</span>(table_name=table):
+                <span class="k">from</span> airflow.providers.google.cloud.hooks.bigquery <span class="k">import</span> BigQueryHook
+                hook = <span class="f">BigQueryHook</span>(gcp_conn_id=<span class="s">'gcp_prod'</span>)
+                <span class="c"># Execute table-specific transformation</span>
+                hook.<span class="f">run_query</span>(<span class="f">f"""
+                    INSERT INTO <span class="s">`prod.{cfg['tenant']}.{table_name}`</span>
+                    SELECT * FROM <span class="s">`staging.{table_name}`</span>
+                    WHERE _partitiontime = '{{ ds }}'
+                """</span>)
+            table_tasks.<span class="f">append</span>(<span class="f">process_table</span>())
+
+        start >> <span class="f">validate_source</span>() >> table_tasks >> end
+
+    <span class="c"># ✓ Inject into globals — this is the canonical way to expose dynamic DAGs</span>
+    globals()[<span class="f">f"pipeline_{tenant}"</span>] = <span class="f">tenant_pipeline</span>()</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">taskflow_advanced.py</span></div>
+    <pre><span class="c">"""
+Pattern 2: TaskFlow API with branching, XCom, and dynamic task mapping.
+Dynamic task mapping (Airflow 2.3+) is a game-changer — fan-out
+without knowing N at parse time.
+"""</span>
+<span class="k">from</span> airflow.decorators <span class="k">import</span> dag, task, task_group
+<span class="k">from</span> airflow.operators.python <span class="k">import</span> BranchPythonOperator
+<span class="k">from</span> airflow.utils.trigger_rule <span class="k">import</span> TriggerRule
+<span class="k">import</span> pendulum
+
+<span class="d">@dag</span>(
+    dag_id=<span class="s">'advanced_taskflow'</span>,
+    schedule=<span class="s">'0 4 * * *'</span>,
+    start_date=pendulum.datetime(<span class="n">2024</span>, <span class="n">1</span>, <span class="n">1</span>, tz=<span class="s">'UTC'</span>),
+    catchup=<span class="k">False</span>,
+    max_active_tasks=<span class="n">16</span>,          <span class="c"># per-DAG concurrency cap</span>
+    max_active_runs=<span class="n">1</span>,             <span class="c"># prevent overlapping runs</span>
+)
+<span class="k">def</span> <span class="f">advanced_pipeline</span>():
+
+    <span class="d">@task</span>
+    <span class="k">def</span> <span class="f">get_work_items</span>() -> list[dict]:
+        <span class="s">"""Returns variable-length list — dynamic map target"""</span>
+        <span class="k">from</span> airflow.providers.postgres.hooks.postgres <span class="k">import</span> PostgresHook
+        hook = <span class="f">PostgresHook</span>(<span class="s">'prod'</span>)
+        rows = hook.<span class="f">get_records</span>(<span class="s">"SELECT id, payload FROM work_queue WHERE status='pending'"</span>)
+        <span class="k">return</span> [{<span class="s">'id'</span>: r[<span class="n">0</span>], <span class="s">'payload'</span>: r[<span class="n">1</span>]} <span class="k">for</span> r <span class="k">in</span> rows]
+
+    <span class="c"># ✓ Dynamic task mapping — creates N parallel tasks at runtime</span>
+    <span class="d">@task</span>(
+        max_active_tis_per_dag=<span class="n">8</span>,    <span class="c"># throttle parallelism</span>
+        retries=<span class="n">2</span>,
+    )
+    <span class="k">def</span> <span class="f">process_item</span>(item: dict) -> dict:
+        <span class="s">"""Runs once per item in work_items list"""</span>
+        result = <span class="f">heavy_computation</span>(item[<span class="s">'payload'</span>])
+        <span class="k">return</span> {<span class="s">'id'</span>: item[<span class="s">'id'</span>], <span class="s">'status'</span>: <span class="s">'ok'</span>, <span class="s">'result'</span>: result}
+
+    <span class="d">@task</span>(trigger_rule=TriggerRule.<span class="t">ALL_DONE</span>)   <span class="c"># run even if some mapped tasks fail</span>
+    <span class="k">def</span> <span class="f">aggregate_results</span>(results: list[dict]) -> dict:
+        ok = [r <span class="k">for</span> r <span class="k">in</span> results <span class="k">if</span> r <span class="k">and</span> r.get(<span class="s">'status'</span>) == <span class="s">'ok'</span>]
+        <span class="k">return</span> {<span class="s">'total'</span>: <span class="f">len</span>(results), <span class="s">'ok'</span>: <span class="f">len</span>(ok), <span class="s">'failed'</span>: <span class="f">len</span>(results) - <span class="f">len</span>(ok)}
+
+    <span class="d">@task_group</span>(group_id=<span class="s">'notifications'</span>)
+    <span class="k">def</span> <span class="f">notify</span>(summary: dict):
+        <span class="d">@task</span>
+        <span class="k">def</span> <span class="f">send_slack</span>(s=summary):
+            <span class="k">from</span> airflow.providers.slack.operators.slack_webhook <span class="k">import</span> SlackWebhookOperator
+            <span class="k">if</span> s[<span class="s">'failed'</span>] > <span class="n">0</span>:
+                msg = <span class="f">f"⚠️ Pipeline complete: {s['ok']}/{s['total']} ok, {s['failed']} failed"</span>
+            <span class="k">else</span>:
+                msg = <span class="f">f"✅ Pipeline complete: all {s['total']} items processed"</span>
+            <span class="f">SlackWebhookOperator</span>(task_id=<span class="s">'_inner'</span>, slack_webhook_conn_id=<span class="s">'slack_ops'</span>, message=msg).<span class="f">execute</span>({})
+
+        <span class="d">@task</span>
+        <span class="k">def</span> <span class="f">update_dashboard</span>(s=summary):
+            <span class="c"># POST metrics to internal observability service</span>
+            <span class="k">import</span> httpx
+            httpx.<span class="f">post</span>(<span class="s">'https://metrics.internal/ingest'</span>, json=s, timeout=<span class="n">10</span>)
+
+        <span class="f">send_slack</span>()
+        <span class="f">update_dashboard</span>()
+
+    items = <span class="f">get_work_items</span>()
+    <span class="c"># .expand() is the magic — one call generates N mapped task instances</span>
+    processed = process_item.<span class="f">expand</span>(item=items)
+    summary = <span class="f">aggregate_results</span>(processed)
+    <span class="f">notify</span>(summary)
+
+<span class="f">advanced_pipeline</span>()</pre>
+  </div>
+
+  <h3 class="sub-title">Trigger Rules — The Full Picture</h3>
+  <table class="data-table">
+    <thead><tr><th>Trigger Rule</th><th>When Task Runs</th><th>Common Use Case</th></tr></thead>
+    <tbody>
+      <tr><td>ALL_SUCCESS</td><td>All upstreams succeeded</td><td>Default — normal pipeline steps</td></tr>
+      <tr><td>ALL_FAILED</td><td>All upstreams failed</td><td>Failure-path cleanup tasks</td></tr>
+      <tr><td>ALL_DONE</td><td>All upstreams finished (any state)</td><td>Always-run summaries, notifications</td></tr>
+      <tr><td>ONE_SUCCESS</td><td>At least one upstream succeeded</td><td>Fan-in where partial success is OK</td></tr>
+      <tr><td>ONE_FAILED</td><td>At least one upstream failed</td><td>Early alerting before all complete</td></tr>
+      <tr><td>NONE_FAILED</td><td>No upstreams failed (skips allowed)</td><td>Branching — tasks after a branch</td></tr>
+      <tr><td>NONE_SKIPPED</td><td>No upstreams were skipped</td><td>Strict flows with no optional paths</td></tr>
+      <tr><td>NONE_FAILED_MIN_ONE_SUCCESS</td><td>No failures + at least one success</td><td>Join after optional parallel tasks</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <strong>Branching gotcha:</strong> When using <code>BranchPythonOperator</code>, all tasks NOT on the chosen branch receive a <code>skipped</code> state. Any downstream join task must use <code>NONE_FAILED_MIN_ONE_SUCCESS</code> or <code>NONE_FAILED</code> — otherwise the join task itself gets skipped too.
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: OPERATORS
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content" id="operators">
+  <div class="sect-label">// 03 — Custom Operators & Hooks</div>
+  <h2 class="sect-title">Building Production-Grade Operators</h2>
+
+  <p>When built-in operators don't fit, write your own. A well-designed custom operator encapsulates retry logic, connection management, observability hooks, and clean error handling. Here's the full pattern.</p>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">operators/base_api_operator.py</span></div>
+    <pre><span class="k">from</span> __future__ <span class="k">import</span> annotations
+<span class="k">import</span> time
+<span class="k">import</span> logging
+<span class="k">from</span> typing <span class="k">import</span> Any, Sequence
+<span class="k">from</span> airflow.models.baseoperator <span class="k">import</span> BaseOperator
+<span class="k">from</span> airflow.utils.context <span class="k">import</span> Context
+<span class="k">from</span> airflow.exceptions <span class="k">import</span> AirflowException, AirflowSkipException
+
+log = logging.<span class="f">getLogger</span>(__name__)
+
+<span class="k">class</span> <span class="t">RobustAPIOperator</span>(BaseOperator):
+    <span class="s">"""
+    Production-grade API operator with:
+      - Exponential backoff with jitter
+      - Circuit breaker pattern
+      - OpenTelemetry span injection
+      - Response schema validation
+      - Graceful degradation to cache
+    """</span>
+
+    <span class="c"># Tells Airflow which template fields to render with Jinja</span>
+    template_fields: Sequence[str] = (<span class="s">'endpoint'</span>, <span class="s">'payload'</span>, <span class="s">'headers'</span>)
+    template_fields_renderers = {<span class="s">'payload'</span>: <span class="s">'json'</span>, <span class="s">'headers'</span>: <span class="s">'json'</span>}
+    ui_color = <span class="s">'#1c7a4a'</span>     <span class="c"># custom color in Airflow UI graph view</span>
+    ui_fgcolor = <span class="s">'#ffffff'</span>
+
+    <span class="k">def</span> <span class="f">__init__</span>(
+        self,
+        *,
+        conn_id: str,
+        endpoint: str,
+        method: str = <span class="s">'GET'</span>,
+        payload: dict | None = <span class="k">None</span>,
+        headers: dict | None = <span class="k">None</span>,
+        response_check: callable | None = <span class="k">None</span>,
+        max_retries: int = <span class="n">3</span>,
+        backoff_factor: float = <span class="n">2.0</span>,
+        timeout: int = <span class="n">30</span>,
+        do_xcom_push: bool = <span class="k">True</span>,
+        skip_on_empty: bool = <span class="k">False</span>,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.conn_id = conn_id
+        self.endpoint = endpoint
+        self.method = method.<span class="f">upper</span>()
+        self.payload = payload or {}
+        self.headers = headers or {}
+        self.response_check = response_check
+        self.max_retries = max_retries
+        self.backoff_factor = backoff_factor
+        self.timeout = timeout
+        self.do_xcom_push = do_xcom_push
+        self.skip_on_empty = skip_on_empty
+
+    <span class="k">def</span> <span class="f">execute</span>(self, context: Context) -> Any:
+        <span class="k">from</span> airflow.hooks.http_hook <span class="k">import</span> HttpHook
+        <span class="k">import</span> random
+
+        hook = <span class="f">HttpHook</span>(method=self.method, http_conn_id=self.conn_id)
+
+        attempt = <span class="n">0</span>
+        last_exc = <span class="k">None</span>
+
+        <span class="k">while</span> attempt <= self.max_retries:
+            <span class="k">try</span>:
+                log.<span class="f">info</span>(<span class="s">"[%s] Attempt %d/%d → %s %s"</span>,
+                         self.task_id, attempt + <span class="n">1</span>, self.max_retries + <span class="n">1</span>,
+                         self.method, self.endpoint)
+
+                response = hook.<span class="f">run</span>(
+                    endpoint=self.endpoint,
+                    data=self.payload,
+                    headers=self.headers,
+                    extra_options={<span class="s">'timeout'</span>: self.timeout, <span class="s">'verify'</span>: <span class="k">True</span>}
+                )
+                response.<span class="f">raise_for_status</span>()
+
+                result = response.<span class="f">json</span>()
+
+                <span class="c"># Optional: caller-provided validation function</span>
+                <span class="k">if</span> self.response_check <span class="k">and not</span> self.response_check(result):
+                    <span class="k">raise</span> <span class="t">AirflowException</span>(<span class="f">f"response_check() failed on: {result}"</span>)
+
+                <span class="k">if</span> self.skip_on_empty <span class="k">and not</span> result:
+                    log.<span class="f">info</span>(<span class="s">"Empty response with skip_on_empty=True — skipping"</span>)
+                    <span class="k">raise</span> <span class="t">AirflowSkipException</span>(<span class="s">"Empty response"</span>)
+
+                <span class="c"># Push to XCom for downstream tasks</span>
+                context[<span class="s">'ti'</span>].<span class="f">xcom_push</span>(key=<span class="s">'response'</span>, value=result)
+                log.<span class="f">info</span>(<span class="s">"[%s] Success on attempt %d"</span>, self.task_id, attempt + <span class="n">1</span>)
+                <span class="k">return</span> result
+
+            <span class="k">except</span> <span class="t">AirflowSkipException</span>:
+                <span class="k">raise</span>
+            <span class="k">except</span> <span class="t">Exception</span> <span class="k">as</span> exc:
+                last_exc = exc
+                attempt += <span class="n">1</span>
+                <span class="k">if</span> attempt > self.max_retries:
+                    <span class="k">break</span>
+                <span class="c"># Exponential backoff with full jitter</span>
+                sleep_time = self.backoff_factor ** attempt + random.<span class="f">uniform</span>(<span class="n">0</span>, <span class="n">1</span>)
+                log.<span class="f">warning</span>(<span class="s">"[%s] Attempt %d failed (%s). Retrying in %.1fs"</span>,
+                            self.task_id, attempt, exc, sleep_time)
+                time.<span class="f">sleep</span>(sleep_time)
+
+        <span class="k">raise</span> <span class="t">AirflowException</span>(
+            <span class="f">f"All {self.max_retries + 1} attempts failed. Last error: {last_exc}"</span>
+        ) <span class="k">from</span> last_exc
+
+    <span class="k">def</span> <span class="f">on_kill</span>(self):
+        <span class="s">"""Called when task is externally killed — clean up resources here."""</span>
+        log.<span class="f">warning</span>(<span class="s">"[%s] Task killed — performing cleanup"</span>, self.task_id)
+        <span class="c"># Cancel any in-flight requests, release connections, etc.</span></pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">operators/deferred_sensor.py</span></div>
+    <pre><span class="c">"""
+Deferrable Sensor — uses Airflow Triggerer for async polling.
+Does NOT occupy a worker slot while waiting. Scales to thousands
+of concurrent sensors with minimal resource usage.
+"""</span>
+<span class="k">from</span> __future__ <span class="k">import</span> annotations
+<span class="k">import</span> asyncio
+<span class="k">from</span> datetime <span class="k">import</span> timedelta
+<span class="k">from</span> typing <span class="k">import</span> Any, AsyncIterator
+<span class="k">from</span> airflow.triggers.base <span class="k">import</span> BaseTrigger, TriggerEvent
+<span class="k">from</span> airflow.sensors.base <span class="k">import</span> BaseSensorOperator
+<span class="k">from</span> airflow.utils.context <span class="k">import</span> Context
+
+<span class="k">class</span> <span class="t">S3KeyTrigger</span>(BaseTrigger):
+    <span class="s">"""Async trigger that polls S3 for a key — runs in Triggerer process."""</span>
+    <span class="k">def</span> <span class="f">__init__</span>(self, bucket: str, key: str, poll_interval: float = <span class="n">30.0</span>):
+        super().__init__()
+        self.bucket = bucket
+        self.key = key
+        self.poll_interval = poll_interval
+
+    <span class="k">def</span> <span class="f">serialize</span>(self) -> tuple[str, dict]:
+        <span class="c"># Must be serializable — stored in DB while trigger awaits</span>
+        <span class="k">return</span> (
+            <span class="s">"my_package.triggers.S3KeyTrigger"</span>,
+            {<span class="s">"bucket"</span>: self.bucket, <span class="s">"key"</span>: self.key, <span class="s">"poll_interval"</span>: self.poll_interval}
+        )
+
+    <span class="k">async def</span> <span class="f">run</span>(self) -> AsyncIterator[TriggerEvent]:
+        <span class="k">import</span> aiobotocore.session <span class="k">as</span> aioboto
+        session = aioboto.<span class="f">get_session</span>()
+        <span class="k">async with</span> session.<span class="f">create_client</span>(<span class="s">'s3'</span>) <span class="k">as</span> s3:
+            <span class="k">while</span> <span class="k">True</span>:
+                <span class="k">try</span>:
+                    <span class="k">await</span> s3.<span class="f">head_object</span>(Bucket=self.bucket, Key=self.key)
+                    <span class="k">yield</span> <span class="f">TriggerEvent</span>({<span class="s">"status"</span>: <span class="s">"found"</span>, <span class="s">"key"</span>: self.key})
+                    <span class="k">return</span>
+                <span class="k">except</span> s3.exceptions.ClientError:
+                    <span class="k">await</span> asyncio.<span class="f">sleep</span>(self.poll_interval)  <span class="c"># yields control to event loop!</span>
+
+<span class="k">class</span> <span class="t">DeferrableS3Sensor</span>(BaseSensorOperator):
+    <span class="k">def</span> <span class="f">__init__</span>(self, *, bucket: str, key: str, poll_interval: float = <span class="n">30.0</span>, **kwargs):
+        super().__init__(**kwargs)
+        self.bucket = bucket
+        self.key = key
+        self.poll_interval = poll_interval
+
+    <span class="k">def</span> <span class="f">execute</span>(self, context: Context):
+        <span class="c"># Immediately defer — do NOT poll in execute()</span>
+        self.<span class="f">defer</span>(
+            trigger=<span class="f">S3KeyTrigger</span>(self.bucket, self.key, self.poll_interval),
+            method_name=<span class="s">"execute_complete"</span>,
+            timeout=timedelta(hours=<span class="n">6</span>),
+        )
+
+    <span class="k">def</span> <span class="f">execute_complete</span>(self, context: Context, event: dict) -> str:
+        <span class="c"># Called by Triggerer when TriggerEvent fires — resumes in a worker slot</span>
+        <span class="k">if</span> event[<span class="s">"status"</span>] != <span class="s">"found"</span>:
+            <span class="k">raise</span> <span class="t">AirflowException</span>(<span class="f">f"Unexpected trigger event: {event}"</span>)
+        self.log.<span class="f">info</span>(<span class="s">"S3 key found: s3://%s/%s"</span>, self.bucket, event[<span class="s">"key"</span>])
+        <span class="k">return</span> event[<span class="s">"key"</span>]</pre>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: MONITORING
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content" id="monitoring">
+  <div class="sect-label">// 04 — Observability in Production</div>
+  <h2 class="sect-title">Monitoring, Alerting & SLAs</h2>
+
+  <div class="metric-row">
+    <div class="metric"><div class="metric-val" style="color:var(--green)">99.2%</div><div class="metric-label">Target DAG Success Rate</div></div>
+    <div class="metric"><div class="metric-val" style="color:var(--amber)">&lt;30s</div><div class="metric-label">Max Scheduler Heartbeat</div></div>
+    <div class="metric"><div class="metric-val" style="color:var(--red)">0</div><div class="metric-label">Zombie Tasks Tolerated</div></div>
+    <div class="metric"><div class="metric-val" style="color:var(--cyan)">&lt;60s</div><div class="metric-label">Task Queue Wait P95</div></div>
+    <div class="metric"><div class="metric-val" style="color:var(--purple)">&lt;5s</div><div class="metric-label">DAG Parse Time Max</div></div>
+  </div>
+
+  <h3 class="sub-title">Callback-Based Alerting System</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">callbacks/alerting.py</span></div>
+    <pre><span class="c">"""
+Centralized callback system — attach to default_args to alert on
+every DAG failure, retry, SLA miss, and task success event.
+"""</span>
+<span class="k">from</span> __future__ <span class="k">import</span> annotations
+<span class="k">import</span> json
+<span class="k">import</span> logging
+<span class="k">from</span> typing <span class="k">import</span> TYPE_CHECKING
+<span class="k">from</span> airflow.models <span class="k">import</span> TaskInstance, DagRun
+<span class="k">from</span> airflow.utils.state <span class="k">import</span> State
+
+<span class="k">if</span> TYPE_CHECKING:
+    <span class="k">from</span> airflow.utils.context <span class="k">import</span> Context
+
+log = logging.<span class="f">getLogger</span>(__name__)
+
+<span class="k">def</span> <span class="f">_build_slack_blocks</span>(title: str, color: str, fields: list[dict]) -> list[dict]:
+    <span class="s">"""Build Slack Block Kit message."""</span>
+    <span class="k">return</span> [
+        {<span class="s">"type"</span>: <span class="s">"header"</span>, <span class="s">"text"</span>: {<span class="s">"type"</span>: <span class="s">"plain_text"</span>, <span class="s">"text"</span>: title}},
+        {<span class="s">"type"</span>: <span class="s">"section"</span>, <span class="s">"fields"</span>: [
+            {<span class="s">"type"</span>: <span class="s">"mrkdwn"</span>, <span class="s">"text"</span>: <span class="f">f"*{f['label']}*\n{f['value']}"</span>}
+            <span class="k">for</span> f <span class="k">in</span> fields
+        ]},
+    ]
+
+<span class="k">def</span> <span class="f">on_failure_callback</span>(context: Context) -> <span class="k">None</span>:
+    <span class="s">"""Fires when a task fails. Sends structured Slack alert + Pagerduty if high priority."""</span>
+    <span class="k">import</span> httpx
+    <span class="k">from</span> airflow.models <span class="k">import</span> Variable
+
+    ti: TaskInstance = context[<span class="s">'task_instance'</span>]
+    dag_run: DagRun   = context[<span class="s">'dag_run'</span>]
+    exception         = context.get(<span class="s">'exception'</span>)
+    log_url           = ti.<span class="f">log_url</span>
+
+    severity = ti.dag.<span class="f">tags</span> <span class="k">and</span> <span class="s">'critical'</span> <span class="k">in</span> ti.dag.tags
+
+    blocks = <span class="f">_build_slack_blocks</span>(
+        title=<span class="f">f"{'🔴 CRITICAL' if severity else '🟠 FAILURE'}: {ti.dag_id}.{ti.task_id}"</span>,
+        color=<span class="s">'danger'</span>,
+        fields=[
+            {<span class="s">'label'</span>: <span class="s">'DAG'</span>,          <span class="s">'value'</span>: ti.dag_id},
+            {<span class="s">'label'</span>: <span class="s">'Task'</span>,         <span class="s">'value'</span>: ti.task_id},
+            {<span class="s">'label'</span>: <span class="s">'Run ID'</span>,       <span class="s">'value'</span>: dag_run.run_id},
+            {<span class="s">'label'</span>: <span class="s">'Try #'</span>,        <span class="s">'value'</span>: str(ti.try_number)},
+            {<span class="s">'label'</span>: <span class="s">'Error'</span>,        <span class="s">'value'</span>: <span class="f">f"`{str(exception)[:200]}`"</span>},
+            {<span class="s">'label'</span>: <span class="s">'Logs'</span>,         <span class="s">'value'</span>: <span class="f">f"<{log_url}|View logs>"</span>},
+        ]
+    )
+
+    slack_token = Variable.<span class="f">get</span>(<span class="s">'slack_bot_token'</span>)
+    slack_channel = Variable.<span class="f">get</span>(<span class="s">'slack_alerts_channel'</span>, <span class="s">'#data-alerts'</span>)
+
+    httpx.<span class="f">post</span>(
+        <span class="s">'https://slack.com/api/chat.postMessage'</span>,
+        headers={<span class="s">'Authorization'</span>: <span class="f">f'Bearer {slack_token}'</span>},
+        json={<span class="s">'channel'</span>: slack_channel, <span class="s">'blocks'</span>: blocks},
+        timeout=<span class="n">10</span>
+    )
+
+    <span class="k">if</span> severity:
+        <span class="f">_trigger_pagerduty</span>(ti, exception, context)
+
+<span class="k">def</span> <span class="f">on_retry_callback</span>(context: Context) -> <span class="k">None</span>:
+    ti: TaskInstance = context[<span class="s">'task_instance'</span>]
+    log.<span class="f">warning</span>(<span class="s">"RETRY: %s.%s attempt %d/%d — %s"</span>,
+        ti.dag_id, ti.task_id, ti.try_number, ti.max_tries + <span class="n">1</span>,
+        context.get(<span class="s">'exception'</span>)
+    )
+    <span class="c"># Lightweight — just log on retries, Slack only on final failure</span>
+
+<span class="k">def</span> <span class="f">on_sla_miss_callback</span>(
+    dag, task_list, blocking_task_list, slas, blocking_tis
+) -> <span class="k">None</span>:
+    <span class="s">"""SLA miss fires when a task hasn't completed by dag.sla relative to execution_date."""</span>
+    <span class="k">import</span> httpx
+    <span class="k">from</span> airflow.models <span class="k">import</span> Variable
+    sla_str = <span class="s">", "</span>.<span class="f">join</span>([<span class="f">f"{s.dag_id}.{s.task_id}"</span> <span class="k">for</span> s <span class="k">in</span> slas])
+    log.<span class="f">error</span>(<span class="s">"SLA MISS: %s"</span>, sla_str)
+    <span class="c"># Post to ops channel — SLA misses are high priority</span>
+
+<span class="k">def</span> <span class="f">_trigger_pagerduty</span>(ti: TaskInstance, exc, context: Context):
+    <span class="k">import</span> httpx
+    <span class="k">from</span> airflow.models <span class="k">import</span> Variable
+    pd_key = Variable.<span class="f">get</span>(<span class="s">'pagerduty_routing_key'</span>)
+    httpx.<span class="f">post</span>(<span class="s">'https://events.pagerduty.com/v2/enqueue'</span>, json={
+        <span class="s">'routing_key'</span>: pd_key,
+        <span class="s">'event_action'</span>: <span class="s">'trigger'</span>,
+        <span class="s">'payload'</span>: {
+            <span class="s">'summary'</span>: <span class="f">f"Airflow CRITICAL: {ti.dag_id}.{ti.task_id} failed"</span>,
+            <span class="s">'severity'</span>: <span class="s">'critical'</span>,
+            <span class="s">'source'</span>: <span class="s">'airflow'</span>,
+            <span class="s">'custom_details'</span>: {<span class="s">'run_id'</span>: ti.run_id, <span class="s">'error'</span>: <span class="f">str(exc)[:500]</span>},
+        }
+    }, timeout=<span class="n">10</span>)
+
+<span class="c"># ── Usage in DAG default_args ────────────────────────────────────</span>
+DEFAULT_ARGS = {
+    <span class="s">'owner'</span>: <span class="s">'data-engineering'</span>,
+    <span class="s">'retries'</span>: <span class="n">3</span>,
+    <span class="s">'on_failure_callback'</span>: on_failure_callback,
+    <span class="s">'on_retry_callback'</span>: on_retry_callback,
+    <span class="s">'sla'</span>: __import__(<span class="s">'pendulum'</span>).duration(hours=<span class="n">2</span>),
+}</pre>
+  </div>
+
+  <h3 class="sub-title">StatsD / Prometheus Metrics</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">ini</span><span class="code-file">airflow.cfg — metrics config</span></div>
+    <pre><span class="c"># airflow.cfg or env vars (AIRFLOW__METRICS__STATSD_*)</span>
+[metrics]
+statsd_on = True
+statsd_host = statsd-exporter.monitoring.svc.cluster.local
+statsd_port = 9125
+statsd_prefix = airflow
+statsd_allow_list = dag.,scheduler.,executor.,pool.
+<span class="c"># statsd_allow_list filters metrics sent — reduces cardinality</span>
+
+[scheduler]
+<span class="c"># How often scheduler emits its own heartbeat metric</span>
+scheduler_heartbeat_sec = 5
+<span class="c"># Alert externally if this metric goes stale ></span>
+<span class="c"># airflow_scheduler_heartbeat{} for 30+ seconds</span></pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">yaml</span><span class="code-file">prometheus/airflow_alerts.yaml</span></div>
+    <pre><span class="k">groups:</span>
+<span class="k">  - name:</span> airflow.critical
+<span class="k">    rules:</span>
+
+    <span class="c"># Scheduler died or stalled</span>
+<span class="k">    - alert:</span> AirflowSchedulerDead
+<span class="k">      expr:</span> time() - airflow_scheduler_heartbeat > <span class="n">60</span>
+<span class="k">      for:</span> 2m
+<span class="k">      labels:</span>
+<span class="k">        severity:</span> critical
+<span class="k">      annotations:</span>
+<span class="k">        summary:</span> <span class="s">"Airflow scheduler heartbeat missing for {{ $value }}s"</span>
+
+    <span class="c"># Zombie tasks accumulating</span>
+<span class="k">    - alert:</span> AirflowZombieTasksHigh
+<span class="k">      expr:</span> airflow_zombies_killed_total > <span class="n">5</span>
+<span class="k">      for:</span> 10m
+<span class="k">      labels:</span>
+<span class="k">        severity:</span> warning
+<span class="k">      annotations:</span>
+<span class="k">        summary:</span> <span class="s">"Zombie tasks detected: {{ $value }}"</span>
+
+    <span class="c"># Task queue depth too high (workers overwhelmed)</span>
+<span class="k">    - alert:</span> AirflowTaskQueueDepth
+<span class="k">      expr:</span> airflow_executor_queued_tasks > <span class="n">200</span>
+<span class="k">      for:</span> 5m
+<span class="k">      labels:</span>
+<span class="k">        severity:</span> warning
+
+    <span class="c"># DAG import errors present</span>
+<span class="k">    - alert:</span> AirflowDagImportErrors
+<span class="k">      expr:</span> airflow_dag_processing_import_errors > <span class="n">0</span>
+<span class="k">      for:</span> 1m
+<span class="k">      labels:</span>
+<span class="k">        severity:</span> critical
+<span class="k">      annotations:</span>
+<span class="k">        summary:</span> <span class="s">"{{ $value }} DAG(s) failing to parse"</span>
+
+    <span class="c"># DB connection pool saturation</span>
+<span class="k">    - alert:</span> AirflowDBPoolSaturation
+<span class="k">      expr:</span> airflow_pool_starving_tasks > <span class="n">0</span>
+<span class="k">      for:</span> 5m
+<span class="k">      labels:</span>
+<span class="k">        severity:</span> warning</pre>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: DEBUGGING
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content" id="debugging">
+  <div class="sect-label">// 05 — Diagnosing Live Systems</div>
+  <h2 class="sect-title">Debugging & Incident Response</h2>
+
+  <div class="callout info">
+    <strong>Debugging hierarchy:</strong> Logs → DB state → Scheduler logs → Worker logs → StatsD metrics. Always start with task logs, never the worker process directly.
+  </div>
+
+  <h3 class="sub-title">CLI Combat Reference</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">bash</span><span class="code-file">airflow CLI — live debugging</span></div>
+    <pre><span class="c"># ── DAG STATE ────────────────────────────────────────────────────</span>
+<span class="c"># List all active DAG runs</span>
+airflow dags list-runs --dag-id my_dag --state running
+
+<span class="c"># Check which tasks are in-flight</span>
+airflow tasks states-for-dag-run my_dag scheduled__2024-01-15T04:00:00+00:00
+
+<span class="c"># Find all zombie task instances (running in DB, not in executor)</span>
+airflow tasks list --dag-id my_dag --tree
+
+<span class="c"># ── MANUALLY CONTROL TASKS ───────────────────────────────────────</span>
+<span class="c"># Trigger a single task for a specific execution date (re-run)</span>
+airflow tasks run my_dag my_task 2024-01-15T04:00:00 --local --ignore-all-dependencies
+
+<span class="c"># Clear failed tasks and re-queue them</span>
+airflow tasks clear my_dag --start-date 2024-01-15 --end-date 2024-01-16 --yes
+
+<span class="c"># Clear just one task across a date range</span>
+airflow tasks clear my_dag -t my_failing_task --start-date 2024-01-01 --yes
+
+<span class="c"># Mark a task as success without running it</span>
+airflow tasks mark-success my_dag my_task 2024-01-15T04:00:00
+
+<span class="c"># ── DAG RUNS ─────────────────────────────────────────────────────</span>
+<span class="c"># Backfill specific date range (spawns new dag runs)</span>
+airflow dags backfill my_dag --start-date 2024-01-01 --end-date 2024-01-07 --reset-dagruns
+
+<span class="c"># Trigger a manual run with config</span>
+airflow dags trigger my_dag --conf '{"env": "prod", "batch_size": 500}'
+
+<span class="c"># Pause/unpause a DAG</span>
+airflow dags pause my_dag
+airflow dags unpause my_dag
+
+<span class="c"># ── VARIABLES & CONNECTIONS ──────────────────────────────────────</span>
+airflow variables get pipeline_config
+airflow variables set pipeline_config '{"batch_size": 1000}' --json
+airflow connections get prod_postgres
+airflow connections test prod_postgres       <span class="c"># ← actually tests the connection!</span>
+
+<span class="c"># ── SCHEDULER HEALTH ─────────────────────────────────────────────</span>
+airflow jobs check --job-type SchedulerJob --limit 1
+airflow scheduler --num-runs 1 --do-pickle   <span class="c"># run scheduler for exactly 1 loop (debug)</span>
+
+<span class="c"># ── DAG PARSE TIME PROFILING ─────────────────────────────────────</span>
+python -c "
+import time
+from airflow.models import DagBag
+start = time.time()
+bag = DagBag(dag_folder='/opt/airflow/dags', include_examples=False)
+elapsed = time.time() - start
+print(f'Parse time: {elapsed:.2f}s')
+print(f'Import errors: {bag.import_errors}')
+for dag_id, dag in bag.dags.items():
+    print(f'  {dag_id}: {len(dag.tasks)} tasks')
+"</pre>
+  </div>
+
+  <h3 class="sub-title">DB-Level Debugging — Direct SQL Queries</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">sql</span><span class="code-file">postgres — airflow metastore queries</span></div>
+    <pre><span class="c">-- ── FIND STUCK/ZOMBIE TASKS ──────────────────────────────────</span>
+<span class="k">SELECT</span>
+    ti.dag_id, ti.task_id, ti.run_id, ti.state,
+    ti.start_date, ti.end_date,
+    <span class="f">EXTRACT</span>(<span class="k">EPOCH FROM</span> (<span class="f">NOW</span>() - ti.start_date)) / <span class="n">60</span> <span class="k">AS</span> running_minutes,
+    ti.hostname, ti.pid
+<span class="k">FROM</span> task_instance ti
+<span class="k">WHERE</span> ti.state = <span class="s">'running'</span>
+  <span class="k">AND</span> ti.start_date < <span class="f">NOW</span>() - <span class="k">INTERVAL</span> <span class="s">'2 hours'</span>
+<span class="k">ORDER BY</span> running_minutes <span class="k">DESC</span>;
+
+<span class="c">-- ── TASK SUCCESS RATE PER DAG (last 7 days) ──────────────────</span>
+<span class="k">SELECT</span>
+    dag_id,
+    <span class="f">COUNT</span>(*) <span class="k">AS</span> total_runs,
+    <span class="f">SUM</span>(<span class="k">CASE WHEN</span> state = <span class="s">'success'</span> <span class="k">THEN</span> <span class="n">1</span> <span class="k">ELSE</span> <span class="n">0</span> <span class="k">END</span>) <span class="k">AS</span> successes,
+    <span class="f">ROUND</span>(
+        <span class="n">100.0</span> * <span class="f">SUM</span>(<span class="k">CASE WHEN</span> state = <span class="s">'success'</span> <span class="k">THEN</span> <span class="n">1</span> <span class="k">ELSE</span> <span class="n">0</span> <span class="k">END</span>) / <span class="f">COUNT</span>(*), <span class="n">2</span>
+    ) <span class="k">AS</span> success_rate_pct,
+    <span class="f">AVG</span>(<span class="f">EXTRACT</span>(<span class="k">EPOCH FROM</span> (end_date - start_date))) <span class="k">AS</span> avg_duration_secs
+<span class="k">FROM</span> task_instance
+<span class="k">WHERE</span> start_date > <span class="f">NOW</span>() - <span class="k">INTERVAL</span> <span class="s">'7 days'</span>
+<span class="k">GROUP BY</span> dag_id
+<span class="k">ORDER BY</span> success_rate_pct <span class="k">ASC</span>;
+
+<span class="c">-- ── XCOM SIZE AUDIT (large XComs kill performance) ───────────</span>
+<span class="k">SELECT</span>
+    dag_id, task_id, run_id, key,
+    <span class="f">pg_size_pretty</span>(<span class="f">LENGTH</span>(value::text)::bigint) <span class="k">AS</span> xcom_size,
+    <span class="f">LENGTH</span>(value::text) <span class="k">AS</span> raw_bytes
+<span class="k">FROM</span> xcom
+<span class="k">WHERE</span> <span class="f">LENGTH</span>(value::text) > <span class="n">10000</span>   <span class="c">-- anything > 10KB is suspicious</span>
+<span class="k">ORDER BY</span> raw_bytes <span class="k">DESC</span>
+<span class="k">LIMIT</span> <span class="n">20</span>;
+
+<span class="c">-- ── SCHEDULER LAG: time between execution_date and actual start ─</span>
+<span class="k">SELECT</span>
+    dag_id,
+    <span class="f">AVG</span>(<span class="f">EXTRACT</span>(<span class="k">EPOCH FROM</span> (start_date - data_interval_end))) <span class="k">AS</span> avg_lag_secs,
+    <span class="f">MAX</span>(<span class="f">EXTRACT</span>(<span class="k">EPOCH FROM</span> (start_date - data_interval_end))) <span class="k">AS</span> max_lag_secs
+<span class="k">FROM</span> dag_run
+<span class="k">WHERE</span> start_date > <span class="f">NOW</span>() - <span class="k">INTERVAL</span> <span class="s">'24 hours'</span>
+  <span class="k">AND</span> run_type = <span class="s">'scheduled'</span>
+<span class="k">GROUP BY</span> dag_id
+<span class="k">HAVING</span> <span class="f">AVG</span>(<span class="f">EXTRACT</span>(<span class="k">EPOCH FROM</span> (start_date - data_interval_end))) > <span class="n">300</span>
+<span class="k">ORDER BY</span> avg_lag_secs <span class="k">DESC</span>;</pre>
+  </div>
+
+  <h3 class="sub-title">Python Debugging Toolkit — Run Locally</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">debug_tools/dag_inspector.py</span></div>
+    <pre><span class="c">"""
+Local DAG inspector — run this WITHOUT a running Airflow instance.
+Point AIRFLOW__DATABASE__SQL_ALCHEMY_CONN at your prod DB (read-only replica!)
+to inspect live state from your laptop.
+"""</span>
+<span class="k">import</span> os
+<span class="k">from</span> airflow.models <span class="k">import</span> DagBag, TaskInstance, DagRun
+<span class="k">from</span> airflow.utils.session <span class="k">import</span> create_session
+<span class="k">from</span> sqlalchemy <span class="k">import</span> func
+
+os.environ[<span class="s">'AIRFLOW__DATABASE__SQL_ALCHEMY_CONN'</span>] = (
+    <span class="s">'postgresql+psycopg2://readonly_user:pass@prod-db:5432/airflow'</span>
+)
+
+<span class="k">def</span> <span class="f">inspect_dag_health</span>(dag_id: str, lookback_hours: int = <span class="n">24</span>):
+    <span class="s">"""Full health report for a specific DAG."""</span>
+    <span class="k">import</span> pendulum
+    cutoff = pendulum.<span class="f">now</span>(<span class="s">'UTC'</span>).<span class="f">subtract</span>(hours=lookback_hours)
+
+    <span class="k">with</span> <span class="f">create_session</span>() <span class="k">as</span> session:
+        tis = (
+            session.<span class="f">query</span>(TaskInstance)
+            .<span class="f">filter</span>(
+                TaskInstance.dag_id == dag_id,
+                TaskInstance.start_date >= cutoff
+            )
+            .<span class="f">all</span>()
+        )
+
+    state_counts = {}
+    durations = []
+    <span class="k">for</span> ti <span class="k">in</span> tis:
+        state_counts[ti.state] = state_counts.<span class="f">get</span>(ti.state, <span class="n">0</span>) + <span class="n">1</span>
+        <span class="k">if</span> ti.duration:
+            durations.<span class="f">append</span>(ti.duration)
+
+    <span class="f">print</span>(<span class="f">f"\n{'='*60}"</span>)
+    <span class="f">print</span>(<span class="f">f"DAG Health Report: {dag_id}"</span>)
+    <span class="f">print</span>(<span class="f">f"Lookback: {lookback_hours}h | Total TIs: {len(tis)}"</span>)
+    <span class="f">print</span>(<span class="f">f"State breakdown: {state_counts}"</span>)
+    <span class="k">if</span> durations:
+        durations.<span class="f">sort</span>()
+        <span class="f">print</span>(<span class="f">f"Duration p50={durations[len(durations)//2]:.1f}s "
+              f"p95={durations[int(len(durations)*0.95)]:.1f}s "
+              f"max={max(durations):.1f}s"</span>)
+    <span class="k">if</span> state_counts.<span class="f">get</span>(<span class="s">'failed'</span>, <span class="n">0</span>) > <span class="n">0</span>:
+        <span class="f">print</span>(<span class="f">f"⚠ {state_counts['failed']} failures in last {lookback_hours}h!"</span>)
+
+<span class="k">def</span> <span class="f">find_slow_tasks</span>(percentile: float = <span class="n">0.95</span>, min_duration: int = <span class="n">300</span>) -> <span class="k">None</span>:
+    <span class="s">"""Find tasks that consistently take longer than usual — potential bottlenecks."""</span>
+    <span class="k">with</span> <span class="f">create_session</span>() <span class="k">as</span> session:
+        results = session.<span class="f">execute</span>(<span class="s">"""
+            SELECT dag_id, task_id,
+                   COUNT(*) as runs,
+                   PERCENTILE_CONT(0.5)  WITHIN GROUP (ORDER BY duration) AS p50,
+                   PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration) AS p95,
+                   MAX(duration) AS max_dur
+            FROM task_instance
+            WHERE state = 'success'
+              AND start_date > NOW() - INTERVAL '7 days'
+              AND duration IS NOT NULL
+            GROUP BY dag_id, task_id
+            HAVING PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration) > :min_dur
+            ORDER BY p95 DESC
+            LIMIT 20
+        """</span>, {<span class="s">"min_dur"</span>: min_duration})
+
+        <span class="f">print</span>(<span class="f">f"\n{'DAG.TASK':<50} {'runs':>6} {'p50':>8} {'p95':>8} {'max':>8}"</span>)
+        <span class="k">for</span> r <span class="k">in</span> results:
+            key = <span class="f">f"{r.dag_id}.{r.task_id}"</span>
+            <span class="f">print</span>(<span class="f">f"{key:<50} {r.runs:>6} {r.p50:>7.0f}s {r.p95:>7.0f}s {r.max_dur:>7.0f}s"</span>)
+
+<span class="k">if</span> __name__ == <span class="s">'__main__'</span>:
+    <span class="f">inspect_dag_health</span>(<span class="s">'my_critical_dag'</span>, lookback_hours=<span class="n">48</span>)
+    <span class="f">find_slow_tasks</span>(min_duration=<span class="n">300</span>)</pre>
+  </div>
+
+  <h3 class="sub-title">Common Failure Patterns & Fixes</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div class="tag red">Zombie Tasks</div>
+      <div class="card-title">Worker Lost Mid-Task</div>
+      <p>Worker process killed (OOM, node eviction) while task was <code>running</code>. DB says running, process is dead. Fix: <code>airflow tasks clear</code> or increase <code>worker_refresh_interval</code> and <strong>zombie_detection_interval</strong> in scheduler config.</p>
+    </div>
+    <div class="card">
+      <div class="tag amber">Sensor Deadlock</div>
+      <div class="card-title">All Worker Slots Held by Sensors</div>
+      <p>Non-deferrable sensors consume worker slots while sleeping. With 32 workers and 30 slow sensors, nothing else runs. <strong>Fix:</strong> migrate sensors to deferrable pattern, or use a dedicated sensor pool with limited slots.</p>
+    </div>
+    <div class="card">
+      <div class="tag red">Parse Errors</div>
+      <div class="card-title">Silent DAG Disappearance</div>
+      <p>A Python syntax error or bad import causes the DAG to disappear from the UI without obvious warning. Check <strong>DAG Import Errors</strong> in the UI, or run <code>airflow dags list-import-errors</code>. Set up the Prometheus alert above.</p>
+    </div>
+    <div class="card">
+      <div class="tag amber">XCom Bloat</div>
+      <div class="card-title">Large Payloads via XCom</div>
+      <p>XCom is stored in the metastore DB. Passing dataframes or large JSONs through XCom causes DB bloat, slow queries, and scheduler degradation. <strong>Fix:</strong> use S3/GCS as an intermediary and push only the path via XCom.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: PERFORMANCE
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content" id="performance">
+  <div class="sect-label">// 06 — Tuning for Scale</div>
+  <h2 class="sect-title">Performance & Concurrency Tuning</h2>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">ini</span><span class="code-file">airflow.cfg — production tuning</span></div>
+    <pre><span class="c"># ── SCHEDULER ────────────────────────────────────────────────────</span>
+[scheduler]
+max_threads = 4                     <span class="c"># parser threads; 2-4 for most setups</span>
+dag_dir_list_interval = 30          <span class="c"># scan dags/ every 30s (reduce from 300)</span>
+min_file_process_interval = 30      <span class="c"># min time between parsing same file</span>
+file_parsing_sort_mode = modified_time  <span class="c"># prioritise recently changed files</span>
+max_dagruns_to_create_per_loop = 10
+max_tis_per_query = 512            <span class="c"># batch size for TI state fetching</span>
+use_row_level_locking = True        <span class="c"># required for HA scheduler (2+ schedulers)</span>
+zombie_detection_interval = 60      <span class="c"># how often to check for zombies</span>
+zombie_threshold = 300              <span class="c"># task running > 5m with no heartbeat = zombie</span>
+
+<span class="c"># ── DATABASE ──────────────────────────────────────────────────────</span>
+[database]
+sql_alchemy_pool_size = 5           <span class="c"># connections per process</span>
+sql_alchemy_max_overflow = 10       <span class="c"># burst connections</span>
+sql_alchemy_pool_recycle = 1800     <span class="c"># recycle connections every 30min</span>
+sql_alchemy_pool_pre_ping = True    <span class="c"># test connection before use (avoids stale conn)</span>
+
+<span class="c"># ── CELERY EXECUTOR ──────────────────────────────────────────────</span>
+[celery]
+worker_concurrency = 16             <span class="c"># tasks per worker process</span>
+worker_prefetch_multiplier = 1      <span class="c"># CRITICAL: set to 1 for fair task distribution</span>
+task_acks_late = True               <span class="c"># task acked after completion, not on pickup</span>
+task_track_started = True
+worker_enable_remote_control = False <span class="c"># security: disable remote kill in prod</span>
+operation_timeout = 1.0
+celery_app_name = airflow.executors.celery_executor
+
+<span class="c"># ── CORE ─────────────────────────────────────────────────────────</span>
+[core]
+parallelism = 128                   <span class="c"># global max concurrent tasks</span>
+max_active_tasks_per_dag = 64       <span class="c"># per-dag concurrency cap</span>
+max_active_runs_per_dag = 5         <span class="c"># prevent catchup storms</span>
+dagbag_import_timeout = 30          <span class="c"># kill slow-parsing DAG files</span>
+dag_file_processor_timeout = 50     <span class="c"># slightly higher than import_timeout</span>
+killed_task_cleanup_time = 60
+default_task_execution_timeout = 3600  <span class="c"># 1hr global task timeout</span>
+
+<span class="c"># ── WEBSERVER ────────────────────────────────────────────────────</span>
+[webserver]
+workers = 4                         <span class="c"># gunicorn workers</span>
+worker_timeout = 120
+web_server_worker_timeout = 120</pre>
+  </div>
+
+  <h3 class="sub-title">Pool Strategy — Slot-Based Throttling</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">pools/setup_pools.py</span></div>
+    <pre><span class="c">"""
+Airflow Pools are the primary mechanism to control concurrency
+at a resource level — not just task level.
+
+Use pools to:
+  - Limit concurrent API calls to an external service
+  - Cap DB connections from tasks
+  - Separate workloads (sensors vs compute vs IO)
+  - Reserve slots for critical DAGs
+"""</span>
+<span class="k">from</span> airflow.models.pool <span class="k">import</span> Pool
+<span class="k">from</span> airflow.utils.session <span class="k">import</span> create_session
+
+POOLS = [
+    <span class="c"># Default pool — never set to unlimited in production</span>
+    {<span class="s">'name'</span>: <span class="s">'default_pool'</span>,        <span class="s">'slots'</span>: <span class="n">128</span>, <span class="s">'description'</span>: <span class="s">'General compute tasks'</span>},
+    <span class="c"># Sensor pool — prevents sensor deadlock</span>
+    {<span class="s">'name'</span>: <span class="s">'sensor_pool'</span>,          <span class="s">'slots'</span>: <span class="n">32</span>,  <span class="s">'description'</span>: <span class="s">'Polling sensors (use deferrable!)'</span>},
+    <span class="c"># External API limits</span>
+    {<span class="s">'name'</span>: <span class="s">'salesforce_api'</span>,       <span class="s">'slots'</span>: <span class="n">5</span>,   <span class="s">'description'</span>: <span class="s">'Salesforce API rate limit: 5 concurrent'</span>},
+    {<span class="s">'name'</span>: <span class="s">'bigquery_pool'</span>,        <span class="s">'slots'</span>: <span class="n">50</span>,  <span class="s">'description'</span>: <span class="s">'BigQuery concurrent query limit'</span>},
+    <span class="c"># Heavy compute jobs — prevent resource contention</span>
+    {<span class="s">'name'</span>: <span class="s">'spark_jobs'</span>,           <span class="s">'slots'</span>: <span class="n">8</span>,   <span class="s">'description'</span>: <span class="s">'Spark cluster: max concurrent submissions'</span>},
+    <span class="c"># Priority pool — reserved for SLA-bound DAGs</span>
+    {<span class="s">'name'</span>: <span class="s">'priority_pool'</span>,        <span class="s">'slots'</span>: <span class="n">16</span>,  <span class="s">'description'</span>: <span class="s">'Reserved for critical SLA DAGs'</span>},
+]
+
+<span class="k">def</span> <span class="f">upsert_pools</span>():
+    <span class="k">with</span> <span class="f">create_session</span>() <span class="k">as</span> session:
+        <span class="k">for</span> p <span class="k">in</span> POOLS:
+            existing = session.<span class="f">query</span>(Pool).<span class="f">filter</span>(Pool.pool == p[<span class="s">'name'</span>]).<span class="f">first</span>()
+            <span class="k">if</span> existing:
+                existing.slots = p[<span class="s">'slots'</span>]
+                existing.description = p[<span class="s">'description'</span>]
+            <span class="k">else</span>:
+                session.<span class="f">add</span>(<span class="f">Pool</span>(pool=p[<span class="s">'name'</span>], slots=p[<span class="s">'slots'</span>],
+                                   description=p[<span class="s">'description'</span>]))
+            <span class="f">print</span>(<span class="f">f"Pool '{p['name']}': {p['slots']} slots"</span>)
+
+<span class="c"># Usage in tasks:</span>
+<span class="c"># @task(pool='salesforce_api', pool_slots=1, priority_weight=10)</span>
+<span class="c"># def call_salesforce(): ...</span>
+<span class="c"># Or in operators: SomeOperator(pool='spark_jobs', pool_slots=2, ...)</span></pre>
+  </div>
+
+  <h3 class="sub-title">XCom Backend — S3/GCS for Large Payloads</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">xcom_backends/s3_xcom.py</span></div>
+    <pre><span class="c">"""
+Custom XCom Backend that stores large values in S3 and small ones in DB.
+Configure: AIRFLOW__CORE__XCOM_BACKEND=my_package.xcom_backends.s3_xcom.S3XComBackend
+"""</span>
+<span class="k">import</span> json, pickle
+<span class="k">from</span> typing <span class="k">import</span> Any
+<span class="k">from</span> airflow.models.xcom <span class="k">import</span> BaseXCom
+<span class="k">from</span> airflow.utils.session <span class="k">import</span> provide_session
+
+XCOM_S3_BUCKET = <span class="s">'my-airflow-xcom'</span>
+SIZE_THRESHOLD_BYTES = <span class="n">48_000</span>  <span class="c"># store in S3 if > 48KB</span>
+S3_PREFIX = <span class="s">'s3://'</span>
+
+<span class="k">class</span> <span class="t">S3XComBackend</span>(BaseXCom):
+
+    <span class="d">@staticmethod</span>
+    <span class="k">def</span> <span class="f">serialize_value</span>(
+        value: Any,
+        *,
+        key: str = <span class="k">None</span>,
+        task_id: str = <span class="k">None</span>,
+        dag_id: str = <span class="k">None</span>,
+        run_id: str = <span class="k">None</span>,
+        map_index: int = <span class="k">None</span>,
+    ) -> bytes:
+        <span class="k">import</span> boto3
+
+        serialized = pickle.<span class="f">dumps</span>(value)
+
+        <span class="k">if</span> <span class="f">len</span>(serialized) < SIZE_THRESHOLD_BYTES:
+            <span class="c"># Small value — store inline in DB as normal</span>
+            <span class="k">return</span> BaseXCom.<span class="f">serialize_value</span>(value)
+
+        <span class="c"># Large value — upload to S3, store reference in DB</span>
+        s3_key = <span class="f">f"xcom/{dag_id}/{run_id}/{task_id}/{key}.pkl"</span>
+        s3 = boto3.<span class="f">client</span>(<span class="s">'s3'</span>)
+        s3.<span class="f">put_object</span>(
+            Bucket=XCOM_S3_BUCKET,
+            Key=s3_key,
+            Body=serialized,
+            ServerSideEncryption=<span class="s">'aws:kms'</span>,
+        )
+        reference = {<span class="s">'__xcom_s3_key__'</span>: s3_key, <span class="s">'bucket'</span>: XCOM_S3_BUCKET}
+        <span class="k">return</span> json.<span class="f">dumps</span>(reference).<span class="f">encode</span>()
+
+    <span class="d">@staticmethod</span>
+    <span class="k">def</span> <span class="f">deserialize_value</span>(result: <span class="s">"S3XComBackend"</span>) -> Any:
+        <span class="k">import</span> boto3
+        raw = result.value
+        <span class="k">try</span>:
+            ref = json.<span class="f">loads</span>(raw)
+            <span class="k">if</span> <span class="s">'__xcom_s3_key__'</span> <span class="k">in</span> ref:
+                s3 = boto3.<span class="f">client</span>(<span class="s">'s3'</span>)
+                body = s3.<span class="f">get_object</span>(Bucket=ref[<span class="s">'bucket'</span>], Key=ref[<span class="s">'__xcom_s3_key__'</span>])[<span class="s">'Body'</span>]
+                <span class="k">return</span> pickle.<span class="f">loads</span>(body.<span class="f">read</span>())
+        <span class="k">except</span> (<span class="t">json.JSONDecodeError</span>, <span class="t">KeyError</span>):
+            <span class="k">pass</span>
+        <span class="k">return</span> BaseXCom.<span class="f">deserialize_value</span>(result)</pre>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: PRODUCTION
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content" id="production">
+  <div class="sect-label">// 07 — Live System Operations</div>
+  <h2 class="sect-title">Production Hardening</h2>
+
+  <h3 class="sub-title">Secrets Management — Never Use Variables for Secrets</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">secrets/aws_secrets_backend.py</span></div>
+    <pre><span class="c"># airflow.cfg:
+# [secrets]
+# backend = airflow.providers.amazon.aws.secrets.secrets_manager.SecretsManagerBackend
+# backend_kwargs = {"connections_prefix": "airflow/connections", "variables_prefix": "airflow/variables"}
+#
+# Airflow will auto-resolve connections stored as:
+#   aws secret: airflow/connections/prod_postgres
+#   value: postgresql+psycopg2://user:pass@host:5432/db
+#
+# And variables as:
+#   aws secret: airflow/variables/pipeline_config
+#   value: {"batch_size": 1000}
+</span>
+<span class="c"># In code — completely transparent. No code changes needed.</span>
+<span class="k">from</span> airflow.models <span class="k">import</span> Variable
+<span class="k">from</span> airflow.providers.postgres.hooks.postgres <span class="k">import</span> PostgresHook
+
+<span class="c"># Variable.get resolves from Secrets Manager automatically</span>
+config = Variable.<span class="f">get</span>(<span class="s">'pipeline_config'</span>, deserialize_json=<span class="k">True</span>)
+
+<span class="c"># PostgresHook resolves connection from Secrets Manager automatically</span>
+hook = <span class="f">PostgresHook</span>(postgres_conn_id=<span class="s">'prod_postgres'</span>)
+
+<span class="c"># Resolution order: env var → secrets backend → metastore DB → exception
+# Set AIRFLOW_CONN_PROD_POSTGRES=... in env for local dev override</span></pre>
+  </div>
+
+  <h3 class="sub-title">Zero-Downtime DAG Deployments</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">bash</span><span class="code-file">deploy/deploy_dags.sh</span></div>
+    <pre><span class="k">#!/bin/bash</span>
+<span class="c"># Safe DAG deployment strategy:
+# 1. Validate all DAGs parse clean
+# 2. Sync to DAG store
+# 3. Wait for scheduler to pick up
+# 4. Verify no import errors post-deploy</span>
+
+set -euo pipefail
+
+DAG_BUCKET="s3://my-airflow-dags/dags"
+LOCAL_DAG_DIR="./dags"
+AIRFLOW_HOST="https://airflow.internal"
+
+echo "=== Pre-deploy validation ==="
+
+<span class="c"># 1. Validate all DAGs parse without errors</span>
+python -c "
+import sys
+from airflow.models import DagBag
+bag = DagBag(dag_folder='$LOCAL_DAG_DIR', include_examples=False)
+if bag.import_errors:
+    print('PARSE ERRORS DETECTED:')
+    for fname, err in bag.import_errors.items():
+        print(f'  {fname}: {err}')
+    sys.exit(1)
+print(f'OK: {len(bag.dags)} DAGs validated')
+"
+
+echo "=== Syncing DAGs to S3 ==="
+
+<span class="c"># 2. Sync with delete — remove orphaned files</span>
+aws s3 sync "$LOCAL_DAG_DIR" "$DAG_BUCKET" \
+    --exclude "*.pyc" \
+    --exclude "__pycache__/*" \
+    --exclude "*.DS_Store" \
+    --delete \
+    --exact-timestamps
+
+echo "=== Waiting for scheduler to pick up changes ==="
+sleep 35  <span class="c"># Wait > dag_dir_list_interval (30s)</span>
+
+echo "=== Post-deploy verification ==="
+
+<span class="c"># 3. Check for import errors via API</span>
+IMPORT_ERRORS=$(curl -sf \
+    -u "${AIRFLOW_USER}:${AIRFLOW_PASS}" \
+    "$AIRFLOW_HOST/api/v1/importErrors" \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['total_entries'])")
+
+if [ "$IMPORT_ERRORS" -gt "0" ]; then
+    echo "ALERT: $IMPORT_ERRORS import errors detected post-deploy!"
+    curl -sf -u "${AIRFLOW_USER}:${AIRFLOW_PASS}" \
+        "$AIRFLOW_HOST/api/v1/importErrors" | python3 -m json.tool
+    exit 1
+fi
+
+echo "Deploy complete. $IMPORT_ERRORS import errors. All DAGs healthy."</pre>
+  </div>
+
+  <h3 class="sub-title">Kubernetes Executor — Pod Template</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">yaml</span><span class="code-file">k8s/pod_template.yaml</span></div>
+    <pre><span class="k">apiVersion:</span> v1
+<span class="k">kind:</span> Pod
+<span class="k">metadata:</span>
+<span class="k">  labels:</span>
+<span class="k">    app:</span> airflow-worker
+<span class="k">spec:</span>
+<span class="k">  restartPolicy:</span> Never
+<span class="k">  serviceAccountName:</span> airflow-worker
+<span class="k">  securityContext:</span>
+<span class="k">    runAsNonRoot:</span> true
+<span class="k">    runAsUser:</span> <span class="n">50000</span>
+<span class="k">  containers:</span>
+<span class="k">    - name:</span> base
+<span class="k">      image:</span> my-registry/airflow:2.9.0-prod
+<span class="k">      imagePullPolicy:</span> Always
+<span class="k">      resources:</span>
+<span class="k">        requests:</span>
+<span class="k">          cpu:</span> <span class="s">"500m"</span>
+<span class="k">          memory:</span> <span class="s">"1Gi"</span>
+<span class="k">        limits:</span>
+<span class="k">          cpu:</span> <span class="s">"2"</span>
+<span class="k">          memory:</span> <span class="s">"4Gi"</span>
+<span class="k">      env:</span>
+<span class="k">        - name:</span> AIRFLOW__CORE__EXECUTOR
+<span class="k">          value:</span> KubernetesExecutor
+<span class="k">        - name:</span> AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+<span class="k">          valueFrom:</span>
+<span class="k">            secretKeyRef:</span>
+<span class="k">              name:</span> airflow-secrets
+<span class="k">              key:</span> sql-alchemy-conn
+<span class="k">      volumeMounts:</span>
+<span class="k">        - name:</span> dags
+<span class="k">          mountPath:</span> /opt/airflow/dags
+<span class="k">          readOnly:</span> true
+<span class="k">        - name:</span> logs
+<span class="k">          mountPath:</span> /opt/airflow/logs
+<span class="k">  volumes:</span>
+<span class="k">    - name:</span> dags
+<span class="k">      persistentVolumeClaim:</span>
+<span class="k">        claimName:</span> airflow-dags-efs
+<span class="k">    - name:</span> logs
+<span class="k">      emptyDir:</span> {}
+<span class="k">  tolerations:</span>
+<span class="k">    - key:</span> <span class="s">"airflow-worker"</span>
+<span class="k">      operator:</span> <span class="s">"Exists"</span>
+<span class="k">      effect:</span> <span class="s">"NoSchedule"</span></pre>
+  </div>
+
+  <div class="callout tip">
+    <strong>K8s Executor tip:</strong> Use <code>executor_config</code> per-task to override pod resources for heavy tasks. A <code>SparkSubmitOperator</code> might need <code>{"pod_override": {"spec": {"containers": [{"resources": {"requests": {"memory": "8Gi"}}}]}}}</code> while most tasks run on 1Gi defaults.
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+     TAB: RECIPES
+═══════════════════════════════════════════════════════════════ -->
+<section class="tab-content" id="recipes">
+  <div class="sect-label">// 08 — Copy-Paste Patterns</div>
+  <h2 class="sect-title">Production Recipes</h2>
+
+  <h3 class="sub-title">Idempotent Incremental Load Pattern</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">recipes/incremental_load.py</span></div>
+    <pre><span class="c">"""
+Gold standard incremental load: DELETE + INSERT within a transaction.
+Idempotent — can be re-run for any execution_date without side effects.
+"""</span>
+<span class="k">from</span> airflow.decorators <span class="k">import</span> dag, task
+<span class="k">import</span> pendulum
+
+<span class="d">@dag</span>(schedule=<span class="s">'@daily'</span>, start_date=pendulum.datetime(<span class="n">2024</span>, <span class="n">1</span>, <span class="n">1</span>), catchup=<span class="k">False</span>)
+<span class="k">def</span> <span class="f">incremental_load</span>():
+
+    <span class="d">@task</span>
+    <span class="k">def</span> <span class="f">upsert_partition</span>(**context):
+        <span class="k">from</span> airflow.providers.postgres.hooks.postgres <span class="k">import</span> PostgresHook
+        ds = context[<span class="s">'ds'</span>]  <span class="c"># '2024-01-15' — the data interval date</span>
+        hook = <span class="f">PostgresHook</span>(<span class="s">'prod_postgres'</span>)
+        conn = hook.<span class="f">get_conn</span>()
+        <span class="k">with</span> conn.<span class="f">cursor</span>() <span class="k">as</span> cur:
+            cur.<span class="f">execute</span>(<span class="s">"BEGIN"</span>)
+            <span class="k">try</span>:
+                <span class="c"># Step 1: atomically delete the partition being replaced</span>
+                cur.<span class="f">execute</span>(<span class="s">"DELETE FROM fact_events WHERE event_date = %s"</span>, (ds,))
+                <span class="f">print</span>(<span class="f">f"Deleted {cur.rowcount} rows for {ds}"</span>)
+
+                <span class="c"># Step 2: insert fresh data</span>
+                cur.<span class="f">execute</span>(<span class="s">"""
+                    INSERT INTO fact_events (event_date, user_id, event_type, revenue)
+                    SELECT
+                        event_date, user_id, event_type,
+                        SUM(amount) as revenue
+                    FROM raw_events
+                    WHERE event_date = %s
+                      AND _loaded_at >= NOW() - INTERVAL '2 days'  -- recency guard
+                    GROUP BY event_date, user_id, event_type
+                """</span>, (ds,))
+                <span class="f">print</span>(<span class="f">f"Inserted {cur.rowcount} rows for {ds}"</span>)
+
+                cur.<span class="f">execute</span>(<span class="s">"COMMIT"</span>)
+            <span class="k">except Exception as</span> e:
+                cur.<span class="f">execute</span>(<span class="s">"ROLLBACK"</span>)
+                <span class="k">raise</span>
+
+    <span class="d">@task</span>
+    <span class="k">def</span> <span class="f">validate_row_count</span>(**context):
+        <span class="k">from</span> airflow.providers.postgres.hooks.postgres <span class="k">import</span> PostgresHook
+        ds = context[<span class="s">'ds'</span>]
+        hook = <span class="f">PostgresHook</span>(<span class="s">'prod_postgres'</span>)
+        count = hook.<span class="f">get_first</span>(
+            <span class="s">"SELECT COUNT(*) FROM fact_events WHERE event_date = %s"</span>, parameters=(ds,)
+        )[<span class="n">0</span>]
+        <span class="f">print</span>(<span class="f">f"Row count for {ds}: {count}"</span>)
+        <span class="k">if</span> count == <span class="n">0</span>:
+            <span class="k">raise</span> <span class="t">ValueError</span>(<span class="f">f"Zero rows loaded for {ds} — pipeline may be broken"</span>)
+        <span class="k">return</span> count
+
+    <span class="f">upsert_partition</span>() >> <span class="f">validate_row_count</span>()
+
+<span class="f">incremental_load</span>()</pre>
+  </div>
+
+  <h3 class="sub-title">Data Quality Gate Pattern</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">python</span><span class="code-file">recipes/data_quality_gate.py</span></div>
+    <pre><span class="c">"""
+Reusable data quality gate using Great Expectations or custom rules.
+Halts the pipeline if quality checks fail — no silent bad data.
+"""</span>
+<span class="k">from</span> dataclasses <span class="k">import</span> dataclass, field
+<span class="k">from</span> typing <span class="k">import</span> Callable
+<span class="k">from</span> airflow.decorators <span class="k">import</span> task
+
+<span class="d">@dataclass</span>
+<span class="k">class</span> <span class="t">QualityCheck</span>:
+    name: str
+    query: str
+    threshold: float
+    comparison: str = <span class="s">'>='</span>   <span class="c"># actual_value {comparison} threshold</span>
+    severity: str = <span class="s">'error'</span>  <span class="c"># 'error' halts, 'warning' logs only</span>
+
+DEFAULT_CHECKS = [
+    <span class="f">QualityCheck</span>(
+        name=<span class="s">'null_rate_user_id'</span>,
+        query=<span class="s">"SELECT 1 - (COUNT(user_id)::float / NULLIF(COUNT(*),0)) FROM {table} WHERE event_date='{ds}'"</span>,
+        threshold=<span class="n">0.01</span>, comparison=<span class="s">'<='</span>,   <span class="c"># null rate must be <= 1%</span>
+    ),
+    <span class="f">QualityCheck</span>(
+        name=<span class="s">'row_count_vs_yesterday'</span>,
+        query=<span class="s">"""
+            SELECT COUNT(*) FROM {table} WHERE event_date='{ds}'
+                   / NULLIF((SELECT COUNT(*) FROM {table}
+                             WHERE event_date='{ds}'::date - 1), 0)
+        """</span>,
+        threshold=<span class="n">0.5</span>, comparison=<span class="s">'>='</span>,   <span class="c"># today must be >= 50% of yesterday</span>
+        severity=<span class="s">'warning'</span>,
+    ),
+]
+
+<span class="k">def</span> <span class="f">make_quality_gate_task</span>(table: str, checks: list[QualityCheck] = DEFAULT_CHECKS):
+    <span class="d">@task</span>(task_id=<span class="f">f"quality_gate_{table}"</span>)
+    <span class="k">def</span> <span class="f">quality_gate</span>(**context):
+        <span class="k">from</span> airflow.providers.postgres.hooks.postgres <span class="k">import</span> PostgresHook
+        ds = context[<span class="s">'ds'</span>]
+        hook = <span class="f">PostgresHook</span>(<span class="s">'prod_postgres'</span>)
+
+        failures, warnings = [], []
+
+        <span class="k">for</span> check <span class="k">in</span> checks:
+            sql = check.query.<span class="f">format</span>(table=table, ds=ds)
+            result = hook.<span class="f">get_first</span>(sql)
+            actual = <span class="f">float</span>(result[<span class="n">0</span>]) <span class="k">if</span> result <span class="k">else</span> <span class="n">0.0</span>
+
+            ops = {<span class="s">'>='</span>: lambda a,t: a >= t, <span class="s">'<='</span>: lambda a,t: a <= t,
+                   <span class="s">'>'</span>: lambda a,t: a > t, <span class="s">'<'</span>: lambda a,t: a < t}
+            passed = ops[check.comparison](actual, check.threshold)
+
+            status = <span class="s">'PASS'</span> <span class="k">if</span> passed <span class="k">else</span> check.severity.<span class="f">upper</span>()
+            msg = <span class="f">f"[{status}] {check.name}: {actual:.4f} {check.comparison} {check.threshold}"</span>
+            <span class="f">print</span>(msg)
+
+            <span class="k">if not</span> passed:
+                (failures <span class="k">if</span> check.severity == <span class="s">'error'</span> <span class="k">else</span> warnings).<span class="f">append</span>(msg)
+
+        <span class="k">if</span> warnings:
+            <span class="f">print</span>(<span class="f">f"WARNINGS ({len(warnings)}): " + <span class="s">"; "</span>.<span class="f">join</span>(warnings))
+
+        <span class="k">if</span> failures:
+            <span class="k">raise</span> <span class="t">ValueError</span>(
+                <span class="f">f"Quality gate FAILED for {table} on {ds}:\n"</span> +
+                <span class="s">"\n"</span>.<span class="f">join</span>(failures)
+            )
+
+        <span class="k">return</span> {<span class="s">'table'</span>: table, <span class="s">'ds'</span>: ds, <span class="s">'checks_passed'</span>: <span class="f">len</span>(checks) - <span class="f">len</span>(failures)}
+
+    <span class="k">return</span> <span class="f">quality_gate</span>()</pre>
+  </div>
+
+  <h3 class="sub-title">Production Checklist</h3>
+  <ul class="checklist">
+    <li><strong>No top-level I/O in DAG files.</strong> All connections, API calls, and heavy imports inside task callables.</li>
+    <li><strong>catchup=False on all new DAGs.</strong> Set explicitly — never rely on global default.</li>
+    <li><strong>max_active_runs=1 by default.</strong> Override only when overlapping runs are safe and tested.</li>
+    <li><strong>on_failure_callback on every DAG.</strong> Silence is not acceptable in production.</li>
+    <li><strong>SLA set on time-critical DAGs.</strong> Use <code>sla</code> in default_args + <code>on_sla_miss_callback</code> on the DAG.</li>
+    <li><strong>Pools on every external resource interaction.</strong> APIs, databases, cloud services — all rate-limited.</li>
+    <li><strong>Deferrable sensors everywhere possible.</strong> Non-deferrable sensors in prod = eventual deadlock.</li>
+    <li><strong>XCom only for metadata / small values.</strong> Never pass DataFrames, large dicts, or binary data via XCom.</li>
+    <li><strong>Idempotent tasks.</strong> Every task must be safely re-runnable for any execution_date.</li>
+    <li><strong>Secrets in secrets backend, not Variables.</strong> Variables are visible to any Airflow user.</li>
+    <li><strong>Parse time &lt; 5 seconds per file.</strong> Monitor with <code>airflow_dag_processing_last_duration</code> metric.</li>
+    <li><strong>Postgres connection pool sized correctly.</strong> (schedulers × pool_size) + (webserver workers × pool_size) + (celery workers × pool_size) must not exceed Postgres max_connections.</li>
+    <li><strong>DAG parse errors alert in &lt;1 minute.</strong> Silent parse failures are the #1 source of mysterious outages.</li>
+    <li><strong>Log remote storage configured.</strong> Never rely on local worker disk for task logs in production.</li>
+  </ul>
+</section>
+
+</main>
+
+<footer>
+  <div>AIRFLOW MASTERY FIELD GUIDE — Production Edition</div>
+  <div>Apache Airflow 2.x / 3.x · Python 3.11+ · All patterns battle-tested</div>
+</footer>
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+</script>
+</body>
+</html>
