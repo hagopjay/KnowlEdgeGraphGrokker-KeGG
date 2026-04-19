@@ -1,4 +1,60 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Git Workflow Reference</title>
+<meta property="og:title" content="Advanced Git Workflow Reference">
+<meta property="og:description" content="A visual reference for Git commands, zones, and workflow transitions.">
+<meta property="og:image" content="../mathsGraph.jpg">
+<meta property="og:type" content="article">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --color-background-primary:#fffdfa;
+  --color-background-secondary:#f4efe6;
+  --color-background-success:#e1f5ee;
+  --color-background-warning:#faeeda;
+  --color-background-info:#e6f1fb;
+  --color-background-danger:#faece7;
+  --color-border-primary:#c8bfb0;
+  --color-border-secondary:#d8cebf;
+  --color-border-tertiary:#e5ddd0;
+  --color-text-primary:#1c1a16;
+  --color-text-secondary:#4a4640;
+  --color-text-tertiary:#8a8278;
+  --color-text-success:#085041;
+  --color-text-warning:#633806;
+  --color-text-info:#0c447c;
+  --color-text-danger:#712b13;
+  --border-radius-md:8px;
+  --font-sans:'Barlow',sans-serif;
+  --font-mono:'DM Mono',monospace;
+}
+body{margin:0;background:linear-gradient(180deg,#f4efe6 0%,#f8f4ec 100%);color:var(--color-text-primary);}
+.shell-nav{font-family:var(--font-mono);font-size:.7rem;padding:8px 16px;background:#1c1a16;color:#b8b0a4;border-bottom:1px solid #333;letter-spacing:.03em;position:sticky;top:0;z-index:9999;}
+.shell-nav a{color:#cc4400;text-decoration:none;}
+.shell-wrap{max-width:1180px;margin:0 auto;padding:24px 18px 48px;}
+.shell-hero{margin-bottom:18px;padding:18px 22px;border:1px solid var(--color-border-primary);border-radius:18px;background:rgba(255,255,255,.72);box-shadow:0 14px 40px rgba(28,26,22,.06);}
+.shell-kicker{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-tertiary);margin-bottom:8px;}
+.shell-hero h1{margin:0 0 8px;font:600 clamp(1.7rem,4vw,2.5rem)/1.05 var(--font-sans);}
+.shell-hero p{margin:0;max-width:760px;font:14px/1.65 var(--font-sans);color:var(--color-text-secondary);}
+</style>
+</head>
+<body>
+<nav class="shell-nav">
+  <a href="../index.html">KeGG</a>
+  <span style="color:#555;margin:0 6px;">/</span>
+  <span>Masterclasses</span>
+  <span style="color:#555;margin:0 6px;">/</span>
+  <span style="color:#f2ece0;">Advanced Git Workflow Reference</span>
+</nav>
+<main class="shell-wrap">
+<section class="shell-hero">
+  <div class="shell-kicker">Masterclass · reference map</div>
+  <h1>Advanced Git Workflow Reference</h1>
+  <p>A live visual cheat sheet for Git state transitions, command intent, and the edges between working tree, staging area, local history, and remote.</p>
+</section>
 <style>
 .gd{padding:4px 0 24px;font-family:var(--font-sans)}
 .gd-hdr{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px}
@@ -154,3 +210,6 @@ if(row)row.classList.toggle('op',el.classList.contains('op'));
 }
 document.getElementById('gd-body').innerHTML=D.map(g=>`<div class="gd-grp"><div class="gd-gh">${g.g}</div>${g.items.map(row).join('')}</div>`).join('');
 </script>
+</main>
+</body>
+</html>

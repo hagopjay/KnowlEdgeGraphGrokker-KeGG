@@ -65,11 +65,18 @@ All interactive HTML references are browsable via the [landing page](https://hag
 | [dbt Masterclass](./masterclasses/dbt_masterclass.html) | SQL Veteran's Field Guide |
 | [DuckDB Masterclass](./masterclasses/duckdb_masterclass.html) | The Analytical Engine |
 | [Apache Flink Masterclass](./masterclasses/flink_masterclass.html) | Stateful Stream Processing |
+| [Advanced Git Workflow Reference](./masterclasses/advanced_git_workflow_reference.html) | Visual Git command and state reference |
+| [AI Software Engineer Curriculum](./masterclasses/ai-engineer-curriculum.html) | AI-first engineering path |
+| [Airflow Mastery](./masterclasses/airflow_mastery_guide.html) | Production orchestration field guide |
 | [jq Masterclass](./masterclasses/jq_masterclass.html) | JSON Surgery at the Command Line |
 | [Apache Kafka Masterclass](./masterclasses/kafka_masterclass.html) | The Distributed Log |
+| [Claude Code Ninja Arsenal](./masterclasses/claude_code_ninja_arsenal.html) | CLI snippets and workflow tricks |
+| [Epic SQL Reference](./masterclasses/epic_sql_reference.html) | Interactive SQL foundations through windows |
+| [Apache Iceberg Mastery](./masterclasses/iceberg_mastery_guide.html) | Lakehouse table format field guide |
 | [Perl Masterclass](./masterclasses/perl_masterclass.html) | The Swiss Army Chainsaw |
 | [Polars Masterclass](./masterclasses/polars_masterclass.html) | The Rust DataFrame Engine |
 | [Python Cheat Sheet](./masterclasses/python_cheatsheet.html) | Interview patterns and idioms |
+| [Java vs The World](./masterclasses/java-language-comparison.html) | Comparative JVM language tour |
 | [tmux Masterclass](./masterclasses/tmux_masterclass.html) | The Terminal Multiplexer |
 | [Unity Cloud Masterclass](./masterclasses/unity-cloud-masterclass.html) | Cloud Engineering for Unity |
 
@@ -89,6 +96,7 @@ All interactive HTML references are browsable via the [landing page](https://hag
 |--------|-------------|
 | [Cloud Vehicle Reference](./research-reports/cloud_vehicle_reference.html) | Cloud vehicle architecture |
 | [The Consulting Mindset](./research-reports/consulting_mindset_reference.html) | Frameworks and delivery |
+| [The Engineer's Codex](./research-reports/engineers-codex.html) | Engineering craft and systems reference |
 | [Empathy Research Atlas](./research-reports/eoe_empathy_deep_research_atlas.html) | Empathy across domains |
 | [IronClaw x NEAR AI](./research-reports/ironclaw-near-ai-intelligence-report.html) | AI/Blockchain convergence |
 
