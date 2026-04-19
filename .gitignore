@@ -18,3 +18,7 @@ ehthumbs.db
 *.log
 .playwright-mcp/
 landing-page-preview.png
+
+# Local agent / session artifacts
+.codex
+2026-*-ok-this-is-the-current-state-of-my-kegg-repo-let.txt
