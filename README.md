@@ -1,4 +1,4 @@
-# KnowlEdgeGraph
+# KeGG - KnowlEdgeGraphGrokker - from Conceptoids to Deployeds!
 
 Native Rust based Knowledge Database with bespoke, real-time Visual outputs  multi formatted / structured.
 
