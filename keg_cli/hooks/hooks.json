@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/server/dist/hooks/session-start.js",
+            "description": "Check KEG connections, print active DB status to session context"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__keg-grokker__keg_query|mcp__keg-grokker__keg_explore",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/server/dist/hooks/post-query.js",
+            "description": "Log query to session history, update query cache metrics"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/server/dist/hooks/session-end.js",
+            "description": "Save session transcript, snapshot viz state if server running"
+          }
+        ]
+      }
+    ]
+  }
+}
