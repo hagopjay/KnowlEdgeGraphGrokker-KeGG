@@ -1,0 +1,2547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamical Systems & Chaos Masterclass</title>
+<style>
+  :root {
+    --chaos-red: #ff2d55;
+    --attractor-cyan: #00f5ff;
+    --bifur-green: #39ff14;
+    --phase-purple: #bf5fff;
+    --lyap-orange: #ff6b35;
+    --strange-gold: #ffd700;
+    --dark-bg: #030108;
+    --card-bg: #07030f;
+    --card-border: #130828;
+    --text-primary: #f0e8ff;
+    --text-secondary: #7766aa;
+    --text-dim: #2a1a44;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--dark-bg);
+    color: var(--text-primary);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  #bg-canvas {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  }
+
+  header {
+    position: relative; z-index: 10;
+    text-align: center; padding: 55px 20px 35px;
+  }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
+    color: var(--chaos-red);
+    border: 1px solid var(--chaos-red);
+    padding: 5px 20px; border-radius: 20px; margin-bottom: 20px;
+    animation: badge-chaos 3s ease-in-out infinite;
+  }
+
+  @keyframes badge-chaos {
+    0%,100% { box-shadow: 0 0 8px var(--chaos-red); }
+    33%      { box-shadow: 0 0 20px var(--attractor-cyan), 0 0 40px rgba(0,245,255,0.2); border-color: var(--attractor-cyan); color: var(--attractor-cyan); }
+    66%      { box-shadow: 0 0 20px var(--bifur-green),  0 0 40px rgba(57,255,20,0.2);  border-color: var(--bifur-green);  color: var(--bifur-green); }
+  }
+
+  h1.main-title {
+    font-size: clamp(2rem, 5.5vw, 4.8rem);
+    font-weight: 900; line-height: 1.08;
+    background: linear-gradient(135deg, var(--attractor-cyan), var(--phase-purple), var(--chaos-red), var(--strange-gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    filter: drop-shadow(0 0 35px rgba(191,95,255,0.5));
+    margin-bottom: 16px;
+  }
+
+  .subtitle {
+    font-size: 1rem; color: var(--text-secondary);
+    max-width: 700px; margin: 0 auto 28px; line-height: 1.8;
+  }
+
+  .nav-pills {
+    display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
+  }
+
+  .nav-pill {
+    padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; cursor: pointer; transition: all 0.3s; border: 1px solid;
+    background: none;
+  }
+
+  .np1 { border-color: var(--attractor-cyan);  color: var(--attractor-cyan);  background: rgba(0,245,255,0.06); }
+  .np2 { border-color: var(--chaos-red);        color: var(--chaos-red);        background: rgba(255,45,85,0.06); }
+  .np3 { border-color: var(--bifur-green);       color: var(--bifur-green);       background: rgba(57,255,20,0.06); }
+  .np4 { border-color: var(--phase-purple);      color: var(--phase-purple);      background: rgba(191,95,255,0.06); }
+  .np5 { border-color: var(--strange-gold);      color: var(--strange-gold);      background: rgba(255,215,0,0.06); }
+  .nav-pill:hover { transform: translateY(-2px); filter: brightness(1.5); }
+
+  .hero-wrap {
+    position: relative; z-index: 5;
+    max-width: 1200px; margin: 0 auto; padding: 0 20px;
+  }
+
+  .hero-header {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 12px; flex-wrap: wrap;
+  }
+
+  .hero-title-block { flex: 1; }
+  .hero-title-block h2 { font-size: 1.1rem; font-weight: 800; color: var(--attractor-cyan); }
+  .hero-title-block p  { font-size: 0.8rem; color: var(--text-secondary); margin-top: 3px; }
+
+  .hero-controls {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  }
+
+  .hc-btn {
+    padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; cursor: pointer; transition: all 0.25s; border: 1px solid;
+    background: none;
+  }
+
+  .hcb1 { border-color: var(--attractor-cyan); color: var(--attractor-cyan); }
+  .hcb2 { border-color: var(--chaos-red);       color: var(--chaos-red); }
+  .hcb3 { border-color: var(--bifur-green);      color: var(--bifur-green); }
+  .hcb4 { border-color: var(--phase-purple);     color: var(--phase-purple); }
+  .hcb5 { border-color: var(--text-dim);         color: var(--text-secondary); }
+  .hc-btn:hover { transform: translateY(-1px); filter: brightness(1.5); }
+  .hcb1:hover { background: rgba(0,245,255,0.1); }
+  .hcb2:hover { background: rgba(255,45,85,0.1); }
+  .hcb3:hover { background: rgba(57,255,20,0.1); }
+  .hcb4:hover { background: rgba(191,95,255,0.1); }
+
+  .hero-canvas-wrap {
+    position: relative; border-radius: 16px; overflow: hidden;
+    border: 1px solid var(--card-border);
+    box-shadow: 0 0 80px rgba(191,95,255,0.08), inset 0 0 80px rgba(0,0,0,0.6);
+  }
+
+  #lorenzCanvas { display: block; width: 100%; background: #030108; cursor: grab; }
+  #lorenzCanvas:active { cursor: grabbing; }
+
+  .hero-overlay {
+    position: absolute; top: 14px; left: 14px;
+    display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+  }
+
+  .ov-chip {
+    background: rgba(3,1,8,0.88); border: 1px solid var(--card-border);
+    border-radius: 8px; padding: 6px 11px;
+    font-size: 10px; font-family: 'Courier New', monospace;
+    color: var(--text-secondary); line-height: 1.7;
+  }
+
+  .ov-chip span { color: var(--attractor-cyan); }
+  .ov-chip .lyap-pos { color: var(--chaos-red); }
+  .ov-chip .lyap-neg { color: var(--bifur-green); }
+
+  .hero-sys-badge {
+    position: absolute; top: 14px; right: 14px;
+    background: rgba(3,1,8,0.9); border-radius: 10px;
+    padding: 8px 14px; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; pointer-events: none; color: var(--attractor-cyan);
+  }
+
+  .hint-bar {
+    text-align: center; font-size: 11px; color: var(--text-dim);
+    margin-top: 8px; letter-spacing: 0.5px;
+  }
+
+  .param-panel {
+    display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px;
+    background: rgba(0,0,0,0.4); border: 1px solid var(--card-border);
+    border-radius: 12px; padding: 14px 18px;
+  }
+
+  .param-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
+  .param-label { font-size: 10px; color: var(--text-secondary); letter-spacing: 1px; font-family: 'Courier New', monospace; }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 3px; border-radius: 2px;
+    background: var(--card-border); outline: none;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--attractor-cyan);
+    box-shadow: 0 0 8px var(--attractor-cyan); cursor: pointer;
+  }
+
+  .param-val { font-size: 11px; color: var(--attractor-cyan); font-family: 'Courier New', monospace; }
+
+  .main-container {
+    position: relative; z-index: 5;
+    max-width: 1200px; margin: 0 auto; padding: 10px 20px;
+  }
+
+  .stats-bar {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr));
+    gap: 14px; margin: 28px 0;
+  }
+
+  .stat-item {
+    text-align: center; padding: 18px 12px;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 12px; transition: all 0.3s; cursor: default;
+  }
+
+  .stat-item:hover { border-color: var(--phase-purple); transform: translateY(-2px); }
+
+  .stat-item .num {
+    font-size: 2rem; font-weight: 900; line-height: 1;
+    background: linear-gradient(135deg, var(--attractor-cyan), var(--phase-purple));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 5px;
+  }
+
+  .stat-item .lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+  .sec-header {
+    display: flex; align-items: center; gap: 14px; margin: 46px 0 20px; flex-wrap: wrap;
+  }
+
+  .sec-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+
+  .si-cyan   { background: rgba(0,245,255,0.12);  box-shadow: 0 0 18px rgba(0,245,255,0.18); }
+  .si-red    { background: rgba(255,45,85,0.12);   box-shadow: 0 0 18px rgba(255,45,85,0.18); }
+  .si-green  { background: rgba(57,255,20,0.12);   box-shadow: 0 0 18px rgba(57,255,20,0.18); }
+  .si-purple { background: rgba(191,95,255,0.12);  box-shadow: 0 0 18px rgba(191,95,255,0.18); }
+  .si-gold   { background: rgba(255,215,0,0.12);   box-shadow: 0 0 18px rgba(255,215,0,0.18); }
+  .si-orange { background: rgba(255,107,53,0.12);  box-shadow: 0 0 18px rgba(255,107,53,0.18); }
+
+  .sec-title-grp h2 { font-size: 1.5rem; font-weight: 800; }
+  .sec-title-grp p  { font-size: 0.81rem; color: var(--text-secondary); margin-top: 3px; }
+
+  .sec-badge {
+    margin-left: auto; font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase; padding: 4px 12px; border-radius: 10px;
+    font-weight: 700; white-space: nowrap;
+  }
+
+  .card-grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: repeat(auto-fill, minmax(350px,1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fill, minmax(285px,1fr)); }
+  .grid-4 { grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); }
+
+  .card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 14px; padding: 20px; position: relative; overflow: hidden;
+    cursor: pointer; transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--acc, var(--attractor-cyan));
+    transform: scaleX(0); transition: transform 0.3s; transform-origin: left;
+  }
+
+  .card:hover { transform: translateY(-4px); }
+  .card:hover::before { transform: scaleX(1); }
+  .card:hover { box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px var(--acc, var(--attractor-cyan)) inset; }
+
+  .cc { --acc: var(--attractor-cyan); }
+  .cr { --acc: var(--chaos-red); }
+  .cg { --acc: var(--bifur-green); }
+  .cp { --acc: var(--phase-purple); }
+  .co { --acc: var(--lyap-orange); }
+  .ck { --acc: var(--strange-gold); }
+
+  .card-glow {
+    position: absolute; top: -40px; right: -40px;
+    width: 110px; height: 110px; border-radius: 50%;
+    background: var(--acc, var(--attractor-cyan));
+    opacity: 0.04; filter: blur(28px); transition: opacity 0.3s;
+  }
+
+  .card:hover .card-glow { opacity: 0.15; }
+
+  .card-num {
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    color: var(--acc, var(--attractor-cyan));
+    margin-bottom: 9px; display: flex; align-items: center; gap: 8px;
+  }
+
+  .card-num::after {
+    content: ''; flex: 1; height: 1px;
+    background: var(--acc); opacity: 0.25;
+  }
+
+  .card h3 { font-size: 0.96rem; font-weight: 700; margin-bottom: 7px; line-height: 1.35; }
+  .card p  { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.65; margin-bottom: 12px; }
+
+  .card-mini { width: 100%; height: 88px; border-radius: 8px; overflow: hidden; margin-bottom: 12px; background: rgba(0,0,0,0.5); }
+  .card-mini canvas { width: 100%; height: 100%; display: block; }
+
+  .card-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+
+  .tag {
+    font-size: 9px; padding: 2px 7px; border-radius: 5px;
+    background: rgba(255,255,255,0.04); color: var(--text-secondary);
+    border: 1px solid var(--card-border); letter-spacing: 0.5px;
+  }
+
+  .card-footer { display: flex; align-items: center; justify-content: space-between; }
+  .duration    { font-size: 10px; color: var(--text-dim); }
+  .diff-dots   { display: flex; gap: 3px; }
+  .dot         { width: 6px; height: 6px; border-radius: 50%; background: var(--card-border); }
+  .dot.f       { background: var(--acc); }
+
+  .feat-card {
+    grid-column: 1 / -1;
+    display: grid; grid-template-columns: 1fr 340px; overflow: hidden; min-height: 210px;
+  }
+
+  .feat-card .card-content { padding: 24px; }
+  .feat-card canvas { width: 100%; height: 100%; display: block; }
+
+  @media(max-width:680px){
+    .feat-card { grid-template-columns: 1fr; }
+    .feat-card canvas { height: 140px; }
+  }
+
+  .bifur-wrap {
+    background: rgba(0,0,0,0.5); border: 1px solid var(--card-border);
+    border-radius: 16px; overflow: hidden; margin: 24px 0;
+  }
+
+  .bifur-header {
+    display: flex; align-items: center; gap: 12px; padding: 16px 20px;
+    border-bottom: 1px solid var(--card-border); flex-wrap: wrap;
+  }
+
+  .bifur-header h3 { font-size: 1rem; font-weight: 800; color: var(--bifur-green); }
+  .bifur-header p  { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+
+  #bifurCanvas { display: block; width: 100%; cursor: crosshair; }
+
+  .bifur-controls {
+    display: flex; gap: 10px; flex-wrap: wrap; padding: 14px 20px;
+    border-top: 1px solid var(--card-border); align-items: center;
+  }
+
+  .bifur-stat {
+    font-size: 11px; color: var(--bifur-green);
+    font-family: 'Courier New', monospace;
+    background: rgba(57,255,20,0.05); border: 1px solid rgba(57,255,20,0.2);
+    padding: 5px 12px; border-radius: 8px;
+  }
+
+  .demo-panel {
+    background: rgba(0,0,0,0.4); border: 1px solid var(--card-border);
+    border-radius: 14px; overflow: hidden; margin: 24px 0;
+  }
+
+  .demo-tabs {
+    display: flex; overflow-x: auto; background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  .demo-tab {
+    padding: 11px 18px; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; color: var(--text-dim); cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all 0.3s;
+    white-space: nowrap; background: none;
+    border-top: none; border-left: none; border-right: none;
+  }
+
+  .demo-tab.active { color: var(--attractor-cyan); border-bottom-color: var(--attractor-cyan); background: rgba(0,245,255,0.05); }
+  .demo-tab:hover:not(.active) { color: var(--text-secondary); }
+
+  .demo-content { padding: 22px; display: none; }
+  .demo-content.active { display: block; }
+
+  .demo-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  @media(max-width:640px) { .demo-2col { grid-template-columns: 1fr; } }
+
+  .demo-2col canvas { width: 100%; border-radius: 10px; display: block; background: rgba(0,0,0,0.6); }
+
+  .demo-explain h4 { font-size: 0.93rem; font-weight: 700; margin-bottom: 9px; color: var(--attractor-cyan); }
+  .demo-explain p  { font-size: 0.81rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 11px; }
+
+  .code-block {
+    background: rgba(0,0,0,0.7); border: 1px solid var(--card-border);
+    border-radius: 8px; padding: 12px; font-family: 'Courier New', monospace;
+    font-size: 10.5px; color: var(--bifur-green); overflow-x: auto; line-height: 1.7;
+  }
+
+  .code-block .kw  { color: var(--phase-purple); }
+  .code-block .num { color: var(--lyap-orange); }
+  .code-block .cm  { color: #4a3a6a; }
+  .code-block .hl  { color: var(--attractor-cyan); }
+
+  .insight-box {
+    background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(10,0,20,0.7));
+    border: 1px solid rgba(191,95,255,0.3); border-radius: 12px;
+    padding: 18px 22px; margin: 22px 0; position: relative; overflow: hidden;
+  }
+
+  .insight-box.red    { border-color: rgba(255,45,85,0.3); }
+  .insight-box.green  { border-color: rgba(57,255,20,0.3); }
+  .insight-box.gold   { border-color: rgba(255,215,0,0.3); }
+  .insight-box.orange { border-color: rgba(255,107,53,0.3); }
+
+  .insight-box::after {
+    content: ''; position: absolute; top: 0; right: 0; bottom: 0;
+    width: 3px; background: var(--ib-col, var(--phase-purple));
+    box-shadow: 0 0 12px var(--ib-col, var(--phase-purple));
+  }
+
+  .insight-box h4 {
+    font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--phase-purple); margin-bottom: 8px;
+  }
+
+  .insight-box.red    h4 { color: var(--chaos-red); }
+  .insight-box.green  h4 { color: var(--bifur-green); }
+  .insight-box.gold   h4 { color: var(--strange-gold); }
+  .insight-box.orange h4 { color: var(--lyap-orange); }
+
+  .insight-box p { font-size: 0.87rem; color: var(--text-secondary); line-height: 1.75; }
+
+  /* ── KEY INSIGHT (new — practical takeaway blocks) ── */
+  .key-insight {
+    display: grid; grid-template-columns: auto 1fr; gap: 14px;
+    background: rgba(0,245,255,0.03); border: 1px solid rgba(0,245,255,0.15);
+    border-radius: 10px; padding: 14px 18px; margin: 14px 0;
+  }
+  .ki-icon { font-size: 22px; margin-top: 2px; }
+  .ki-body h5 { font-size: 0.78rem; font-weight: 700; color: var(--attractor-cyan); margin-bottom: 4px; letter-spacing: 1px; text-transform: uppercase; }
+  .ki-body p  { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.65; }
+  .key-insight.red    { border-color: rgba(255,45,85,0.2);  background: rgba(255,45,85,0.03); }
+  .key-insight.red .ki-body h5 { color: var(--chaos-red); }
+  .key-insight.green  { border-color: rgba(57,255,20,0.2);  background: rgba(57,255,20,0.03); }
+  .key-insight.green .ki-body h5 { color: var(--bifur-green); }
+  .key-insight.gold   { border-color: rgba(255,215,0,0.2);  background: rgba(255,215,0,0.03); }
+  .key-insight.gold .ki-body h5 { color: var(--strange-gold); }
+
+  .formula-strip {
+    display: flex; gap: 10px; overflow-x: auto; padding: 10px 0;
+    scrollbar-width: thin; scrollbar-color: var(--phase-purple) transparent;
+  }
+
+  .formula-chip {
+    flex-shrink: 0; background: rgba(191,95,255,0.05);
+    border: 1px solid rgba(191,95,255,0.2); border-radius: 9px;
+    padding: 9px 14px; font-family: 'Courier New', monospace;
+    font-size: 12px; color: var(--phase-purple); white-space: nowrap;
+    transition: all 0.3s; cursor: default;
+  }
+
+  .formula-chip:hover {
+    background: rgba(191,95,255,0.12); transform: translateY(-2px);
+    box-shadow: 0 4px 18px rgba(191,95,255,0.2);
+  }
+
+  .journey-track { position: relative; padding: 20px 0 10px; margin: 10px 0 30px; }
+
+  .journey-line {
+    position: absolute; left: 27px; top: 0; bottom: 0; width: 2px;
+    background: linear-gradient(180deg,
+      var(--attractor-cyan),
+      var(--phase-purple) 30%,
+      var(--chaos-red) 60%,
+      var(--bifur-green) 80%,
+      var(--strange-gold));
+    opacity: 0.4;
+  }
+
+  .journey-node { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 24px; position: relative; }
+
+  .node-dot {
+    width: 56px; height: 56px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0; z-index: 2;
+    border: 2px solid transparent; transition: all 0.3s;
+  }
+
+  .node-dot:hover { transform: scale(1.1); }
+  .nd1 { background: rgba(0,245,255,0.15);  border-color: var(--attractor-cyan); }
+  .nd2 { background: rgba(191,95,255,0.15); border-color: var(--phase-purple); }
+  .nd3 { background: rgba(255,45,85,0.15);  border-color: var(--chaos-red); }
+  .nd4 { background: rgba(57,255,20,0.15);  border-color: var(--bifur-green); }
+  .nd5 { background: rgba(255,215,0,0.15);  border-color: var(--strange-gold); }
+
+  .node-content { padding-top: 7px; }
+  .node-content h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 5px; }
+  .node-content p  { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.65; }
+
+  .card, .stat-item {
+    animation: fadeUp 0.45s ease both;
+    animation-play-state: paused;
+  }
+
+  .card.visible, .stat-item.visible { animation-play-state: running; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--phase-purple); }
+
+  footer {
+    position: relative; z-index: 5;
+    text-align: center; padding: 55px 20px;
+    border-top: 1px solid var(--card-border); margin-top: 50px;
+  }
+
+  .footer-glow {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 500px; height: 180px;
+    background: radial-gradient(ellipse, rgba(191,95,255,0.07), transparent 70%);
+    pointer-events: none;
+  }
+
+  footer h3 { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+  footer p  { color: var(--text-secondary); font-size: 0.84rem; line-height: 1.8; }
+
+  /* ── BUTTERFLY EFFECT BAR ── */
+  .butterfly-bar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 10px 14px; background: rgba(255,45,85,0.06);
+    border: 1px solid rgba(255,45,85,0.2); border-radius: 10px;
+    margin-top: 10px; font-size: 11px; font-family: 'Courier New', monospace;
+  }
+  .butterfly-bar .sep-label { color: var(--text-secondary); }
+  .butterfly-bar .sep-val   { color: var(--chaos-red); font-weight: 700; }
+  .butterfly-bar .lyap-live { color: var(--bifur-green); }
+  .butterfly-bar .lyap-live.chaotic { color: var(--chaos-red); }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- HEADER -->
+<header>
+  <div class="hero-badge">🌀 Chaos Theory Masterclass 🌀</div>
+  <h1 class="main-title">Dynamical Systems<br>&amp; Chaos</h1>
+  <p class="subtitle">
+    One parameter away from infinity. A butterfly flaps its wings.
+    The universe folds into a strange attractor and never repeats — but never escapes either.
+    Welcome to the mathematics of everything that moves.
+  </p>
+  <div class="nav-pills">
+    <button class="nav-pill np1" onclick="smoothTo('sec-foundations')">🌱 Foundations</button>
+    <button class="nav-pill np2" onclick="smoothTo('sec-chaos')">🌀 Routes to Chaos</button>
+    <button class="nav-pill np3" onclick="smoothTo('sec-bifur')">🌿 Bifurcations</button>
+    <button class="nav-pill np4" onclick="smoothTo('sec-attractors')">✨ Strange Attractors</button>
+    <button class="nav-pill np5" onclick="smoothTo('sec-advanced')">🔮 Advanced</button>
+  </div>
+</header>
+
+<!-- LORENZ HERO SANDBOX -->
+<div class="hero-wrap">
+  <div class="hero-header">
+    <div class="hero-title-block">
+      <h2>🌀 Live Lorenz Attractor</h2>
+      <p>Drag to rotate · RK4 integration · Watch determinism become unpredictable</p>
+    </div>
+    <div class="hero-controls">
+      <button class="hc-btn hcb1" onclick="addTrajectory()">＋ New Trajectory</button>
+      <button class="hc-btn hcb2" onclick="toggleButterfly()">🦋 Butterfly Mode</button>
+      <button class="hc-btn hcb3" onclick="setSystem('lorenz')">Lorenz</button>
+      <button class="hc-btn hcb4" onclick="setSystem('rossler')">Rössler</button>
+      <button class="hc-btn hcb5" onclick="resetSim()">↺ Reset</button>
+    </div>
+  </div>
+
+  <div class="hero-canvas-wrap">
+    <canvas id="lorenzCanvas" height="500"></canvas>
+    <div class="hero-overlay">
+      <div class="ov-chip">
+        System: <span id="sysName">Lorenz</span><br>
+        Trajectories: <span id="trajCount">1</span><br>
+        Steps: <span id="stepCount">0</span>
+      </div>
+      <div class="ov-chip">
+        σ = <span id="pSigma">10.0</span><br>
+        ρ = <span id="pRho">28.0</span><br>
+        β = <span id="pBeta">2.67</span>
+      </div>
+      <div class="ov-chip" id="lyapChip" style="display:none">
+        λ_max ≈ <span id="lyapVal" class="lyap-pos">0.000</span><br>
+        sep: <span id="sepVal">1.0e-4</span><br>
+        <span style="font-size:9px;color:#2a1a44">divergence rate</span>
+      </div>
+    </div>
+    <div class="hero-sys-badge" id="sysBadge">LORENZ ATTRACTOR</div>
+  </div>
+
+  <div class="butterfly-bar" id="butterflyBar" style="display:none">
+    <span class="sep-label">🦋 Butterfly Mode:</span>
+    <span class="sep-label">twin trajectories, initial separation ε=1×10⁻⁴</span>
+    <span class="sep-label">|δx| =</span>
+    <span class="sep-val" id="bfSepDisplay">1.0e-4</span>
+    <span class="sep-label">· λ_max ≈</span>
+    <span class="lyap-live" id="bfLyapDisplay">—</span>
+    <span class="sep-label">· doubling time ≈</span>
+    <span class="lyap-live" id="bfDoubling">—</span>
+  </div>
+
+  <div class="param-panel">
+    <div class="param-group">
+      <div class="param-label">σ (SIGMA) — PRANDTL</div>
+      <input type="range" id="sl-sigma" min="1" max="20" step="0.1" value="10" oninput="updateParams()">
+      <div class="param-val" id="vl-sigma">10.0</div>
+    </div>
+    <div class="param-group">
+      <div class="param-label">ρ (RHO) — RAYLEIGH</div>
+      <input type="range" id="sl-rho" min="1" max="50" step="0.1" value="28" oninput="updateParams()">
+      <div class="param-val" id="vl-rho">28.0</div>
+    </div>
+    <div class="param-group">
+      <div class="param-label">β (BETA) — GEOMETRY</div>
+      <input type="range" id="sl-beta" min="0.5" max="6" step="0.05" value="2.667" oninput="updateParams()">
+      <div class="param-val" id="vl-beta">2.67</div>
+    </div>
+    <div class="param-group">
+      <div class="param-label">TRAIL LENGTH</div>
+      <input type="range" id="sl-trail" min="100" max="3000" step="50" value="1200" oninput="updateParams()">
+      <div class="param-val" id="vl-trail">1200</div>
+    </div>
+    <div class="param-group">
+      <div class="param-label">SPEED</div>
+      <input type="range" id="sl-speed" min="1" max="20" step="1" value="6" oninput="updateParams()">
+      <div class="param-val" id="vl-speed">6</div>
+    </div>
+  </div>
+  <div class="hint-bar">Drag the attractor to rotate in 3D · Slide parameters to morph the system · 🦋 Butterfly Mode shows two nearly-identical trajectories diverging exponentially</div>
+</div>
+
+<!-- MAIN CONTAINER -->
+<div class="main-container">
+
+  <div class="stats-bar">
+    <div class="stat-item"><div class="num">∞</div><div class="lbl">Never Repeats</div></div>
+    <div class="stat-item"><div class="num">3</div><div class="lbl">Min Dimensions for Chaos</div></div>
+    <div class="stat-item"><div class="num">λ</div><div class="lbl">Lyapunov Exponent</div></div>
+    <div class="stat-item"><div class="num">4.669</div><div class="lbl">Feigenbaum δ</div></div>
+    <div class="stat-item"><div class="num">2.06</div><div class="lbl">Lorenz Dimension</div></div>
+  </div>
+
+  <!-- JOURNEY -->
+  <div class="sec-header">
+    <div class="sec-icon si-cyan">🗺️</div>
+    <div class="sec-title-grp"><h2>Your Chaos Journey</h2><p>From equilibrium to the edge of the unknowable</p></div>
+  </div>
+
+  <div class="journey-track">
+    <div class="journey-line"></div>
+    <div class="journey-node">
+      <div class="node-dot nd1">🌱</div>
+      <div class="node-content">
+        <h3 style="color:var(--attractor-cyan)">Foundations — "Systems That Evolve"</h3>
+        <p>ODEs, flows, fixed points, stability analysis. Phase portraits as the map of all possible behaviors. The language of dx/dt = f(x) and what it means geometrically. Linear systems solved exactly; nonlinear systems where the real adventure begins.</p>
+      </div>
+    </div>
+    <div class="journey-node">
+      <div class="node-dot nd2">🔄</div>
+      <div class="node-content">
+        <h3 style="color:var(--phase-purple)">Phase Portraits — "Geometry of Behavior"</h3>
+        <p>Fixed points, limit cycles, saddle points, stable/unstable manifolds. The Poincaré-Bendixson theorem. Nullclines. Every trajectory is a story; the phase portrait is the complete atlas of all possible stories for a system.</p>
+      </div>
+    </div>
+    <div class="journey-node">
+      <div class="node-dot nd3">🌀</div>
+      <div class="node-content">
+        <h3 style="color:var(--chaos-red)">Chaos — "Sensitive Dependence"</h3>
+        <p>Lyapunov exponents, the butterfly effect, topological mixing, dense periodic orbits. Chaos is not randomness — it's determinism so tangled it becomes unpredictable. The three ingredients: sensitivity, transitivity, density of periodics.</p>
+      </div>
+    </div>
+    <div class="journey-node">
+      <div class="node-dot nd4">🌿</div>
+      <div class="node-content">
+        <h3 style="color:var(--bifur-green)">Bifurcations — "Where Systems Change Character"</h3>
+        <p>Saddle-node, pitchfork, transcritical, Hopf bifurcations. The logistic map's period-doubling cascade. The Feigenbaum constant 4.669... appearing universally. Bifurcation diagrams as the autobiography of a parameter sweep.</p>
+      </div>
+    </div>
+    <div class="journey-node">
+      <div class="node-dot nd5">✨</div>
+      <div class="node-content">
+        <h3 style="color:var(--strange-gold)">Strange Attractors &amp; Fractals — "Infinite Complexity, Finite Box"</h3>
+        <p>Hausdorff dimension, fractal geometry of attractors, the Lorenz butterfly, Rössler band, Chua circuit. Measure theory on sets of zero volume but nonzero information. The universe's preference for self-similar structure.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SECTION 1 — FOUNDATIONS -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="sec-foundations" class="sec-header">
+    <div class="sec-icon si-cyan">🌱</div>
+    <div class="sec-title-grp">
+      <h2 style="color:var(--attractor-cyan)">Section 1 — Dynamical Foundations</h2>
+      <p>The grammar of systems that evolve in time</p>
+    </div>
+    <div class="sec-badge" style="background:rgba(0,245,255,0.08);border:1px solid var(--attractor-cyan);color:var(--attractor-cyan)">FOUNDATIONS</div>
+  </div>
+
+  <div class="insight-box">
+    <h4>The Central Object</h4>
+    <p>A dynamical system is simply a rule for how a state changes over time: dx/dt = f(x). That's it. From this single idea flows all of classical mechanics, population biology, economics, neuroscience, and the weather. The profound question isn't how to write the equation — it's understanding what every possible solution looks like without necessarily solving it. That's where geometry enters, and where the magic begins.</p>
+  </div>
+
+  <div class="key-insight">
+    <div class="ki-icon">💡</div>
+    <div class="ki-body">
+      <h5>Practical Insight — Why Geometry Over Algebra?</h5>
+      <p>Most nonlinear ODEs have no closed-form solutions — they can't be "solved" symbolically. But you can always draw the vector field and read off the qualitative behavior: fixed points, limit cycles, basins of attraction. This geometric thinking is what makes dynamical systems actually useful in science and engineering.</p>
+    </div>
+  </div>
+
+  <div class="demo-panel">
+    <div class="demo-tabs">
+      <button class="demo-tab active" onclick="switchTab(this,'phase1d')">1D Phase Line</button>
+      <button class="demo-tab" onclick="switchTab(this,'phase2d')">2D Phase Portrait</button>
+      <button class="demo-tab" onclick="switchTab(this,'nullclines')">Nullclines</button>
+      <button class="demo-tab" onclick="switchTab(this,'stability')">Stability</button>
+    </div>
+
+    <div class="demo-content active" id="tab-phase1d">
+      <div class="demo-2col">
+        <canvas id="d-phase1d" height="220"></canvas>
+        <div class="demo-explain">
+          <h4>1D Phase Line — Simplest Possible Dynamics</h4>
+          <p>dx/dt = f(x) in one dimension. Plot f(x) vs x — where f&gt;0, the state moves right; where f&lt;0, it moves left. Zeros of f are fixed points. The slope of f at a fixed point determines stability: f'(x*)&lt;0 → stable (attracted), f'(x*)&gt;0 → unstable (repelled).</p>
+          <p>This single picture contains the complete qualitative behavior of any 1D autonomous system — no integration required.</p>
+          <div class="code-block">
+<span class="cm">// Logistic growth: dx/dt = rx(1-x)</span>
+<span class="kw">f</span>(x) = r * x * (<span class="num">1</span> - x);
+<span class="cm">// Fixed points: x* = 0 (unstable)</span>
+<span class="cm">//              x* = 1 (stable)</span>
+<span class="cm">// f'(0) = r &gt; 0  → unstable</span>
+<span class="cm">// f'(1) = -r &lt; 0 → stable ✓</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-content" id="tab-phase2d">
+      <div class="demo-2col">
+        <canvas id="d-phase2d" height="220"></canvas>
+        <div class="demo-explain">
+          <h4>2D Phase Portrait — The Full Atlas</h4>
+          <p>In 2D, the state is (x,y) and the velocity field is (dx/dt, dy/dt) = (f,g). Every point in the plane has an arrow showing where the system goes next. Trajectories are the integral curves of this vector field — they can never cross (uniqueness theorem).</p>
+          <p>Click anywhere on the canvas to drop a new trajectory and watch it evolve!</p>
+          <div class="code-block">
+<span class="cm">// Van der Pol oscillator</span>
+dx/dt = y
+dy/dt = μ(<span class="num">1</span>-x²)y - x
+<span class="cm">// μ=0: pure harmonic</span>
+<span class="cm">// μ&gt;0: limit cycle emerges</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-content" id="tab-nullclines">
+      <div class="demo-2col">
+        <canvas id="d-nullclines" height="220"></canvas>
+        <div class="demo-explain">
+          <h4>Nullclines — Where Motion Goes Silent in One Direction</h4>
+          <p>x-nullcline: the curve where dx/dt = 0 (horizontal flow). y-nullcline: where dy/dt = 0 (vertical flow). Their intersections are fixed points. The regions between nullclines have consistent direction signs — this partitions phase space into qualitative regimes without solving anything.</p>
+          <div class="code-block">
+<span class="cm">// Predator-Prey (Lotka-Volterra)</span>
+dx/dt = αx - βxy  <span class="cm">// prey</span>
+dy/dt = δxy - γy  <span class="cm">// predator</span>
+<span class="cm">// x-nullcline: x=0 or y=α/β</span>
+<span class="cm">// y-nullcline: y=0 or x=γ/δ</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-content" id="tab-stability">
+      <div class="demo-2col">
+        <canvas id="d-stability" height="220"></canvas>
+        <div class="demo-explain">
+          <h4>Linear Stability — The Jacobian Tells All</h4>
+          <p>Linearize near a fixed point x*: δẋ = J·δx where J is the Jacobian matrix. The eigenvalues of J determine stability: both negative real parts → stable node; both positive → unstable node; opposite signs → saddle; complex with negative real part → spiral sink.</p>
+          <div class="code-block">
+J = [∂f/∂x  ∂f/∂y]
+    [∂g/∂x  ∂g/∂y]
+<span class="cm">// at fixed point: τ = tr(J), Δ = det(J)</span>
+<span class="cm">// τ&lt;0, Δ&gt;0 → stable spiral/node</span>
+<span class="cm">// Δ&lt;0      → saddle point</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-grid grid-3">
+    <div class="card cc">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 1.1</div>
+      <div class="card-mini"><canvas id="m1c1"></canvas></div>
+      <h3>ODEs as Flows — Geometry Over Algebra</h3>
+      <p>The paradigm shift: instead of finding explicit solutions, understand the geometry of the vector field. Existence and uniqueness theorem. Autonomous vs non-autonomous systems. The flow map φₜ and what it means to compose flows.</p>
+      <div class="card-tags"><span class="tag">ODEs</span><span class="tag">Vector Fields</span><span class="tag">Flow Maps</span><span class="tag">Autonomous</span></div>
+      <div class="card-footer"><span class="duration">⏱ 75 min</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      </div>
+    </div>
+
+    <div class="card cc">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 1.2</div>
+      <div class="card-mini"><canvas id="m1c2"></canvas></div>
+      <h3>Fixed Points &amp; Their Stability</h3>
+      <p>Finding equilibria algebraically, classifying them geometrically. The trace-determinant plane as the complete atlas of 2D linear fixed point types. Lyapunov functions — proving stability without linearization. Basin of attraction.</p>
+      <div class="card-tags"><span class="tag">Fixed Points</span><span class="tag">Jacobian</span><span class="tag">Lyapunov</span><span class="tag">Basin</span></div>
+      <div class="card-footer"><span class="duration">⏱ 90 min</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span><span class="dot"></span></div>
+      </div>
+    </div>
+
+    <div class="card cc">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 1.3</div>
+      <div class="card-mini"><canvas id="m1c3"></canvas></div>
+      <h3>Limit Cycles — Self-Sustained Oscillation</h3>
+      <p>Isolated closed trajectories that attract nearby orbits. Poincaré-Bendixson theorem: chaos is impossible in 2D flows (no room to be chaotic without crossing). The Van der Pol oscillator. How biological rhythms (heartbeats, circadian clocks) are limit cycles.</p>
+      <div class="card-tags"><span class="tag">Limit Cycles</span><span class="tag">Van der Pol</span><span class="tag">Oscillation</span><span class="tag">P-B Theorem</span></div>
+      <div class="card-footer"><span class="duration">⏱ 80 min</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span><span class="dot"></span></div>
+      </div>
+    </div>
+
+    <div class="card cc">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 1.4</div>
+      <div class="card-mini"><canvas id="m1c4"></canvas></div>
+      <h3>Predator-Prey &amp; Population Dynamics</h3>
+      <p>Lotka-Volterra equations — rabbits and foxes oscillating forever. Why the centers are neutrally stable (not attractors). What happens with logistic prey? The real Yellowstone data vs the model. A masterclass in what equations can and cannot capture.</p>
+      <div class="card-tags"><span class="tag">Lotka-Volterra</span><span class="tag">Ecology</span><span class="tag">Centers</span><span class="tag">Oscillations</span></div>
+      <div class="card-footer"><span class="duration">⏱ 60 min</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      </div>
+    </div>
+
+    <div class="card cc">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 1.5</div>
+      <div class="card-mini"><canvas id="m1c5"></canvas></div>
+      <h3>Conservative Systems &amp; Energy Surfaces</h3>
+      <p>When energy is conserved: H(x,y) = constant defines invariant curves. Hamiltonian systems, symplectic structure, Liouville's theorem (phase space volume conserved). The pendulum as the gateway between integrable and chaotic.</p>
+      <div class="card-tags"><span class="tag">Hamiltonian</span><span class="tag">Energy</span><span class="tag">Symplectic</span><span class="tag">Pendulum</span></div>
+      <div class="card-footer"><span class="duration">⏱ 90 min</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span></div>
+      </div>
+    </div>
+
+    <div class="card cc feat-card">
+      <div class="card-content">
+        <div class="card-glow"></div>
+        <div class="card-num">MODULE 1.6 — FEATURED</div>
+        <h3>The Pendulum — Every Behavior in One System</h3>
+        <p>Small oscillations → harmonic oscillator. Separatrix → the knife-edge between oscillation and rotation. Beyond separatrix → full rotation. A single system showing fixed points, centers, saddles, separatrices, homoclinic orbits — the complete zoo of 2D phase portrait features.</p>
+        <div class="card-tags">
+          <span class="tag">Pendulum</span><span class="tag">Separatrix</span><span class="tag">Homoclinic</span><span class="tag">Phase Portrait</span><span class="tag">Complete Zoo</span>
+        </div>
+        <div class="card-footer"><span class="duration">⏱ 2 hours</span>
+          <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span></div>
+        </div>
+      </div>
+      <canvas id="feat-pendulum"></canvas>
+    </div>
+  </div>
+
+  <div class="formula-strip">
+    <div class="formula-chip">ẋ = f(x,y),  ẏ = g(x,y)</div>
+    <div class="formula-chip">J = [∂f/∂x, ∂f/∂y; ∂g/∂x, ∂g/∂y]</div>
+    <div class="formula-chip">τ = tr(J),  Δ = det(J)</div>
+    <div class="formula-chip">τ² - 4Δ &gt; 0 → nodes</div>
+    <div class="formula-chip">Δ &lt; 0 → saddle</div>
+    <div class="formula-chip">H(x,y) = ½v² - cos(θ)</div>
+    <div class="formula-chip">∇·F = 0 → no limit cycles</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SECTION 2 — ROUTES TO CHAOS -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="sec-chaos" class="sec-header">
+    <div class="sec-icon si-red">🌀</div>
+    <div class="sec-title-grp">
+      <h2 style="color:var(--chaos-red)">Section 2 — Routes to Chaos</h2>
+      <p>Sensitive dependence, the butterfly effect, and Lyapunov's measuring stick</p>
+    </div>
+    <div class="sec-badge" style="background:rgba(255,45,85,0.08);border:1px solid var(--chaos-red);color:var(--chaos-red)">CORE CHAOS</div>
+  </div>
+
+  <div class="insight-box red" style="--ib-col:var(--chaos-red)">
+    <h4>The Butterfly Effect — Precisely Defined</h4>
+    <p>Edward Lorenz in 1963: a tiny rounding error in initial conditions — 0.506127 vs 0.506 — produced completely different weather simulations after two months. This is sensitive dependence on initial conditions: nearby trajectories diverge exponentially. The Lyapunov exponent λ measures this divergence rate. Chaos requires λ &gt; 0. It's not that small causes have large effects — it's that the information required to predict the future grows without bound.</p>
+  </div>
+
+  <div class="key-insight red">
+    <div class="ki-icon">🔑</div>
+    <div class="ki-body">
+      <h5>The Real Definition of Chaos (Devaney)</h5>
+      <p>A dynamical system is chaotic if it has: (1) sensitive dependence on initial conditions (λ&gt;0), (2) topological transitivity (orbits visit everywhere), and (3) dense periodic orbits (periodics are everywhere, but measure zero). Remarkably, conditions 2+3 together imply condition 1 — sensitivity is a consequence of the other two structural properties.</p>
+    </div>
+  </div>
+
+  <div class="card-grid grid-3">
+    <div class="card cr">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 2.1</div>
+      <div class="card-mini"><canvas id="m2c1"></canvas></div>
+      <h3>Lyapunov Exponents — Measuring Chaos</h3>
+      <p>λ = lim(t→∞) (1/t) ln|δx(t)/δx(0)|. If λ&gt;0, nearby trajectories diverge exponentially — chaos. The Lyapunov spectrum for higher-dimensional systems. The maximum Lyapunov exponent as chaos's fingerprint. How to compute λ numerically from a time series.</p>
+      <div class="card-tags"><span class="tag">Lyapunov</span><span class="tag">Divergence</span><span class="tag">Exponent</span><span class="tag">Measurement</span></div>
+      <div class="card-footer"><span class="duration">⏱ 90 min</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span></div>
+      </div>
+    </div>
+
+    <div class="card cr">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 2.2</div>
+      <div class="card-mini"><canvas id="m2c2"></canvas></div>
+      <h3>The Logistic Map — A Universe in One Equation</h3>
+      <p>xₙ₊₁ = rxₙ(1−xₙ). For r&lt;3: stable fixed point. r&gt;3: period-2 cycle. r≈3.57: period-doubling into chaos. Beyond: windows of order amid chaos, self-similarity, universal constants. The simplest discrete map containing everything chaos theory has to say.</p>
+      <div class="card-tags"><span class="tag">Logistic Map</span><span class="tag">Period Doubling</span><span class="tag">Discrete</span><span class="tag">Universal</span></div>
+      <div class="card-footer"><span class="duration">⏱ 2 hours</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span></div>
+      </div>
+    </div>
+
+    <div class="card cr">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 2.3</div>
+      <div class="card-mini"><canvas id="m2c3"></canvas></div>
+      <h3>Stretching &amp; Folding — The Taffy Machine</h3>
+      <p>Chaos requires two operations: stretching (sensitivity) and folding (boundedness). The horseshoe map as the geometric prototype. Symbolic dynamics — encoding trajectories as binary sequences. How infinite complexity is generated by finite operations, repeated.</p>
+      <div class="card-tags"><span class="tag">Horseshoe</span><span class="tag">Symbolic Dynamics</span><span class="tag">Stretching</span><span class="tag">Folding</span></div>
+      <div class="card-footer"><span class="duration">⏱ 75 min</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span></div>
+      </div>
+    </div>
+
+    <div class="card cr">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 2.4</div>
+      <div class="card-mini"><canvas id="m2c4"></canvas></div>
+      <h3>Poincaré Sections — Slicing Through Chaos</h3>
+      <p>Instead of a continuous trajectory, record only the state each time it pierces a chosen surface. A limit cycle becomes a fixed point. A torus becomes a closed curve. Chaos becomes a fractal cloud of points. The Poincaré map reduces continuous time to a discrete map.</p>
+      <div class="card-tags"><span class="tag">Poincaré Section</span><span class="tag">Return Map</span><span class="tag">Reduction</span><span class="tag">Torus</span></div>
+      <div class="card-footer"><span class="duration">⏱ 80 min</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span></div>
+      </div>
+    </div>
+
+    <div class="card cr">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 2.5</div>
+      <div class="card-mini"><canvas id="m2c5"></canvas></div>
+      <h3>The Three Routes to Chaos</h3>
+      <p>Period-doubling (Feigenbaum): stable cycles → 2-cycles → 4-cycles → chaos, universally. Quasiperiodicity (Ruelle-Takens): adding incommensurate frequencies fills a torus, then chaos. Intermittency (Pomeau-Manneville): long regular stretches punctuated by chaotic bursts.</p>
+      <div class="card-tags"><span class="tag">Period-Doubling</span><span class="tag">Quasiperiodic</span><span class="tag">Intermittency</span><span class="tag">Routes</span></div>
+      <div class="card-footer"><span class="duration">⏱ 90 min</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span></div>
+      </div>
+    </div>
+
+    <div class="card cr">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 2.6</div>
+      <div class="card-mini"><canvas id="m2c6"></canvas></div>
+      <h3>Chaos vs Noise — Telling Them Apart</h3>
+      <p>Both look irregular. Both have power spectra with broad peaks. But chaos is deterministic: it has finite correlation dimension, positive Lyapunov exponents, and reconstructible attractors. Takens' embedding theorem: reconstruct phase space from a single time series using delay coordinates.</p>
+      <div class="card-tags"><span class="tag">Takens</span><span class="tag">Embedding</span><span class="tag">Delay Coords</span><span class="tag">Correlation Dim</span></div>
+      <div class="card-footer"><span class="duration">⏱ 2 hours</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- BIFURCATION DIAGRAM — INTERACTIVE -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="sec-bifur">
+  <div class="bifur-wrap">
+    <div class="bifur-header">
+      <div>
+        <h3>🌿 Live Bifurcation Diagram — The Logistic Map</h3>
+        <p>xₙ₊₁ = rxₙ(1−xₙ) · Hover to probe any r value · Watch period-doubling collapse into chaos</p>
+      </div>
+    </div>
+    <canvas id="bifurCanvas" height="320"></canvas>
+    <div class="bifur-controls">
+      <div class="bifur-stat" id="bifur-r">r: hover to probe</div>
+      <div class="bifur-stat" id="bifur-period">Period: —</div>
+      <div class="bifur-stat" id="bifur-feig">δ ≈ 4.669 (Feigenbaum)</div>
+      <div class="bifur-stat">Chaos onset: r ≈ 3.5699...</div>
+    </div>
+  </div>
+  </div>
+
+  <div class="insight-box green" style="--ib-col:var(--bifur-green)">
+    <h4>The Feigenbaum Constant — Universality's Fingerprint</h4>
+    <p>Mitchell Feigenbaum discovered in 1975 that for ANY unimodal map undergoing period-doubling, the ratio of consecutive period-doubling intervals converges to δ = 4.66920160910299... and the ratio of orbit widths converges to α = 2.5029... These constants appear in dripping faucets, cardiac arrhythmias, chemical oscillations, and laser physics — completely different systems, same universal constants. Universality means the details don't matter; the structure is inevitable.</p>
+  </div>
+
+  <div class="key-insight green">
+    <div class="ki-icon">🌿</div>
+    <div class="ki-body">
+      <h5>Why Feigenbaum Constants Matter in Practice</h5>
+      <p>If you measure period-doubling in any real experiment — an oscillating chemical reaction, a dripping faucet, a heart rhythm — you can predict the chaos onset threshold before it happens. The ratio of consecutive bifurcation parameter values always approaches 4.669. This gives engineers a universal early-warning signal for impending chaotic behavior.</p>
+    </div>
+  </div>
+
+  <div class="card-grid grid-3">
+    <div class="card cg">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.1</div>
+      <div class="card-mini"><canvas id="m3c1"></canvas></div>
+      <h3>Saddle-Node Bifurcation — Birth &amp; Death of Fixed Points</h3>
+      <p>Two fixed points collide and annihilate. ẋ = r + x². For r&lt;0: two fixed points. r=0: one (degenerate). r&gt;0: none. The ghost of the fixed point leaves a "bottleneck" — trajectories slow dramatically near where the equilibrium used to be (intermittency connection).</p>
+      <div class="card-tags"><span class="tag">Saddle-Node</span><span class="tag">Bifurcation</span><span class="tag">Bottleneck</span><span class="tag">Ghost</span></div>
+      <div class="card-footer"><span class="duration">⏱ 60 min</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span><span class="dot"></span></div>
+      </div>
+    </div>
+
+    <div class="card cg">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.2</div>
+      <div class="card-mini"><canvas id="m3c2"></canvas></div>
+      <h3>Pitchfork Bifurcation — Symmetry Breaking</h3>
+      <p>ẋ = rx − x³. One stable fixed point splits into two stable and one unstable — a pitchfork shape in the bifurcation diagram. Supercritical (soft): smooth transition. Subcritical (hard): catastrophic jump. Laser threshold, Euler buckling, and ferromagnetism are pitchfork bifurcations.</p>
+      <div class="card-tags"><span class="tag">Pitchfork</span><span class="tag">Symmetry</span><span class="tag">Subcritical</span><span class="tag">Supercritical</span></div>
+      <div class="card-footer"><span class="duration">⏱ 70 min</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span><span class="dot"></span></div>
+      </div>
+    </div>
+
+    <div class="card cg">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.3</div>
+      <div class="card-mini"><canvas id="m3c3"></canvas></div>
+      <h3>Hopf Bifurcation — Birth of a Limit Cycle</h3>
+      <p>A stable spiral loses stability and a limit cycle is born. The eigenvalues of the Jacobian cross the imaginary axis: Re(λ) = 0. Supercritical Hopf: a small stable limit cycle grows smoothly. Subcritical: an unstable limit cycle shrinks to zero catastrophically. The mathematical mechanism behind oscillating chemical reactions, cardiac rhythms, and Hopfield networks.</p>
+      <div class="card-tags"><span class="tag">Hopf</span><span class="tag">Limit Cycle Birth</span><span class="tag">Oscillation</span><span class="tag">Chemical Waves</span></div>
+      <div class="card-footer"><span class="duration">⏱ 90 min</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SECTION 4 — STRANGE ATTRACTORS -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="sec-attractors" class="sec-header">
+    <div class="sec-icon si-gold">✨</div>
+    <div class="sec-title-grp">
+      <h2 style="color:var(--strange-gold)">Section 4 — Strange Attractors &amp; Fractals</h2>
+      <p>Infinite complexity within a bounded region of phase space</p>
+    </div>
+    <div class="sec-badge" style="background:rgba(255,215,0,0.08);border:1px solid var(--strange-gold);color:var(--strange-gold)">INTERMEDIATE → ADVANCED</div>
+  </div>
+
+  <div class="insight-box gold" style="--ib-col:var(--strange-gold)">
+    <h4>What Makes an Attractor Strange</h4>
+    <p>An attractor is a set that trajectories converge to and stay near. A strange attractor has two contradictory properties simultaneously: it attracts (trajectories come to it) yet it has sensitive dependence (trajectories on it diverge). This is only possible if the attractor has fractal structure — infinite layers of fine detail, non-integer dimension. The Lorenz attractor has dimension ≈ 2.06: more than a surface, less than a volume. The universe hides infinite information in a finite region of phase space.</p>
+  </div>
+
+  <div class="key-insight gold">
+    <div class="ki-icon">✨</div>
+    <div class="ki-body">
+      <h5>Strange Attractors in Real Systems</h5>
+      <p>Turbulent fluid flow, cardiac fibrillation, neural seizure dynamics, stock market crashes, and laser instabilities all exhibit strange attractors. The fractal dimension of the attractor tells you how many effective degrees of freedom the system has — even if the governing equations are high-dimensional, a low fractal dimension means a compact description is possible.</p>
+    </div>
+  </div>
+
+  <div class="demo-panel">
+    <div class="demo-tabs">
+      <button class="demo-tab active" onclick="switchTab(this,'attr-lorenz')">Lorenz</button>
+      <button class="demo-tab" onclick="switchTab(this,'attr-rossler')">Rössler</button>
+      <button class="demo-tab" onclick="switchTab(this,'attr-thomas')">Thomas</button>
+      <button class="demo-tab" onclick="switchTab(this,'attr-duffing')">Duffing</button>
+    </div>
+
+    <div class="demo-content active" id="tab-attr-lorenz">
+      <div class="demo-2col">
+        <canvas id="d-attr-lorenz" height="220"></canvas>
+        <div class="demo-explain">
+          <h4>The Lorenz Attractor — Weather's Butterfly</h4>
+          <p>ẋ=σ(y−x), ẏ=x(ρ−z)−y, ż=xy−βz. Born from convection rolls in a heated fluid. Two lobes: the trajectory spirals outward on one lobe, then switches to the other, then back — but the number of loops before switching is unpredictable. Hausdorff dimension ≈ 2.06.</p>
+          <div class="code-block">
+ẋ = σ(y - x)         <span class="cm">// σ=10</span>
+ẏ = x(ρ - z) - y    <span class="cm">// ρ=28</span>
+ż = xy - βz          <span class="cm">// β=8/3</span>
+dim ≈ <span class="num">2.06</span>  λ_max ≈ <span class="num">0.9</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-content" id="tab-attr-rossler">
+      <div class="demo-2col">
+        <canvas id="d-attr-rossler" height="220"></canvas>
+        <div class="demo-explain">
+          <h4>The Rössler Attractor — Simplest Possible Chaos</h4>
+          <p>ẋ=−y−z, ẏ=x+ay, ż=b+z(x−c). One nonlinear term! The simplest 3D autonomous system with a strange attractor. The attractor looks like a folded band — one fold per revolution. Rössler designed it to be the minimal chaotic system.</p>
+          <div class="code-block">
+ẋ = -y - z
+ẏ = x + ay       <span class="cm">// a=0.2</span>
+ż = b + z(x-c)   <span class="cm">// b=0.2, c=5.7</span>
+<span class="cm">// Only ONE nonlinear term!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-content" id="tab-attr-thomas">
+      <div class="demo-2col">
+        <canvas id="d-attr-thomas" height="220"></canvas>
+        <div class="demo-explain">
+          <h4>Thomas' Cyclically Symmetric Attractor</h4>
+          <p>ẋ=sin(y)−bx, ẏ=sin(z)−by, ż=sin(x)−bz. A rare system with 3-fold cyclic symmetry. For b≈0.18, a strange attractor with beautiful symmetry. As b decreases from 1, the system transitions from a stable equilibrium through limit cycles to chaos.</p>
+          <div class="code-block">
+ẋ = sin(y) - bx
+ẏ = sin(z) - by   <span class="cm">// b ≈ 0.18</span>
+ż = sin(x) - bz
+<span class="cm">// Cyclic symmetry: (x,y,z)→(y,z,x)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-content" id="tab-attr-duffing">
+      <div class="demo-2col">
+        <canvas id="d-attr-duffing" height="220"></canvas>
+        <div class="demo-explain">
+          <h4>Duffing Oscillator — Forced Nonlinear Spring</h4>
+          <p>ẍ + δẋ + αx + βx³ = γcos(ωt). A driven, damped nonlinear oscillator with a double-well potential. The attractor lives in a 3D space (x, ẋ, t mod 2π/ω). Poincaré section reveals the fractal structure. Two co-existing attractors with fractal basin boundaries.</p>
+          <div class="code-block">
+ẋ = y
+ẏ = -δy - αx - βx³ + γcos(ωt)
+<span class="cm">// Double-well: α&lt;0, β&gt;0</span>
+<span class="cm">// Fractal basin boundaries</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-grid grid-3">
+    <div class="card ck">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 4.1</div>
+      <div class="card-mini"><canvas id="m4c1"></canvas></div>
+      <h3>Fractal Dimension — Non-Integer Geometry</h3>
+      <p>Hausdorff dimension: how does the measure scale with resolution? Box-counting algorithm. A curve has dimension 1; a surface has dimension 2. The Lorenz attractor has dimension 2.06 — it's more than a surface but less than a solid. Correlation dimension from data. Why non-integer dimensions capture the "roughness" of chaos.</p>
+      <div class="card-tags"><span class="tag">Hausdorff Dim</span><span class="tag">Box-Counting</span><span class="tag">Fractal</span><span class="tag">Self-Similar</span></div>
+      <div class="card-footer"><span class="duration">⏱ 90 min</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span></div>
+      </div>
+    </div>
+
+    <div class="card ck">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 4.2</div>
+      <div class="card-mini"><canvas id="m4c2"></canvas></div>
+      <h3>Iterated Function Systems &amp; Self-Similarity</h3>
+      <p>A fractal as the fixed point of a contraction mapping. The Sierpinski triangle from three contractions. Barnsley's fern from four affine maps. The attractor of an IFS is the unique compact set satisfying A = ⋃ᵢ fᵢ(A). Chaos game algorithm — probabilistic IFS iteration.</p>
+      <div class="card-tags"><span class="tag">IFS</span><span class="tag">Contraction</span><span class="tag">Sierpinski</span><span class="tag">Chaos Game</span></div>
+      <div class="card-footer"><span class="duration">⏱ 75 min</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span></div>
+      </div>
+    </div>
+
+    <div class="card ck">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 4.3</div>
+      <div class="card-mini"><canvas id="m4c3"></canvas></div>
+      <h3>The Mandelbrot Set — Chaos in the Complex Plane</h3>
+      <p>zₙ₊₁ = zₙ² + c. The Mandelbrot set is the set of c values for which the orbit remains bounded. Its boundary is infinitely complex — every zoom reveals new structures, self-similar at all scales. The Julia sets are the "fibers" of the Mandelbrot set. Connection to the logistic map via coordinate change.</p>
+      <div class="card-tags"><span class="tag">Mandelbrot</span><span class="tag">Julia Sets</span><span class="tag">Complex Maps</span><span class="tag">Escape Time</span></div>
+      <div class="card-footer"><span class="duration">⏱ 2 hours</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SECTION 5 — ADVANCED -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="sec-advanced" class="sec-header">
+    <div class="sec-icon si-purple">🔮</div>
+    <div class="sec-title-grp">
+      <h2 style="color:var(--phase-purple)">Section 5 — Advanced &amp; Applications</h2>
+      <p>Where dynamical systems meets the rest of physics, biology, and engineering</p>
+    </div>
+    <div class="sec-badge" style="background:rgba(191,95,255,0.08);border:1px solid var(--phase-purple);color:var(--phase-purple)">ADVANCED</div>
+  </div>
+
+  <div class="key-insight">
+    <div class="ki-icon">🔮</div>
+    <div class="ki-body">
+      <h5>The Modern Frontier: Data-Driven + Physics-Informed</h5>
+      <p>The most impactful modern direction is combining classical dynamical systems theory with machine learning. SINDy recovers governing equations from data. Koopman operators linearize nonlinear systems. Neural ODEs embed dynamics into neural networks. This fusion is transforming climate modeling, drug discovery, fluid simulation, and materials science — the language of dynamical systems is becoming the lingua franca of scientific ML.</p>
+    </div>
+  </div>
+
+  <div class="card-grid grid-3">
+    <div class="card cp">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 5.1</div>
+      <div class="card-mini"><canvas id="m5c1"></canvas></div>
+      <h3>Chaos Control &amp; Synchronization</h3>
+      <p>OGY method: stabilize unstable periodic orbits embedded in a chaotic attractor with tiny perturbations. Pecora-Carroll chaos synchronization — two chaotic systems with identical attractors can synchronize via a coupling signal. Applications: secure communication, cardiac defibrillation, laser locking.</p>
+      <div class="card-tags"><span class="tag">OGY Control</span><span class="tag">Synchronization</span><span class="tag">UPO</span><span class="tag">Applications</span></div>
+      <div class="card-footer"><span class="duration">⏱ 3 hours</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span></div>
+      </div>
+    </div>
+
+    <div class="card cp">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 5.2</div>
+      <div class="card-mini"><canvas id="m5c2"></canvas></div>
+      <h3>Spatiotemporal Chaos &amp; PDEs</h3>
+      <p>When space is added to the system, chaos spreads. The Kuramoto-Sivashinsky equation: spatial chaos in flame fronts. Turing patterns from reaction-diffusion systems — chaos creating biological spots and stripes. The Lyapunov spectrum for spatially extended systems and extensive chaos.</p>
+      <div class="card-tags"><span class="tag">Kuramoto-Sivashinsky</span><span class="tag">Turing Patterns</span><span class="tag">PDEs</span><span class="tag">Spatiotemporal</span></div>
+      <div class="card-footer"><span class="duration">⏱ 4 hours</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span></div>
+      </div>
+    </div>
+
+    <div class="card cp">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 5.3</div>
+      <div class="card-mini"><canvas id="m5c3"></canvas></div>
+      <h3>Neuronal Dynamics — Spikes &amp; Synchrony</h3>
+      <p>Hodgkin-Huxley model as a dynamical system: resting state (stable node), action potential (limit cycle traversal), refractory period. FitzHugh-Nagumo simplification. Excitability near a bifurcation. Networks of coupled oscillators (Kuramoto model). The neural correlates of consciousness as dynamical patterns.</p>
+      <div class="card-tags"><span class="tag">Hodgkin-Huxley</span><span class="tag">Action Potential</span><span class="tag">Kuramoto</span><span class="tag">Neurons</span></div>
+      <div class="card-footer"><span class="duration">⏱ 4 hours</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span></div>
+      </div>
+    </div>
+
+    <div class="card cp">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 5.4</div>
+      <div class="card-mini"><canvas id="m5c4"></canvas></div>
+      <h3>KAM Theory — Order Amid Chaos</h3>
+      <p>Kolmogorov-Arnold-Moser theorem: most invariant tori of an integrable Hamiltonian system survive small perturbations. The rest break into cantori (fractal remnants) and chaos. Islands of stability surrounded by chaotic seas. The transition from integrability to chaos in Hamiltonian systems. Asteroid belt dynamics.</p>
+      <div class="card-tags"><span class="tag">KAM Theorem</span><span class="tag">Hamiltonian</span><span class="tag">Tori</span><span class="tag">Cantori</span></div>
+      <div class="card-footer"><span class="duration">⏱ 5 hours</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span></div>
+      </div>
+    </div>
+
+    <div class="card cp">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 5.5</div>
+      <div class="card-mini"><canvas id="m5c5"></canvas></div>
+      <h3>Renormalization Group &amp; Universality</h3>
+      <p>Why does the Feigenbaum constant appear everywhere? The renormalization group explanation: period-doubling is a fixed point of a functional equation, and the eigenvalues of the linearized RG operator are 1/δ and 1/α. The same mathematical structure explains universality in statistical mechanics phase transitions.</p>
+      <div class="card-tags"><span class="tag">Renormalization</span><span class="tag">Universality</span><span class="tag">Fixed Point</span><span class="tag">RG</span></div>
+      <div class="card-footer"><span class="duration">⏱ 5 hours</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span></div>
+      </div>
+    </div>
+
+    <div class="card cp">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 5.6</div>
+      <div class="card-mini"><canvas id="m5c6"></canvas></div>
+      <h3>Data-Driven Dynamics — Koopman &amp; DMD</h3>
+      <p>Koopman operator: lift nonlinear dynamics to an infinite-dimensional linear space. Dynamic Mode Decomposition (DMD) extracts spatiotemporal coherent structures from data. SINDy (Sparse Identification of Nonlinear Dynamics) recovers governing equations from measurements. Machine learning for dynamical systems — the frontier.</p>
+      <div class="card-tags"><span class="tag">Koopman</span><span class="tag">DMD</span><span class="tag">SINDy</span><span class="tag">Data-Driven</span></div>
+      <div class="card-footer"><span class="duration">⏱ 6 hours</span>
+        <div class="diff-dots"><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span><span class="dot f"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="formula-strip">
+    <div class="formula-chip">λ = lim(1/t)ln|δx(t)/δx₀|</div>
+    <div class="formula-chip">xₙ₊₁ = rxₙ(1-xₙ)</div>
+    <div class="formula-chip">δ = 4.66920160910...</div>
+    <div class="formula-chip">dim_H = log N / log(1/r)</div>
+    <div class="formula-chip">zₙ₊₁ = zₙ² + c</div>
+    <div class="formula-chip">ẋ=σ(y-x), ẏ=x(ρ-z)-y</div>
+    <div class="formula-chip">K[f] = f∘φₜ (Koopman)</div>
+  </div>
+
+</div><!-- /main -->
+
+<footer>
+  <div class="footer-glow"></div>
+  <h3>Chaos Is Not Disorder.<br>It Is Order Too Subtle to See.</h3>
+  <p>The Lorenz attractor never repeats. It never escapes. It traces the same two-winged ghost forever — deterministic, bounded, and utterly unpredictable.<br>That tension is the heartbeat of the universe.</p>
+  <p style="margin-top:10px;font-size:0.74rem;color:var(--text-dim)">38 modules · 1 butterfly · Infinite depth</p>
+</footer>
+
+<!-- ══════════════════════════════════════════ -->
+<script>
+// ════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+
+// FIX: was "function resize(c)width = ..." — missing brace and c.
+function resize(c){ c.width = c.offsetWidth||c.clientWidth||300; c.height = c.offsetHeight||c.clientHeight||200; }
+function smoothTo(id){ $(id)?.scrollIntoView({behavior:'smooth',block:'start'}); }
+function switchTab(btn,id){
+  document.querySelectorAll('.demo-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.demo-content').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  $('tab-'+id)?.classList.add('active');
+}
+
+// ════════════════════════════════════════════
+// BACKGROUND — particle drift
+// ════════════════════════════════════════════
+(function(){
+  const c = $('bg-canvas');
+  const ctx = c.getContext('2d');
+  let W, H, particles=[];
+
+  function init(){
+    W = c.width  = window.innerWidth;
+    H = c.height = window.innerHeight;
+    // FIX: was ".random()-0.5)*0.3" — missing "vx:(Math"
+    particles = Array.from({length:120},()=>({
+      x: Math.random()*W, y: Math.random()*H,
+      vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3,
+      r: Math.random()*1.5+0.3,
+      op: Math.random()*0.3+0.05,
+      hue: Math.random()*60+260
+    }));
+  }
+
+  function frame(){
+    ctx.fillStyle='rgba(3,1,8,0.15)'; ctx.fillRect(0,0,W,H);
+    particles.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0)p.x=W; if(p.x>W)p.x=0;
+      if(p.y<0)p.y=H; if(p.y>H)p.y=0;
+      ctx.fillStyle=`hsla(${p.hue},80%,70%,${p.op})`;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    });
+    requestAnimationFrame(frame);
+  }
+
+  init(); frame();
+  window.addEventListener('resize',init);
+})();
+
+// ════════════════════════════════════════════
+// LORENZ HERO SANDBOX — RK4 Integration
+// ════════════════════════════════════════════
+const lc = $('lorenzCanvas');
+const lctx = lc.getContext('2d');
+
+let params = { sigma:10, rho:28, beta:8/3, trail:1200, speed:6 };
+let currentSystem = 'lorenz';
+let trajectories = [];
+let stepCount = 0;
+let rotX = 0.3, rotY = -0.4;
+let isDragging = false, lastMX=0, lastMY=0;
+let butterflyMode = false;
+let bfTwin = null; // twin trajectory for butterfly mode
+let lyapSum = 0, lyapN = 0;
+let prevSep = 0;
+
+const TRAJ_COLORS = [
+  '#00f5ff','#ff2d55','#39ff14','#bf5fff','#ffd700',
+  '#ff6b35','#00ffaa','#ff00aa','#aaffff','#ffaa00'
+];
+
+function makeTrajectory(x,y,z,col){
+  return { x,y,z, hist:[], color:col };
+}
+
+// RK4 integrator for Lorenz
+function lorenzDerivs(x,y,z,s,r,b){
+  return [s*(y-x), x*(r-z)-y, x*y-b*z];
+}
+
+function stepLorenzRK4(t, dt){
+  const {sigma,rho,beta}=params;
+  const [k1x,k1y,k1z]=lorenzDerivs(t.x,t.y,t.z,sigma,rho,beta);
+  const [k2x,k2y,k2z]=lorenzDerivs(t.x+k1x*dt/2,t.y+k1y*dt/2,t.z+k1z*dt/2,sigma,rho,beta);
+  const [k3x,k3y,k3z]=lorenzDerivs(t.x+k2x*dt/2,t.y+k2y*dt/2,t.z+k2z*dt/2,sigma,rho,beta);
+  const [k4x,k4y,k4z]=lorenzDerivs(t.x+k3x*dt,t.y+k3y*dt,t.z+k3z*dt,sigma,rho,beta);
+  t.x+=(k1x+2*k2x+2*k3x+k4x)*dt/6;
+  t.y+=(k1y+2*k2y+2*k3y+k4y)*dt/6;
+  t.z+=(k1z+2*k2z+2*k3z+k4z)*dt/6;
+}
+
+function stepRosslerRK4(t,dt){
+  const a=0.2,b=0.2,c=5.7;
+  function d(x,y,z){ return [-y-z, x+a*y, b+z*(x-c)]; }
+  const [k1x,k1y,k1z]=d(t.x,t.y,t.z);
+  const [k2x,k2y,k2z]=d(t.x+k1x*dt/2,t.y+k1y*dt/2,t.z+k1z*dt/2);
+  const [k3x,k3y,k3z]=d(t.x+k2x*dt/2,t.y+k2y*dt/2,t.z+k2z*dt/2);
+  const [k4x,k4y,k4z]=d(t.x+k3x*dt,t.y+k3y*dt,t.z+k3z*dt);
+  t.x+=(k1x+2*k2x+2*k3x+k4x)*dt/6;
+  t.y+=(k1y+2*k2y+2*k3y+k4y)*dt/6;
+  t.z+=(k1z+2*k2z+2*k3z+k4z)*dt/6;
+}
+
+function initLorenz(){
+  trajectories = [makeTrajectory(0.1+Math.random()*0.01,0,0,TRAJ_COLORS[0])];
+  bfTwin = null; butterflyMode = false;
+  $('butterflyBar').style.display='none';
+  $('lyapChip').style.display='none';
+  lyapSum=0; lyapN=0; stepCount=0;
+}
+
+function setSystem(s){
+  currentSystem=s;
+  const names={lorenz:'LORENZ ATTRACTOR',rossler:'RÖSSLER ATTRACTOR'};
+  $('sysName').textContent=s.charAt(0).toUpperCase()+s.slice(1);
+  $('sysBadge').textContent=names[s]||s.toUpperCase()+' ATTRACTOR';
+  trajectories.forEach(t=>{ t.x=0.1;t.y=0;t.z=0;t.hist=[]; });
+  bfTwin=null; stepCount=0; lyapSum=0; lyapN=0;
+}
+
+function addTrajectory(){
+  if(trajectories.length>=10)return;
+  const last = trajectories[trajectories.length-1];
+  const eps=0.001;
+  const col=TRAJ_COLORS[trajectories.length%TRAJ_COLORS.length];
+  // FIX: was "trajectoies.push" — typo
+  trajectories.push(makeTrajectory(last.x+eps,last.y+eps,last.z,col));
+  $('trajCount').textContent=trajectories.length;
+}
+
+function toggleButterfly(){
+  butterflyMode=!butterflyMode;
+  if(butterflyMode){
+    const t=trajectories[0];
+    const eps=1e-4;
+    bfTwin=makeTrajectory(t.x+eps,t.y,t.z,'#ff2d55');
+    bfTwin.color='#ff2d55';
+    trajectories[0].color='#00f5ff';
+    $('butterflyBar').style.display='flex';
+    $('lyapChip').style.display='block';
+    lyapSum=0; lyapN=0; prevSep=eps;
+  } else {
+    bfTwin=null;
+    trajectories[0].color=TRAJ_COLORS[0];
+    $('butterflyBar').style.display='none';
+    $('lyapChip').style.display='none';
+  }
+}
+
+function resetSim(){ initLorenz(); $('trajCount').textContent=1; }
+
+function updateParams(){
+  params.sigma = parseFloat($('sl-sigma').value);
+  params.rho   = parseFloat($('sl-rho').value);
+  params.beta  = parseFloat($('sl-beta').value);
+  params.trail = parseInt($('sl-trail').value);
+  params.speed = parseInt($('sl-speed').value);
+  $('vl-sigma').textContent=params.sigma.toFixed(1);
+  $('vl-rho').textContent=params.rho.toFixed(1);
+  $('vl-beta').textContent=params.beta.toFixed(2);
+  $('vl-trail').textContent=params.trail;
+  $('vl-speed').textContent=params.speed;
+  $('pSigma').textContent=params.sigma.toFixed(1);
+  $('pRho').textContent=params.rho.toFixed(1);
+  $('pBeta').textContent=params.beta.toFixed(2);
+}
+
+function project3D(x,y,z,W,H){
+  const cx=Math.cos(rotX),sx=Math.sin(rotX);
+  const cy=Math.cos(rotY),sy=Math.sin(rotY);
+  const x2=cy*x+sy*z, z2=-sy*x+cy*z;
+  const y2=cx*y-sx*z2, z3=sx*y+cx*z2;
+  const scale=Math.min(W,H)*0.012;
+  return [W/2+x2*scale, H/2-y2*scale, z3];
+}
+
+lc.addEventListener('mousedown',e=>{ isDragging=true; lastMX=e.clientX; lastMY=e.clientY; });
+lc.addEventListener('mousemove',e=>{
+  if(!isDragging)return;
+  const dx=e.clientX-lastMX, dy=e.clientY-lastMY;
+  rotY+=dx*0.008; rotX+=dy*0.008;
+  lastMX=e.clientX; lastMY=e.clientY;
+});
+lc.addEventListener('mouseup',()=>isDragging=false);
+lc.addEventListener('mouseleave',()=>isDragging=false);
+
+lc.addEventListener('touchstart',e=>{ isDragging=true; lastMX=e.touches[0].clientX; lastMY=e.touches[0].clientY; },{passive:true});
+lc.addEventListener('touchmove',e=>{
+  if(!isDragging)return;
+  const dx=e.touches[0].clientX-lastMX, dy=e.touches[0].clientY-lastMY;
+  rotY+=dx*0.008; rotX+=dy*0.008;
+  lastMX=e.touches[0].clientX; lastMY=e.touches[0].clientY;
+},{passive:true});
+lc.addEventListener('touchend',()=>isDragging=false);
+
+function drawLorenz(){
+  resize(lc);
+  const W=lc.width, H=lc.height;
+  lctx.fillStyle='rgba(3,1,8,0.18)'; lctx.fillRect(0,0,W,H);
+
+  const dt=0.005;
+  const stepFn=currentSystem==='lorenz'?stepLorenzRK4:stepRosslerRK4;
+
+  for(let s=0;s<params.speed;s++){
+    trajectories.forEach(t=>{
+      stepFn(t,dt);
+      t.hist.push([t.x,t.y,t.z]);
+      if(t.hist.length>params.trail) t.hist.shift();
+    });
+
+    // Butterfly mode: evolve twin and track divergence
+    if(butterflyMode && bfTwin){
+      stepFn(bfTwin,dt);
+      bfTwin.hist.push([bfTwin.x,bfTwin.y,bfTwin.z]);
+      if(bfTwin.hist.length>params.trail) bfTwin.hist.shift();
+
+      const t0=trajectories[0];
+      const sep=Math.sqrt((t0.x-bfTwin.x)**2+(t0.y-bfTwin.y)**2+(t0.z-bfTwin.z)**2);
+      if(sep>0 && prevSep>0 && sep<50){
+        lyapSum+=Math.log(sep/prevSep)/dt;
+        lyapN++;
+      }
+      // Renormalize to prevent overflow
+      if(sep>1){
+        const rescale=1e-4/sep;
+        bfTwin.x=t0.x+(bfTwin.x-t0.x)*rescale;
+        bfTwin.y=t0.y+(bfTwin.y-t0.y)*rescale;
+        bfTwin.z=t0.z+(bfTwin.z-t0.z)*rescale;
+        prevSep=1e-4;
+      } else {
+        prevSep=sep;
+      }
+
+      // Update displays
+      if(lyapN>0){
+        const lambda=(lyapSum/lyapN);
+        const lyapEl=$('lyapVal');
+        lyapEl.textContent=lambda.toFixed(3);
+        lyapEl.className=lambda>0?'lyap-pos':'lyap-neg';
+
+        const sepFmt=sep<0.001?sep.toExponential(2):sep.toFixed(4);
+        $('sepVal').textContent=sepFmt;
+        $('bfSepDisplay').textContent=sepFmt;
+        $('bfLyapDisplay').textContent=lambda.toFixed(3);
+        $('bfLyapDisplay').className=`lyap-live${lambda>0?' chaotic':''}`;
+        const doublingT=lambda>0.001?(Math.LN2/lambda).toFixed(1):'∞';
+        $('bfDoubling').textContent=doublingT+'s';
+      }
+    }
+
+    stepCount++;
+  }
+
+  $('stepCount').textContent=stepCount;
+
+  // Draw twin first (behind)
+  if(butterflyMode && bfTwin && bfTwin.hist.length>1){
+    const h=bfTwin.hist; const n=h.length;
+    for(let i=1;i<n;i++){
+      const frac=i/n;
+      const p1=project3D(...h[i-1],W,H);
+      const p2=project3D(...h[i],W,H);
+      lctx.strokeStyle=`rgba(255,45,85,${frac*frac*0.6})`;
+      lctx.lineWidth=frac>0.97?1.5:0.8;
+      lctx.beginPath(); lctx.moveTo(p1[0],p1[1]); lctx.lineTo(p2[0],p2[1]); lctx.stroke();
+    }
+    const last=bfTwin.hist[bfTwin.hist.length-1];
+    const hp=project3D(...last,W,H);
+    lctx.fillStyle='#ff2d55'; lctx.shadowColor='#ff2d55'; lctx.shadowBlur=12;
+    lctx.beginPath(); lctx.arc(hp[0],hp[1],3.5,0,Math.PI*2); lctx.fill();
+    lctx.shadowBlur=0;
+  }
+
+  // Draw main trajectories
+  trajectories.forEach(traj=>{
+    const h=traj.hist;
+    if(h.length<2)return;
+    const n=h.length;
+    for(let i=1;i<n;i++){
+      const frac=i/n;
+      const p1=project3D(...h[i-1],W,H);
+      const p2=project3D(...h[i],W,H);
+      const col=traj.color;
+      // Parse hex color to rgba
+      let r=0,g=245,b=255;
+      if(col.startsWith('#')&&col.length===7){
+        r=parseInt(col.slice(1,3),16);
+        g=parseInt(col.slice(3,5),16);
+        b=parseInt(col.slice(5,7),16);
+      }
+      const alpha=frac*frac*0.85;
+      lctx.strokeStyle=`rgba(${r},${g},${b},${alpha})`;
+      lctx.lineWidth=frac>0.97?2:1;
+      lctx.shadowColor=i>n*0.95?col:'transparent';
+      lctx.shadowBlur=i>n*0.95?8:0;
+      lctx.beginPath();
+      lctx.moveTo(p1[0],p1[1]);
+      lctx.lineTo(p2[0],p2[1]);
+      lctx.stroke();
+    }
+    const last=h[h.length-1];
+    const hp=project3D(...last,W,H);
+    lctx.fillStyle=traj.color;
+    lctx.shadowColor=traj.color; lctx.shadowBlur=15;
+    lctx.beginPath(); lctx.arc(hp[0],hp[1],3.5,0,Math.PI*2); lctx.fill();
+    lctx.shadowBlur=0;
+  });
+
+  requestAnimationFrame(drawLorenz);
+}
+
+// ════════════════════════════════════════════
+// BIFURCATION DIAGRAM
+// ════════════════════════════════════════════
+function drawBifurcation(){
+  const c=$('bifurCanvas'); if(!c)return;
+  resize(c);
+  const W=c.width, H=c.height;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#030108'; ctx.fillRect(0,0,W,H);
+
+  const rMin=2.5, rMax=4.0;
+  const warmup=300, plot=200;
+
+  // FIX: was "ctx.fillStyle='r0,0.7)'" — corrupted rgba string
+  ctx.fillStyle='rgba(57,255,20,0.7)';
+
+  for(let px=0;px<W;px++){
+    const r=rMin+(rMax-rMin)*(px/W);
+    let x=0.5;
+    for(let i=0;i<warmup;i++) x=r*x*(1-x);
+    for(let i=0;i<plot;i++){
+      x=r*x*(1-x);
+      const py=H-H*x;
+      ctx.fillRect(px,Math.floor(py),1,1);
+    }
+  }
+
+  // axis labels
+  ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.font='11px monospace';
+  ctx.fillText('r=2.5',4,H-4); ctx.textAlign='right'; ctx.fillText('r=4.0',W-4,H-4);
+  ctx.textAlign='center'; ctx.fillText('x',W/2,H-4);
+  ctx.textAlign='left';
+  const markers=[{r:3.0,lbl:'Period 2'},{r:3.449,lbl:'Period 4'},{r:3.544,lbl:'P8'},{r:3.5699,lbl:'Chaos'}];
+  markers.forEach(({r,lbl})=>{
+    const px=(r-rMin)/(rMax-rMin)*W;
+    ctx.strokeStyle='rgba(255,45,85,0.5)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,H); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,45,85,0.8)'; ctx.font='9px monospace'; ctx.textAlign='center';
+    ctx.fillText(lbl,px,12);
+  });
+  ctx.textAlign='left';
+
+  c.addEventListener('mousemove',e=>{
+    const rect=c.getBoundingClientRect();
+    const px=(e.clientX-rect.left)*(W/rect.width);
+    const r=rMin+(rMax-rMin)*(px/W);
+    $('bifur-r').textContent=`r: ${r.toFixed(4)}`;
+    let period='chaotic';
+    let x=0.5;
+    for(let i=0;i<500;i++) x=r*x*(1-x);
+    const seed=x;
+    for(let p=1;p<=64;p++){
+      x=r*x*(1-x);
+      if(Math.abs(x-seed)<1e-6){ period=`${p}`; break; }
+    }
+    $('bifur-period').textContent=`Period: ${period}`;
+  });
+}
+
+// ════════════════════════════════════════════
+// DEMO PANEL CANVASES
+// ════════════════════════════════════════════
+function demoLoop(id,fn){
+  const c=$(id); if(!c)return;
+  let t=0;
+  function frame(){ resize(c); fn(c.getContext('2d'),c.width,c.height,t); t+=0.02; requestAnimationFrame(frame); }
+  frame();
+}
+
+// 1D Phase line
+demoLoop('d-phase1d',(ctx,W,H,t)=>{
+  ctx.fillStyle='#030108'; ctx.fillRect(0,0,W,H);
+  const ox=W*0.1, ex=W*0.9, ay=H*0.5;
+  ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(ox,ay); ctx.lineTo(ex,ay); ctx.stroke();
+  const r=2.8;
+  ctx.beginPath();
+  for(let i=0;i<=100;i++){
+    const x=i/100;
+    const fx=r*x*(1-x);
+    const px=ox+x*(ex-ox);
+    const py=ay-fx*(H*0.35);
+    i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  }
+  ctx.strokeStyle='#00f5ff'; ctx.lineWidth=2.5; ctx.shadowColor='#00f5ff'; ctx.shadowBlur=8; ctx.stroke(); ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(ox,ay); ctx.lineTo(ex,ay); ctx.stroke(); ctx.setLineDash([]);
+  [[0,'#ff2d55'],[1,'#39ff14']].forEach(([xfp,col])=>{
+    const px=ox+xfp*(ex-ox);
+    ctx.strokeStyle=col; ctx.lineWidth=2; ctx.shadowColor=col; ctx.shadowBlur=10;
+    ctx.beginPath(); ctx.arc(px,ay,7,0,Math.PI*2); ctx.stroke(); ctx.shadowBlur=0;
+    ctx.fillStyle=col; ctx.font='9px monospace'; ctx.textAlign='center';
+    ctx.fillText(xfp===0?'unstable':'stable',px,ay+22); ctx.textAlign='left';
+  });
+  const x0=0.05+Math.sin(t*0.3)*0.04;
+  let x=x0;
+  ctx.fillStyle='rgba(255,215,0,0.9)'; ctx.shadowColor='#ffd700'; ctx.shadowBlur=10;
+  for(let i=0;i<40;i++){
+    const nx=r*x*(1-x);
+    const px=ox+x*(ex-ox);
+    ctx.beginPath(); ctx.arc(px,ay,3,0,Math.PI*2); ctx.fill();
+    x=nx;
+  }
+  ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(0,245,255,0.5)'; ctx.font='10px monospace'; ctx.textAlign='center';
+  ctx.fillText('ẋ = rx(1-x)',W/2,20); ctx.textAlign='left';
+});
+
+// 2D Phase portrait (Van der Pol)
+(function(){
+  const c=$('d-phase2d'); if(!c)return;
+  let t=0;
+  const trajs=[];
+  let initialized=false;
+
+  // FIX: was "getBndingClientRect" — typo
+  c.addEventListener('click',e=>{
+    const rect=c.getBoundingClientRect();
+    const x=(e.clientX-rect.left)/rect.width*6-3;
+    const y=(e.clientY-rect.top)/rect.height*6-3;
+    trajs.push({x,y,hist:[],col:`hsl(${Math.random()*360},100%,65%)`});
+  });
+
+  function frame(){
+    resize(c);
+    const W=c.width, H=c.height;
+    const ctx=c.getContext('2d');
+    if(!initialized){
+      [[2.0,0],[0,2.0],[-1.5,1.5],[0.1,0.1]].forEach((p,i)=>{
+        trajs.push({x:p[0],y:p[1],hist:[],col:TRAJ_COLORS[i]});
+      });
+      initialized=true;
+    }
+    ctx.fillStyle='rgba(3,1,8,0.2)'; ctx.fillRect(0,0,W,H);
+
+    const toScreen=(x,y)=>[(x+3)/6*W, (3-y)/6*H];
+    const mu=1.5;
+
+    const gs=28;
+    for(let gx=0;gx<W;gx+=gs) for(let gy=0;gy<H;gy+=gs){
+      const x=(gx/W)*6-3, y=(3-gy/H*6);
+      const fx=y, fy=mu*(1-x*x)*y-x;
+      const mag=Math.sqrt(fx*fx+fy*fy)||1;
+      const len=10; const nx=fx/mag,ny=fy/mag;
+      ctx.strokeStyle='rgba(191,95,255,0.2)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(gx,gy); ctx.lineTo(gx+nx*len,gy-ny*len); ctx.stroke();
+    }
+
+    const dt=0.05;
+    trajs.forEach(tr=>{
+      const fx=tr.y, fy=mu*(1-tr.x*tr.x)*tr.y-tr.x;
+      tr.x+=fx*dt; tr.y+=fy*dt;
+      tr.hist.push([tr.x,tr.y]);
+      if(tr.hist.length>400)tr.hist.shift();
+      const h=tr.hist;
+      if(h.length>1){
+        ctx.beginPath();
+        h.forEach(([hx,hy],i)=>{
+          const [px,py]=toScreen(hx,hy);
+          i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+        });
+        ctx.strokeStyle=tr.col; ctx.lineWidth=1.5; ctx.globalAlpha=0.7;
+        ctx.shadowColor=tr.col; ctx.shadowBlur=4; ctx.stroke();
+        ctx.globalAlpha=1; ctx.shadowBlur=0;
+      }
+      const [hx,hy]=toScreen(tr.x,tr.y);
+      ctx.fillStyle=tr.col; ctx.shadowColor=tr.col; ctx.shadowBlur=10;
+      ctx.beginPath(); ctx.arc(hx,hy,3,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+    });
+    ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1;
+    const [ax0,ay0]=toScreen(0,-3), [ax1,ay1]=toScreen(0,3);
+    ctx.beginPath(); ctx.moveTo(ax0,ay0); ctx.lineTo(ax1,ay1); ctx.stroke();
+    const [bx0,by0]=toScreen(-3,0), [bx1,by1]=toScreen(3,0);
+    ctx.beginPath(); ctx.moveTo(bx0,by0); ctx.lineTo(bx1,by1); ctx.stroke();
+
+    t+=0.02; requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// Nullclines — Lotka-Volterra
+demoLoop('d-nullclines',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.25)'; ctx.fillRect(0,0,W,H);
+  const alpha=1.0,beta=0.5,delta=0.25,gamma=0.5;
+  const toS=(x,y)=>[x/3*W,H-y/3*H];
+  // FIX: was "/ x-nullcline:" — missing second slash
+  // x-nullcline: x=0 and y=alpha/beta=2
+  ctx.strokeStyle='rgba(0,245,255,0.6)'; ctx.lineWidth=2; ctx.shadowColor='#00f5ff'; ctx.shadowBlur=6;
+  ctx.beginPath(); ctx.moveTo(...toS(0,0)); ctx.lineTo(...toS(0,3)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(...toS(0,alpha/beta)); ctx.lineTo(...toS(3,alpha/beta)); ctx.stroke();
+  ctx.strokeStyle='rgba(255,45,85,0.6)'; ctx.shadowColor='#ff2d55';
+  ctx.beginPath(); ctx.moveTo(...toS(0,0)); ctx.lineTo(...toS(3,0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(...toS(gamma/delta,0)); ctx.lineTo(...toS(gamma/delta,3)); ctx.stroke();
+  ctx.shadowBlur=0;
+  const angle=t*0.6;
+  const cx=gamma/delta, cy=alpha/beta;
+  const rx=0.7+Math.sin(t*0.1)*0.1, ry=0.5+Math.sin(t*0.15)*0.05;
+  const px=cx+rx*Math.cos(angle), py=cy+ry*Math.sin(angle);
+  const [sx,sy]=toS(px,py);
+  ctx.fillStyle='#ffd700'; ctx.shadowColor='#ffd700'; ctx.shadowBlur=12;
+  ctx.beginPath(); ctx.arc(sx,sy,5,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+  const [fpx,fpy]=toS(cx,cy);
+  ctx.strokeStyle='#39ff14'; ctx.lineWidth=2; ctx.shadowColor='#39ff14'; ctx.shadowBlur=8;
+  ctx.beginPath(); ctx.arc(fpx,fpy,8,0,Math.PI*2); ctx.stroke(); ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='9px monospace';
+  ctx.fillText('Prey (x)',W-55,H-6);
+  ctx.fillText('Predator (y)',4,14);
+});
+
+// Stability — trace-det plane
+demoLoop('d-stability',(ctx,W,H,t)=>{
+  ctx.fillStyle='#030108'; ctx.fillRect(0,0,W,H);
+  // FIX: was "const ox=W/2, oy=H/" — incomplete expression
+  const ox=W/2, oy=H/2;
+  ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,oy); ctx.lineTo(W,oy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox,0); ctx.lineTo(ox,H); ctx.stroke();
+  ctx.beginPath();
+  for(let px=0;px<W;px++){
+    const tau=(px-ox)/(W*0.12);
+    const delta=tau*tau/4;
+    const py=oy-delta*(H*0.15);
+    px===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  }
+  ctx.strokeStyle='rgba(191,95,255,0.5)'; ctx.lineWidth=1.5; ctx.shadowColor='#bf5fff'; ctx.shadowBlur=5; ctx.stroke(); ctx.shadowBlur=0;
+  const regions=[
+    {x:W*0.25,y:H*0.35,lbl:'Stable\nSpiral',col:'#00f5ff'},
+    {x:W*0.75,y:H*0.35,lbl:'Unstable\nSpiral',col:'#ff2d55'},
+    {x:W*0.5,y:H*0.7,lbl:'Saddle',col:'#ffd700'},
+    {x:W*0.25,y:H*0.6,lbl:'Stable\nNode',col:'#39ff14'},
+    {x:W*0.75,y:H*0.6,lbl:'Unstable\nNode',col:'#ff6b35'},
+  ];
+  regions.forEach(({x,y,lbl,col})=>{
+    ctx.fillStyle=col+'44'; ctx.beginPath(); ctx.arc(x,y,22,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=col; ctx.font='8px monospace'; ctx.textAlign='center';
+    lbl.split('\n').forEach((l,i)=>ctx.fillText(l,x,y+i*11-3));
+  });
+  const tau=Math.cos(t*0.5)*2.5, delta=Math.sin(t*0.4)*1.5+1.5;
+  const px=ox+tau*(W*0.12), py=oy-delta*(H*0.15);
+  ctx.fillStyle='#fff'; ctx.shadowColor='#fff'; ctx.shadowBlur=12;
+  ctx.beginPath(); ctx.arc(px,py,5,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText('τ',ox+W*0.45,oy+14); ctx.fillText('Δ',ox+6,8); ctx.textAlign='left';
+});
+
+// ════════════════════════════════════════════
+// FEATURED PENDULUM PHASE PORTRAIT
+// ════════════════════════════════════════════
+(function(){
+  const c=$('feat-pendulum'); if(!c)return;
+  let t=0;
+  function frame(){
+    resize(c);
+    // FIX: was "cot W=c.width" — typo, should be "const"
+    const W=c.width, H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='rgba(3,1,8,0.2)'; ctx.fillRect(0,0,W,H);
+    const toS=(th,om)=>[(th+Math.PI*2.5)/(Math.PI*5)*W, H/2-om*(H*0.12)];
+    for(let th=-2.5*Math.PI;th<2.5*Math.PI;th+=0.05){
+      const H_val=2;
+      const om2=2*(H_val+Math.cos(th));
+      if(om2<0)continue;
+      const om=Math.sqrt(om2);
+      // FIX: was "[px2,py2oS(th,-om)" — missing "]=to"
+      const [px1,py1]=toS(th,om), [px2,py2]=toS(th,-om);
+      ctx.fillStyle='rgba(255,215,0,0.7)';
+      ctx.fillRect(px1,py1,2,2); ctx.fillRect(px2,py2,2,2);
+    }
+    const energies=[0.5,1.0,1.5,2.5,3.5];
+    energies.forEach((E,i)=>{
+      const col=E<2?`rgba(0,245,255,${0.5-i*0.08})`:`rgba(255,45,85,0.4)`;
+      ctx.beginPath();
+      let first=true;
+      for(let th=-2.8*Math.PI;th<2.8*Math.PI;th+=0.04){
+        const om2=2*(E+Math.cos(th));
+        if(om2<0){first=true;continue;}
+        const om=Math.sqrt(om2);
+        const [px,py]=toS(th,om);
+        first?ctx.moveTo(px,py):ctx.lineTo(px,py);
+        first=false;
+      }
+      ctx.strokeStyle=col; ctx.lineWidth=1.2; ctx.stroke();
+      ctx.beginPath(); first=true;
+      for(let th=-2.8*Math.PI;th<2.8*Math.PI;th+=0.04){
+        const om2=2*(E+Math.cos(th));
+        if(om2<0){first=true;continue;}
+        const om=-Math.sqrt(om2);
+        const [px,py]=toS(th,om);
+        first?ctx.moveTo(px,py):ctx.lineTo(px,py);
+        first=false;
+      }
+      ctx.strokeStyle=col; ctx.lineWidth=1.2; ctx.stroke();
+    });
+    const ph=t*1.2;
+    const tho=Math.cos(ph)*1.8;
+    const om_=Math.sqrt(Math.max(0,2*(1.8+Math.cos(tho))));
+    const oms=Math.sin(ph)<0?-om_:om_;
+    const [apx,apy]=toS(tho,oms);
+    ctx.fillStyle='#fff'; ctx.shadowColor='#fff'; ctx.shadowBlur=12;
+    ctx.beginPath(); ctx.arc(apx,apy,5,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.font='9px monospace';
+    ctx.fillText('θ →',W-30,H/2-6); ctx.fillText('ω ↑',4,12);
+    t+=0.02; requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// ════════════════════════════════════════════
+// ATTRACTOR DEMOS — fixed state update bug
+// ════════════════════════════════════════════
+function attractorLoop(id,stepFn,project,col){
+  const c=$(id); if(!c)return;
+  let state=[0.1,0,0]; let hist=[]; let t=0;
+  let rx=0.3, ry=0;
+  function frame(){
+    resize(c); const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='rgba(3,1,8,0.18)'; ctx.fillRect(0,0,W,H);
+    ry+=0.008;
+    for(let s=0;s<8;s++){
+      // FIX: was "stateate,0.005)" — missing "state=" assignment and correct var name
+      state=stepFn(state,0.005);
+      hist.push([...state]);
+      if(hist.length>1800)hist.shift();
+    }
+    if(hist.length>1){
+      const n=hist.length;
+      for(let i=1;i<n;i++){
+        const frac=i/n;
+        const [px1,py1]=project(hist[i-1],W,H,rx,ry);
+        const [px2,py2]=project(hist[i],W,H,rx,ry);
+        ctx.strokeStyle=col; ctx.lineWidth=frac>0.98?1.5:0.8;
+        ctx.globalAlpha=frac*frac*0.7;
+        ctx.beginPath(); ctx.moveTo(px1,py1); ctx.lineTo(px2,py2); ctx.stroke();
+      }
+      ctx.globalAlpha=1;
+      const last=hist[hist.length-1];
+      const [hpx,hpy]=project(last,W,H,rx,ry);
+      ctx.fillStyle='#fff'; ctx.shadowColor='#fff'; ctx.shadowBlur=10;
+      ctx.beginPath(); ctx.arc(hpx,hpy,3,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+    }
+    t+=0.02; requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function proj3d([x,y,z],W,H,rx,ry){
+  const cy=Math.cos(ry),sy=Math.sin(ry);
+  const cx=Math.cos(rx),sx=Math.sin(rx);
+  const x2=cy*x+sy*z, z2=-sy*x+cy*z;
+  const y2=cx*y-sx*z2;
+  const s=Math.min(W,H)*0.011;
+  return [W/2+x2*s, H/2-y2*s];
+}
+
+// Lorenz in demo — stepFn must RETURN new state
+attractorLoop('d-attr-lorenz',
+  ([x,y,z],dt)=>{
+    const s=10,r=28,b=8/3;
+    return [x+s*(y-x)*dt, y+(x*(r-z)-y)*dt, z+(x*y-b*z)*dt];
+  }, proj3d, '#00f5ff'
+);
+
+// Rössler
+attractorLoop('d-attr-rossler',
+  ([x,y,z],dt)=>{
+    const a=0.2,b=0.2,c=5.7;
+    return [x+(-y-z)*dt, y+(x+a*y)*dt, z+(b+z*(x-c))*dt];
+  },
+  ([x,y,z],W,H,rx,ry)=>{
+    const s=Math.min(W,H)*0.06;
+    return [W/2+(x*Math.cos(ry)-z*Math.sin(ry))*s, H/2-(y*Math.cos(rx))*s];
+  },
+  // FIX: was "'ff2d55'" — missing leading '#'
+  '#ff2d55'
+);
+
+// Thomas
+attractorLoop('d-attr-thomas',
+  ([x,y,z],dt)=>{
+    const b=0.19;
+    return [x+(Math.sin(y)-b*x)*dt, y+(Math.sin(z)-b*y)*dt, z+(Math.sin(x)-b*z)*dt];
+  }, proj3d, '#bf5fff'
+);
+
+// Duffing
+(function(){
+  const c=$('d-attr-duffing'); if(!c)return;
+  let x=0.1,vx=0,time=0; let hist=[];
+  function frame(){
+    resize(c); const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='rgba(3,1,8,0.2)'; ctx.fillRect(0,0,W,H);
+    const dt=0.02, delta=0.3, alpha=-1, beta=1, gamma=0.37, omega=1.2;
+    for(let s=0;s<4;s++){
+      const ax=-delta*vx-alpha*x-beta*x*x*x+gamma*Math.cos(omega*time);
+      vx+=ax*dt; x+=vx*dt; time+=dt;
+      hist.push([x,vx]);
+      if(hist.length>1500)hist.shift();
+    }
+    if(hist.length>1){
+      const n=hist.length;
+      for(let i=1;i<n;i++){
+        const [x1,v1]=hist[i-1],[x2,v2]=hist[i];
+        const px1=W/2+x1*(W*0.22),py1=H/2-v1*(H*0.18);
+        const px2=W/2+x2*(W*0.22),py2=H/2-v2*(H*0.18);
+        const frac=i/n;
+        ctx.strokeStyle=`rgba(57,255,20,${frac*frac*0.8})`;
+        ctx.lineWidth=0.8; ctx.beginPath(); ctx.moveTo(px1,py1); ctx.lineTo(px2,py2); ctx.stroke();
+      }
+      const [lx,lv]=hist[hist.length-1];
+      const fpx=W/2+lx*(W*0.22),fpy=H/2-lv*(H*0.18);
+      ctx.fillStyle='#fff'; ctx.shadowColor='#fff'; ctx.shadowBlur=10;
+      ctx.beginPath(); ctx.arc(fpx,fpy,3,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+// ════════════════════════════════════════════
+// CARD MINI CANVASES
+// ════════════════════════════════════════════
+function miniLoop(id,fn){
+  const c=$(id); if(!c)return;
+  let t=0;
+  function frame(){ resize(c); fn(c.getContext('2d'),c.width,c.height,t); t+=0.025; requestAnimationFrame(frame); }
+  frame();
+}
+
+// Section 1 minis
+// FIX: was "ctx.fillStyle='rgba(3,1,8fillRect(0,0,W,H)" — corrupted string, missing closing quote
+miniLoop('m1c1',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  const n=16,gs=Math.min(W,H)/n;
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){
+    const x=i/n*4-2, y=j/n*4-2;
+    const fx=-y+x*(1-x*x-y*y)*0.5, fy=x+y*(1-x*x-y*y)*0.5;
+    const mag=Math.sqrt(fx*fx+fy*fy)||1;
+    const px=(i+0.5)*gs+(W-n*gs)/2, py=(j+0.5)*gs+(H-n*gs)/2;
+    const len=gs*0.4; const hue=(Math.atan2(fy,fx)/Math.PI*180+t*10+360)%360;
+    ctx.strokeStyle=`hsla(${hue},100%,65%,0.55)`; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+fx/mag*len,py-fy/mag*len); ctx.stroke();
+  }
+});
+
+miniLoop('m1c2',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  const ox=W/2,oy=H/2;
+  ctx.beginPath();
+  for(let s=0;s<300;s++){
+    const angle=s*0.15+t;
+    const r=Math.max(0.1,2.5-s*0.008);
+    const px=ox+Math.cos(angle)*r*(W*0.14);
+    const py=oy+Math.sin(angle)*r*(H*0.14);
+    s===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  }
+  ctx.strokeStyle='rgba(0,245,255,0.6)'; ctx.lineWidth=1.5; ctx.shadowColor='#00f5ff'; ctx.shadowBlur=6; ctx.stroke(); ctx.shadowBlur=0;
+  ctx.fillStyle='#39ff14'; ctx.shadowColor='#39ff14'; ctx.shadowBlur=10;
+  ctx.beginPath(); ctx.arc(ox,oy,5,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+});
+
+miniLoop('m1c3',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.2)'; ctx.fillRect(0,0,W,H);
+  const ox=W/2,oy=H/2,R=Math.min(W,H)*0.33;
+  ctx.beginPath(); ctx.arc(ox,oy,R,0,Math.PI*2);
+  ctx.strokeStyle='rgba(57,255,20,0.5)'; ctx.lineWidth=2; ctx.shadowColor='#39ff14'; ctx.shadowBlur=8; ctx.stroke(); ctx.shadowBlur=0;
+  [0.5,0.7,1.4].forEach((r0,i)=>{
+    ctx.beginPath();
+    for(let s=0;s<120;s++){
+      const angle=s*0.12+i*2.1+t*0.5;
+      const r=r0>1?r0-s*0.003:r0+s*0.003;
+      const clr=r0>1?Math.max(R*0.1,r*(R*0.85)):Math.min(R,r*(R*1.15));
+      const px=ox+Math.cos(angle)*clr, py=oy+Math.sin(angle)*clr;
+      s===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+    }
+    ctx.strokeStyle='rgba(191,95,255,0.4)'; ctx.lineWidth=1.2; ctx.stroke();
+  });
+  const angle=t*1.5;
+  ctx.fillStyle='#fff'; ctx.shadowColor='#fff'; ctx.shadowBlur=10;
+  ctx.beginPath(); ctx.arc(ox+Math.cos(angle)*R,oy+Math.sin(angle)*R,4,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+});
+
+miniLoop('m1c4',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.2)'; ctx.fillRect(0,0,W,H);
+  const ox=W/2,oy=H/2;
+  const phase=t;
+  const x=ox+Math.cos(phase)*W*0.3;
+  const y=oy-Math.sin(phase*1.3)*H*0.25;
+  for(let i=0;i<60;i++){
+    const p=phase-i*0.05;
+    const tx=ox+Math.cos(p)*W*0.3, ty=oy-Math.sin(p*1.3)*H*0.25;
+    ctx.fillStyle=`rgba(57,255,20,${(60-i)/60*0.5})`;
+    ctx.beginPath(); ctx.arc(tx,ty,2,0,Math.PI*2); ctx.fill();
+  }
+  ctx.fillStyle='#39ff14'; ctx.shadowColor='#39ff14'; ctx.shadowBlur=10;
+  ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(0,245,255,0.4)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText('prey ↔ predator',W/2,H-6); ctx.textAlign='left';
+});
+
+miniLoop('m1c5',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.2)'; ctx.fillRect(0,0,W,H);
+  const ox=W/2,oy=H/2;
+  const energies=[0.3,0.8,1.4,2.2];
+  energies.forEach((E,i)=>{
+    const col=E>1.8?'rgba(255,45,85,0.5)':`rgba(0,245,255,${0.6-i*0.1})`;
+    ctx.beginPath();
+    const npts=80;
+    for(let j=0;j<=npts;j++){
+      const th=(j/npts)*Math.PI*2-Math.PI;
+      const ke=E-(-Math.cos(th));
+      if(ke<0)continue;
+      const om=Math.sqrt(2*ke);
+      const px=ox+th*(W*0.15), py=oy-om*(H*0.12);
+      j===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+    }
+    ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.beginPath();
+    for(let j=0;j<=npts;j++){
+      const th=(j/npts)*Math.PI*2-Math.PI;
+      const ke=E-(-Math.cos(th));
+      if(ke<0)continue;
+      const om=-Math.sqrt(2*ke);
+      const px=ox+th*(W*0.15), py=oy-om*(H*0.12);
+      j===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+    }
+    ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.stroke();
+  });
+  ctx.fillStyle='rgba(255,215,0,0.6)';
+  [-Math.PI,0,Math.PI].forEach(th=>{
+    ctx.beginPath(); ctx.arc(ox+th*(W*0.15),oy,4,0,Math.PI*2); ctx.fill();
+  });
+});
+
+// Section 2 minis
+miniLoop('m2c1',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.2)'; ctx.fillRect(0,0,W,H);
+  const ox=W*0.1, oy=H/2;
+  const lambda=0.15;
+  for(let i=0;i<2;i++){
+    const eps=i===0?0:0.01;
+    ctx.beginPath();
+    for(let s=0;s<120;s++){
+      const x=ox+s*(W*0.007);
+      const y=oy+(eps*Math.exp(lambda*s)-eps)*H*2+Math.sin(s*0.3+i)*8;
+      s===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle=i===0?'#00f5ff':'#ff2d55'; ctx.lineWidth=2;
+    ctx.shadowColor=i===0?'#00f5ff':'#ff2d55'; ctx.shadowBlur=6; ctx.stroke(); ctx.shadowBlur=0;
+  }
+  ctx.fillStyle='rgba(255,215,0,0.5)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText('|δx| ~ eλt',W/2,H-6); ctx.textAlign='left';
+});
+
+miniLoop('m2c2',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  const r=3.7, n=80;
+  const toS=(x,y)=>[x*W,H-y*H];
+  ctx.strokeStyle='rgba(57,255,20,0.4)'; ctx.lineWidth=1; ctx.beginPath();
+  for(let px=0;px<=100;px++){
+    const x=px/100;
+    const y=r*x*(1-x);
+    const [sx,sy]=toS(x,y);
+    px===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy);
+  }
+  ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,H); ctx.lineTo(W,0); ctx.stroke();
+  let x=0.2+Math.sin(t*0.05)*0.1;
+  ctx.beginPath(); ctx.moveTo(...toS(x,x));
+  ctx.strokeStyle='rgba(255,45,85,0.7)'; ctx.lineWidth=1.2;
+  for(let i=0;i<n;i++){
+    const nx=r*x*(1-x);
+    ctx.lineTo(...toS(x,nx));
+    ctx.lineTo(...toS(nx,nx));
+    x=nx;
+  }
+  ctx.stroke();
+});
+
+miniLoop('m2c3',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.2)'; ctx.fillRect(0,0,W,H);
+  const n=50;
+  for(let i=0;i<n;i++){
+    const frac=i/n;
+    const x0=W*0.1+frac*W*0.8;
+    const y0=H*0.7;
+    const x1=W*0.1+frac*W*0.4*Math.abs(Math.sin(frac*Math.PI));
+    const y1_=H*0.3+Math.sin(frac*Math.PI)*H*0.3;
+    const hue=(frac*360+t*30)%360;
+    ctx.strokeStyle=`hsla(${hue},100%,65%,0.6)`; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1_); ctx.stroke();
+    ctx.fillStyle=`hsla(${hue},100%,65%,0.8)`;
+    ctx.beginPath(); ctx.arc(x0,y0,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x1,y1_,2,0,Math.PI*2); ctx.fill();
+  }
+});
+
+miniLoop('m2c4',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  const n=400;
+  ctx.fillStyle='rgba(191,95,255,0.6)';
+  for(let i=0;i<n;i++){
+    const angle=i*2.39996+t*0.01;
+    const r=0.3+((i*137.5)%100)/100*0.5;
+    const x=W/2+Math.cos(angle)*r*W*0.4;
+    const y=H/2+Math.sin(angle*1.618)*r*H*0.35;
+    ctx.beginPath(); ctx.arc(x,y,1.5,0,Math.PI*2); ctx.fill();
+  }
+  ctx.fillStyle='rgba(255,215,0,0.4)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText('Poincaré Section',W/2,H-6); ctx.textAlign='left';
+});
+
+miniLoop('m2c5',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  const ox=W*0.1, ex=W*0.9, oy=H*0.5;
+  const draw=(x,y,dx,dy,depth)=>{
+    if(depth>4)return;
+    const px1=ox+(x)*( ex-ox), py1=oy-y*(H*0.38);
+    const nx1=x-dx/2, nx2=x+dx/2, ny=y+dy;
+    const px2=ox+nx1*(ex-ox), py2=oy-ny*(H*0.38);
+    const px3=ox+nx2*(ex-ox), py3=py2;
+    const hue=200+depth*30;
+    ctx.strokeStyle=`hsla(${hue},100%,65%,${0.8-depth*0.12})`; ctx.lineWidth=2-depth*0.3;
+    ctx.shadowColor=`hsl(${hue},100%,65%)`; ctx.shadowBlur=4;
+    ctx.beginPath(); ctx.moveTo(px1,py1); ctx.lineTo(px2,py2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px1,py1); ctx.lineTo(px3,py3); ctx.stroke();
+    ctx.shadowBlur=0;
+    draw(nx1,ny,dx/2,dy*0.7,depth+1);
+    draw(nx2,ny,dx/2,dy*0.7,depth+1);
+  };
+  draw(0.5,-0.1,0.7,0.25,0);
+});
+
+miniLoop('m2c6',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  let x=0.6, hist=[];
+  const r=3.9;
+  for(let i=0;i<500;i++){ x=r*x*(1-x); hist.push(x); }
+  ctx.fillStyle='rgba(0,245,255,0.5)';
+  for(let i=1;i<hist.length-1;i++){
+    const px=hist[i-1]*W, py=H-hist[i]*H;
+    ctx.beginPath(); ctx.arc(px,py,1.2,0,Math.PI*2); ctx.fill();
+  }
+  ctx.fillStyle='rgba(255,215,0,0.4)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText('Delay Embedding',W/2,H-6); ctx.textAlign='left';
+});
+
+// Section 3 minis (bifurcations)
+miniLoop('m3c1',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  const ox=W*0.1,ex=W*0.9,oy=H/2;
+  ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ex,oy); ctx.stroke();
+  [-1,-0.3,0,0.5].forEach((r,i)=>{
+    const col=r<0?'#00f5ff':r===0?'#ffd700':'#ff2d55';
+    ctx.beginPath();
+    for(let px=0;px<=100;px++){
+      const x=(px/100)*4-2;
+      const fx=r+x*x;
+      const spx=ox+(x+2)/4*(ex-ox), spy=oy-fx*(H*0.08);
+      px===0?ctx.moveTo(spx,spy):ctx.lineTo(spx,spy);
+    }
+    ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.stroke();
+  });
+  ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText('ẋ = r + x²',W/2,H-6); ctx.textAlign='left';
+});
+
+miniLoop('m3c2',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  const ox=W*0.2,ex=W*0.9,oy=H/2;
+  ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(W*0.1,oy); ctx.lineTo(W,oy); ctx.stroke();
+  // FIX: was "ctx.strokyle" — typo, should be strokeStyle
+  ctx.strokeStyle='#39ff14'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(W*0.5,oy); ctx.stroke();
+  ctx.strokeStyle='rgba(255,45,85,0.6)'; ctx.lineWidth=2; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(W*0.5,oy); ctx.lineTo(ex,oy); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.strokeStyle='#39ff14'; ctx.lineWidth=2;
+  for(let s=-1;s<=1;s+=2){
+    ctx.beginPath();
+    for(let px=0;px<=60;px++){
+      const r=(px/60)*2;
+      const x=s*Math.sqrt(Math.max(0,r));
+      const spx=W*0.5+r*(ex-W*0.5)/2, spy=oy-x*(H*0.22);
+      px===0?ctx.moveTo(spx,spy):ctx.lineTo(spx,spy);
+    }
+    ctx.stroke();
+  }
+  ctx.fillStyle='rgba(255,215,0,0.4)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText('ẋ = rx - x³',W/2,H-6); ctx.textAlign='left';
+});
+
+miniLoop('m3c3',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.2)'; ctx.fillRect(0,0,W,H);
+  const ox=W/2,oy=H/2;
+  const mu=Math.sin(t*0.4)*0.8+0.9;
+  // FIX: was "ctx.beginPath()   for" — missing semicolon between statements
+  if(mu<0.5){
+    ctx.beginPath();
+    for(let s=0;s<150;s++){
+      const angle=s*0.15, r=Math.max(0.1,3-s*0.02)*mu;
+      ctx.lineTo(ox+Math.cos(angle+t)*r*(W*0.12),oy+Math.sin(angle+t)*r*(H*0.12));
+    }
+    ctx.strokeStyle='rgba(0,245,255,0.5)'; ctx.lineWidth=1.5; ctx.stroke();
+  }
+  const R=(mu-0.4)*W*0.22;
+  if(R>2){
+    ctx.beginPath(); ctx.arc(ox,oy,R,0,Math.PI*2);
+    ctx.strokeStyle='rgba(57,255,20,0.7)'; ctx.lineWidth=2; ctx.shadowColor='#39ff14'; ctx.shadowBlur=8; ctx.stroke(); ctx.shadowBlur=0;
+    const ang=t*2;
+    ctx.fillStyle='#fff'; ctx.shadowColor='#fff'; ctx.shadowBlur=8;
+    ctx.beginPath(); ctx.arc(ox+Math.cos(ang)*R,oy+Math.sin(ang)*R,4,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+  }
+  ctx.fillStyle='rgba(255,215,0,0.4)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText('Hopf: μ='+(mu).toFixed(2),W/2,H-6); ctx.textAlign='left';
+});
+
+// Section 4 minis (attractors/fractals)
+miniLoop('m4c1',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  const sizes=[4,8,16,32];
+  const frame_idx=Math.floor(t*0.5)%sizes.length;
+  const gs=sizes[frame_idx];
+  const bw=W/gs,bh=H/gs;
+  let count=0;
+  for(let i=0;i<gs;i++) for(let j=0;j<gs;j++){
+    const x=i/gs,y=j/gs;
+    if((i&j)===0 && Math.sin(x*10+y*7)>0.1){
+      ctx.fillStyle=`rgba(191,95,255,${0.4+Math.random()*0.3})`;
+      ctx.fillRect(i*bw,j*bh,bw-1,bh-1); count++;
+    }
+  }
+  ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=0.5;
+  for(let i=0;i<=gs;i++){
+    ctx.beginPath(); ctx.moveTo(i*bw,0); ctx.lineTo(i*bw,H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,i*bh); ctx.lineTo(W,i*bh); ctx.stroke();
+  }
+  ctx.fillStyle='rgba(191,95,255,0.7)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText(`N=${count} at r=1/${gs}`,W/2,H-6); ctx.textAlign='left';
+});
+
+miniLoop('m4c2',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  // IFS chaos game — Sierpinski
+  let x=0.5,y=0.5;
+  const maps=[
+    [0.5,0,0,0.5,0,0],[0.5,0,0,0.5,0.5,0],[0.5,0,0,0.5,0.25,0.5]
+  ];
+  ctx.fillStyle='rgba(255,215,0,0.6)';
+  for(let i=0;i<2000;i++){
+    const m=maps[Math.floor(Math.random()*3)];
+    const nx=m[0]*x+m[1]*y+m[4];
+    const ny=m[2]*x+m[3]*y+m[5];
+    x=nx; y=ny;
+    if(i>10) ctx.fillRect(x*W,H-y*H,1.5,1.5);
+  }
+});
+
+miniLoop('m4c3',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  const maxIter=80;
+  const zoom=2.5+Math.sin(t*0.05)*0.3;
+  const cx_=-0.5+Math.sin(t*0.02)*0.1;
+  const cy_=Math.cos(t*0.03)*0.1;
+  const step=3;
+  for(let py=0;py<H;py+=step) for(let px=0;px<W;px+=step){
+    const c_r=(px/W-0.5)*zoom+cx_, c_i=(py/H-0.5)*zoom*H/W+cy_;
+    let zr=0,zi=0,n=0;
+    while(n<maxIter&&zr*zr+zi*zi<4){
+      const tmp=zr*zr-zi*zi+c_r;
+      zi=2*zr*zi+c_i; zr=tmp; n++;
+    }
+    if(n<maxIter){
+      const hue=(n/maxIter*360+t*20)%360;
+      ctx.fillStyle=`hsl(${hue},100%,${40+n/maxIter*30}%)`;
+      ctx.fillRect(px,py,step,step);
+    } else {
+      ctx.fillStyle='#030108'; ctx.fillRect(px,py,step,step);
+    }
+  }
+});
+
+// Section 5 minis
+miniLoop('m5c1',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.2)'; ctx.fillRect(0,0,W,H);
+  const ox=W/2,oy=H/2,R=Math.min(W,H)*0.34;
+  ctx.beginPath();
+  for(let s=0;s<200;s++){
+    const a=s*0.4+t, r2=R*(0.8+Math.sin(s*0.3+t)*0.2);
+    const px=ox+Math.cos(a)*r2, py=oy+Math.sin(a)*r2;
+    s===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  }
+  ctx.strokeStyle='rgba(255,45,85,0.3)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.beginPath(); ctx.arc(ox,oy,R,0,Math.PI*2);
+  ctx.strokeStyle='rgba(57,255,20,0.6)'; ctx.lineWidth=2; ctx.shadowColor='#39ff14'; ctx.shadowBlur=8; ctx.stroke(); ctx.shadowBlur=0;
+  const ang=t*1.5;
+  ctx.fillStyle='#fff'; ctx.shadowColor='#fff'; ctx.shadowBlur=10;
+  ctx.beginPath(); ctx.arc(ox+Math.cos(ang)*R,oy+Math.sin(ang)*R,4,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(57,255,20,0.5)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText('OGY Control',W/2,H-6); ctx.textAlign='left';
+});
+
+miniLoop('m5c2',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  const step=5;
+  for(let y=0;y<H;y+=step) for(let x=0;x<W;x+=step){
+    const v=Math.sin(x*0.15+t)*Math.cos(y*0.12-t*0.7)+
+             Math.sin(x*0.08-y*0.1+t*0.5)*0.5;
+    const c=(v+1.5)/3;
+    const hue=c*180+160;
+    ctx.fillStyle=`hsl(${hue},80%,${30+c*40}%)`;
+    ctx.fillRect(x,y,step,step);
+  }
+});
+
+miniLoop('m5c3',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.2)'; ctx.fillRect(0,0,W,H);
+  ctx.beginPath();
+  const total=120;
+  for(let i=0;i<total;i++){
+    const phase=i/total;
+    let v;
+    if(phase<0.1)      v=0;
+    else if(phase<0.2) v=(phase-0.1)/0.1*100-70+70;
+    else if(phase<0.35)v=100-(phase-0.2)/0.15*170;
+    else if(phase<0.6) v=-70+(phase-0.35)/0.25*30;
+    else               v=-40+(phase-0.6)/0.4*40;
+    const px=i/total*W, py=H/2-v*(H*0.0025);
+    i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  }
+  ctx.strokeStyle='#00f5ff'; ctx.lineWidth=2.5; ctx.shadowColor='#00f5ff'; ctx.shadowBlur=8; ctx.stroke(); ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,H/2+70*H*0.0025); ctx.lineTo(W,H/2+70*H*0.0025); ctx.stroke();
+  ctx.fillStyle='rgba(0,245,255,0.4)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText('Action Potential',W/2,H-6); ctx.textAlign='left';
+});
+
+miniLoop('m5c4',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  const ox=W/2,oy=H/2;
+  [0.15,0.28,0.4,0.52].forEach((r,i)=>{
+    const pts=800;
+    ctx.beginPath();
+    for(let j=0;j<pts;j++){
+      const omega=1+i*Math.sqrt(2)*0.15;
+      const theta=(j/pts)*Math.PI*2*40;
+      const R=r*Math.min(W,H)*0.46;
+      const px=ox+Math.cos(theta)*R+Math.cos(theta*omega+t)*R*0.1;
+      const py=oy+Math.sin(theta)*R+Math.sin(theta*omega+t)*R*0.1;
+      j===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+    }
+    const hue=i*50+160;
+    ctx.strokeStyle=`hsla(${hue},100%,60%,0.4)`; ctx.lineWidth=1; ctx.stroke();
+  });
+  for(let i=0;i<80;i++){
+    const angle=i*2.618+t*0.1;
+    const r=0.6+Math.random()*0.1;
+    const R=r*Math.min(W,H)*0.46;
+    ctx.fillStyle='rgba(255,45,85,0.3)';
+    ctx.beginPath(); ctx.arc(ox+Math.cos(angle)*R,oy+Math.sin(angle)*R,1.5,0,Math.PI*2); ctx.fill();
+  }
+});
+
+miniLoop('m5c5',(ctx,W,H,t)=>{
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  const rMin=3.5+Math.sin(t*0.1)*0.05;
+  const rMax=3.58+Math.sin(t*0.1)*0.05;
+  for(let px=0;px<W;px++){
+    const r=rMin+(rMax-rMin)*(px/W);
+    let x=0.5;
+    for(let i=0;i<400;i++) x=r*x*(1-x);
+    for(let i=0;i<100;i++){
+      x=r*x*(1-x);
+      const py=H-x*H;
+      ctx.fillStyle='rgba(57,255,20,0.6)'; ctx.fillRect(px,Math.floor(py),1,1);
+    }
+  }
+  ctx.fillStyle='rgba(255,215,0,0.5)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText('zoom: δ≈4.669',W/2,H-6); ctx.textAlign='left';
+});
+
+miniLoop('m5c6',(ctx,W,H,t)=>{
+  // FIX: was ".fillStyle=" — missing "ctx."
+  ctx.fillStyle='rgba(3,1,8,0.3)'; ctx.fillRect(0,0,W,H);
+  const n=8;
+  for(let mode=0;mode<n;mode++){
+    const freq=mode+1, amp=1/(mode+1);
+    ctx.beginPath();
+    for(let px=0;px<W;px++){
+      const phase=px/W*Math.PI*2*freq-t*(mode+1)*0.3;
+      const y=H*(0.2+mode*0.07)+Math.sin(phase)*amp*(H*0.05);
+      px===0?ctx.moveTo(px,y):ctx.lineTo(px,y);
+    }
+    const hue=(mode/n*360+200)%360;
+    ctx.strokeStyle=`hsla(${hue},100%,60%,${0.8-mode*0.07})`;
+    ctx.lineWidth=1.5; ctx.stroke();
+  }
+  ctx.fillStyle='rgba(255,215,0,0.4)'; ctx.font='9px monospace'; ctx.textAlign='center';
+  ctx.fillText('DMD Modes',W/2,H-6); ctx.textAlign='left';
+});
+
+// ════════════════════════════════════════════
+// SCROLL ANIMATION
+// ════════════════════════════════════════════
+function initScrollAnim(){
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
+  },{threshold:0.08});
+  document.querySelectorAll('.card,.stat-item').forEach((el,i)=>{
+    el.style.animationDelay=`${(i%6)*0.07}s`;
+    obs.observe(el);
+  });
+}
+
+// ════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  initLorenz();
+  drawLorenz();
+  drawBifurcation();
+  initScrollAnim();
+});
+</script>
+</body>
+</html>

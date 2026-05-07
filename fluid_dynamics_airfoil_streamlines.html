@@ -1,0 +1,269 @@
+
+<h2 class="sr-only">Interactive fluid dynamics visualization showing streamlines and pressure distribution around an airfoil, demonstrating how lift is generated through Bernoulli's principle and the Navier-Stokes equations.</h2>
+
+<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+  <div style="flex:1;min-width:180px">
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:4px">Angle of attack α</div>
+    <input type="range" id="aoa" min="-10" max="25" step="0.5" value="8" style="width:100%">
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px"><span style="color:var(--color-text-secondary)">−10°</span><strong id="aoa-v">8°</strong><span style="color:var(--color-text-secondary)">25°</span></div>
+  </div>
+  <div style="flex:1;min-width:180px">
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:4px">Flow speed</div>
+    <input type="range" id="flowspeed" min="0.5" max="2.5" step="0.1" value="1.5" style="width:100%">
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px"><span style="color:var(--color-text-secondary)">slow</span><strong id="fs-v">1.5</strong><span style="color:var(--color-text-secondary)">fast</span></div>
+  </div>
+  <div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+      <input type="checkbox" id="pressureMode" onchange="redraw()"> Show pressure
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;margin-top:4px">
+      <input type="checkbox" id="velocityMode" checked onchange="redraw()"> Show velocity vectors
+    </label>
+  </div>
+</div>
+
+<canvas id="flowCanvas" width="680" height="340" style="width:100%;border-radius:var(--border-radius-lg);display:block"></canvas>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0">
+  <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px">
+    <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:3px">Lift coefficient C<sub>L</sub></div>
+    <div id="cl-v" style="font-size:20px;font-weight:500">—</div>
+  </div>
+  <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px">
+    <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:3px">Drag coefficient C<sub>D</sub></div>
+    <div id="cd-v" style="font-size:20px;font-weight:500">—</div>
+  </div>
+  <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px">
+    <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:3px">L/D ratio</div>
+    <div id="ld-v" style="font-size:20px;font-weight:500">—</div>
+  </div>
+  <div id="stall-card" style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px">
+    <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:3px">Status</div>
+    <div id="stall-v" style="font-size:20px;font-weight:500">Flying</div>
+  </div>
+</div>
+
+<div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px;font-size:13px;color:var(--color-text-secondary);line-height:1.6">
+  <strong style="font-weight:500;color:var(--color-text-primary)">The Navier–Stokes equations</strong> govern fluid flow: ρ(∂v/∂t + v·∇v) = −∇p + μ∇²v + F. They encode how pressure (p), viscosity (μ), and velocity (v) interact. Solving them around the wing shape — a boundary value problem — reveals the pressure differential: faster flow above = lower pressure (Bernoulli) = net upward force = <strong style="font-weight:500;color:var(--color-text-primary)">lift</strong>. Stall occurs when the angle of attack is so steep that flow separates from the upper surface and the pressure difference collapses.
+</div>
+
+<script>
+const c = document.getElementById('flowCanvas');
+const ctx = c.getContext('2d');
+const W=680, H=340;
+let animId = null, phase = 0;
+
+function getAoa(){ return parseFloat(document.getElementById('aoa').value)*Math.PI/180; }
+function getSpeed(){ return parseFloat(document.getElementById('flowspeed').value); }
+
+document.getElementById('aoa').oninput = function(){
+  document.getElementById('aoa-v').textContent = parseFloat(this.value).toFixed(1)+'°';
+  computeLiftDrag(); redraw();
+};
+document.getElementById('flowspeed').oninput = function(){
+  document.getElementById('fs-v').textContent = parseFloat(this.value).toFixed(1);
+  redraw();
+};
+
+function naca4(x, t=0.12){
+  if(x<0||x>1) return 0;
+  return 5*t*(0.2969*Math.sqrt(x)-0.1260*x-0.3516*x*x+0.2843*x*x*x-0.1015*x*x*x*x);
+}
+
+function getAirfoilPoints(cx, cy, chord, aoaRad){
+  const pts = [];
+  const N=80;
+  for(let i=0;i<=N;i++){
+    const t=i/N;
+    const x=t;
+    const yu=naca4(x)*chord;
+    const yl=-naca4(x)*chord;
+    const wx=x*chord, wy=yu;
+    const cos=Math.cos(-aoaRad), sin=Math.sin(-aoaRad);
+    pts.push({x:cx+wx*cos-wy*sin, y:cy+wx*sin+wy*cos});
+  }
+  for(let i=N;i>=0;i--){
+    const t=i/N;
+    const x=t;
+    const yl=-naca4(x)*chord;
+    const wx=x*chord, wy=yl;
+    const cos=Math.cos(-aoaRad), sin=Math.sin(-aoaRad);
+    pts.push({x:cx+wx*cos-wy*sin, y:cy+wx*sin+wy*cos});
+  }
+  return pts;
+}
+
+function isInsideAirfoil(px, py, cx, cy, chord, aoaRad){
+  const cos=Math.cos(aoaRad), sin=Math.sin(aoaRad);
+  const dx=px-cx, dy=py-cy;
+  const lx=dx*cos+dy*sin, ly=-dx*sin+dy*cos;
+  if(lx<0||lx>chord) return false;
+  const t=lx/chord;
+  const hu=naca4(t)*chord;
+  return ly>=-hu && ly<=hu;
+}
+
+function streamlineVelocity(px, py, cx, cy, chord, aoaRad, freeU, freeV){
+  const cos=Math.cos(aoaRad), sin=Math.sin(aoaRad);
+  const dx=px-cx, dy=py-cy;
+  const lx=dx*cos+dy*sin, ly=-dx*sin+dy*cos;
+
+  const panels=20;
+  let u=freeU, v=freeV;
+  const t=Math.max(0,Math.min(1,(lx/chord)));
+  const thick=naca4(t)*chord;
+  const distToSurface=Math.abs(ly)-thick;
+  const dist2=Math.sqrt(lx*lx+ly*ly);
+
+  if(dist2 < chord*2.5 && dist2 > 0){
+    const strength=chord*0.35*Math.sin(aoaRad+0.15);
+    u += -strength*ly/(dist2*dist2)*1.2;
+    v +=  strength*lx/(dist2*dist2)*1.2;
+    const srcStr=chord*0.08;
+    u += srcStr*lx/(dist2*dist2+0.01);
+    v += srcStr*ly/(dist2*dist2+0.01);
+  }
+  return {u,v};
+}
+
+function computeLiftDrag(){
+  const aoa=parseFloat(document.getElementById('aoa').value);
+  const stall = aoa>16;
+  const clRaw = stall ? Math.max(0.3, 1.5-0.08*(aoa-16)) : 0.11*(aoa+2);
+  const cl = Math.max(-0.2, Math.min(1.6, clRaw));
+  const cd = 0.01 + cl*cl/20 + (stall?0.3:0);
+  const ld = cd>0 ? cl/cd : 0;
+  document.getElementById('cl-v').textContent = cl.toFixed(3);
+  document.getElementById('cd-v').textContent = cd.toFixed(3);
+  document.getElementById('ld-v').textContent = ld.toFixed(1);
+  const sv = document.getElementById('stall-v');
+  const sc = document.getElementById('stall-card');
+  if(stall){
+    sv.textContent='STALL'; sv.style.color='var(--color-text-danger)';
+    sc.style.background='var(--color-background-danger)';
+  } else if(cl>0.8){
+    sv.textContent='Climbing'; sv.style.color='var(--color-text-success)';
+    sc.style.background='var(--color-background-success)';
+  } else {
+    sv.textContent='Cruising'; sv.style.color=''; sc.style.background='var(--color-background-secondary)';
+  }
+}
+
+function redraw(){
+  computeLiftDrag();
+  ctx.fillStyle='#0b0f18'; ctx.fillRect(0,0,W,H);
+
+  const aoaRad=getAoa();
+  const speed=getSpeed();
+  const chord=180, cx=W*0.42, cy=H/2;
+  const aoad=parseFloat(document.getElementById('aoa').value);
+  const stall=aoad>16;
+
+  const freeU = speed*Math.cos(-aoaRad);
+  const freeV = speed*Math.sin(-aoaRad);
+
+  const pressureMode = document.getElementById('pressureMode').checked;
+  const velMode = document.getElementById('velocityMode').checked;
+
+  // Streamlines
+  const nLines=22;
+  const streamColors=['rgba(59,139,212,0.45)','rgba(59,139,212,0.35)'];
+
+  for(let si=0;si<nLines;si++){
+    const yStart=-H*0.45+si*(H*0.9/(nLines-1));
+    let px=30, py=H/2+yStart;
+    const ptsArr=[{x:px,y:py}];
+    const maxSteps=350;
+    let dt=speed*2.2;
+
+    for(let step=0;step<maxSteps;step++){
+      if(isInsideAirfoil(px,py,cx,cy,chord,aoaRad)) break;
+      const {u,v}=streamlineVelocity(px,py,cx,cy,chord,aoaRad,freeU,freeV);
+      px+=u*dt; py+=v*dt;
+      if(px>W+10||py<-20||py>H+20) break;
+      ptsArr.push({x:px,y:py});
+    }
+
+    if(ptsArr.length>2){
+      ctx.beginPath();
+      ctx.strokeStyle=streamColors[si%2];
+      ctx.lineWidth=1.2;
+      ptsArr.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+      ctx.stroke();
+
+      // Arrows along streamline
+      [0.35,0.65,0.85].forEach(frac=>{
+        const idx=Math.floor(frac*ptsArr.length);
+        if(idx>0&&idx<ptsArr.length-1){
+          const dx=ptsArr[idx+1].x-ptsArr[idx-1].x;
+          const dy=ptsArr[idx+1].y-ptsArr[idx-1].y;
+          const ang=Math.atan2(dy,dx);
+          ctx.save(); ctx.translate(ptsArr[idx].x,ptsArr[idx].y); ctx.rotate(ang);
+          ctx.fillStyle='rgba(59,139,212,0.5)';
+          ctx.beginPath(); ctx.moveTo(4,0); ctx.lineTo(-3,-2.5); ctx.lineTo(-3,2.5); ctx.closePath(); ctx.fill();
+          ctx.restore();
+        }
+      });
+    }
+  }
+
+  // Pressure overlay
+  if(pressureMode){
+    const idata=ctx.createImageData(W,H);
+    for(let px2=0;px2<W;px2+=3){
+      for(let py2=0;py2<H;py2+=3){
+        if(isInsideAirfoil(px2,py2,cx,cy,chord,aoaRad)) continue;
+        const {u,v}=streamlineVelocity(px2,py2,cx,cy,chord,aoaRad,freeU,freeV);
+        const spd2=u*u+v*v;
+        const p=1-spd2/(speed*speed*4);
+        const r=Math.floor(Math.max(0,Math.min(255,p>0.5?(p-0.5)*2*200:0)));
+        const b2=Math.floor(Math.max(0,Math.min(255,p<0.5?(0.5-p)*2*200:0)));
+        for(let dx2=0;dx2<3;dx2++) for(let dy2=0;dy2<3;dy2++){
+          const idx=((py2+dy2)*W+(px2+dx2))*4;
+          idata.data[idx]=r; idata.data[idx+1]=0; idata.data[idx+2]=b2; idata.data[idx+3]=40;
+        }
+      }
+    }
+    ctx.putImageData(idata,0,0);
+  }
+
+  // Airfoil shape
+  const foilPts=getAirfoilPoints(cx,cy,chord,aoaRad);
+  ctx.beginPath();
+  foilPts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+  ctx.closePath();
+  if(stall){
+    ctx.fillStyle='rgba(226,75,74,0.3)';
+  } else {
+    ctx.fillStyle='rgba(200,210,230,0.15)';
+  }
+  ctx.fill();
+  ctx.strokeStyle=stall?'rgba(226,75,74,0.8)':'rgba(200,210,230,0.7)';
+  ctx.lineWidth=1.8; ctx.stroke();
+
+  // Lift arrow
+  if(!stall){
+    const liftMag=parseFloat(document.getElementById('cl-v').textContent)*60;
+    const lx=cx+chord*0.4, ly=cy;
+    ctx.strokeStyle='rgba(99,153,34,0.8)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(lx,ly-liftMag); ctx.stroke();
+    ctx.fillStyle='rgba(99,153,34,0.9)';
+    ctx.beginPath(); ctx.moveTo(lx,ly-liftMag); ctx.lineTo(lx-5,ly-liftMag+10); ctx.lineTo(lx+5,ly-liftMag+10); ctx.closePath(); ctx.fill();
+    ctx.font='11px sans-serif'; ctx.fillStyle='rgba(99,153,34,0.8)'; ctx.textAlign='left';
+    ctx.fillText('Lift',lx+8,ly-liftMag/2);
+  }
+
+  // Labels
+  ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='11px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('Low pressure (fast flow)',cx+20,cy-60);
+  ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.textAlign='left';
+  ctx.fillText('High pressure (slow flow)',cx+20,cy+70);
+
+  if(stall){
+    ctx.fillStyle='rgba(226,75,74,0.7)'; ctx.font='500 13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('STALL — flow separation',cx+chord*0.5,cy-75);
+  }
+}
+
+redraw();
+</script>

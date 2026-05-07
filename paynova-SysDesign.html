@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayNova — A System Design Case Study</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1814;
+    --ink-secondary: #4a4740;
+    --ink-tertiary: #7a7672;
+    --paper: #faf9f6;
+    --paper-secondary: #f2f0eb;
+    --border: rgba(26,24,20,0.12);
+    --border-strong: rgba(26,24,20,0.25);
+    --accent-blue-bg: #E6F1FB;
+    --accent-blue-text: #0C447C;
+    --accent-blue-border: #185FA5;
+    --accent-teal-bg: #E1F5EE;
+    --accent-teal-text: #085041;
+    --accent-teal-border: #0F6E56;
+    --accent-amber-bg: #FAEEDA;
+    --accent-amber-text: #633806;
+    --accent-amber-border: #854F0B;
+    --accent-coral-bg: #FAECE7;
+    --accent-coral-text: #712B13;
+    --accent-coral-border: #993C1D;
+    --accent-purple-bg: #EEEDFE;
+    --accent-purple-text: #3C3489;
+    --accent-purple-border: #534AB7;
+    --accent-green-bg: #EAF3DE;
+    --accent-green-text: #27500A;
+    --accent-green-border: #3B6D11;
+    --accent-red-bg: #FCEBEB;
+    --accent-red-text: #791F1F;
+    --accent-red-border: #A32D2D;
+    --accent-gray-bg: #F1EFE8;
+    --accent-gray-text: #444441;
+    --accent-gray-border: #5F5E5A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+    color: var(--ink);
+    background: var(--paper);
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 3rem 2rem 6rem;
+  }
+  h1 { font-family: 'DM Serif Display', serif; font-size: 3rem; font-weight: 400; line-height: 1.1; margin-bottom: 0.5rem; letter-spacing: -0.01em; }
+  h2 { font-family: 'DM Serif Display', serif; font-size: 1.75rem; font-weight: 400; line-height: 1.25; margin-top: 3.5rem; margin-bottom: 1rem; color: var(--ink); }
+  h3 { font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 500; margin-top: 2rem; margin-bottom: 0.5rem; color: var(--ink-secondary); letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.8rem; }
+  p { margin-bottom: 1rem; color: var(--ink-secondary); }
+  p strong { font-weight: 500; color: var(--ink); }
+  code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82em;
+    background: var(--paper-secondary);
+    border: 0.5px solid var(--border);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+  pre {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    background: var(--paper-secondary);
+    border: 0.5px solid var(--border);
+    border-left: 2.5px solid var(--accent-blue-border);
+    padding: 1rem 1.25rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    line-height: 1.6;
+    margin: 1.25rem 0;
+    color: var(--ink);
+  }
+  .header-meta {
+    font-size: 0.85rem;
+    color: var(--ink-tertiary);
+    margin-bottom: 2rem;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .scenario-intro {
+    background: var(--paper-secondary);
+    border: 0.5px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 1.75rem 2rem;
+    margin: 2rem 0 3rem;
+  }
+  .scenario-intro p { margin-bottom: 0.5rem; }
+  .scenario-intro p:last-child { margin-bottom: 0; }
+  .concept-block {
+    border-top: 0.5px solid var(--border);
+    padding-top: 0.5rem;
+    margin-top: 3.5rem;
+  }
+  .concept-number {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--ink-tertiary);
+    letter-spacing: 0.08em;
+    margin-bottom: 0.25rem;
+  }
+  .insight-box {
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin: 1.25rem 0;
+    border: 0.5px solid;
+  }
+  .insight-box p { margin-bottom: 0; font-size: 0.92rem; }
+  .insight-box .label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .blue { background: var(--accent-blue-bg); border-color: var(--accent-blue-border); color: var(--accent-blue-text); }
+  .blue .label { color: var(--accent-blue-text); }
+  .blue p { color: var(--accent-blue-text); }
+  .teal { background: var(--accent-teal-bg); border-color: var(--accent-teal-border); color: var(--accent-teal-text); }
+  .teal .label { color: var(--accent-teal-text); }
+  .teal p { color: var(--accent-teal-text); }
+  .amber { background: var(--accent-amber-bg); border-color: var(--accent-amber-border); color: var(--accent-amber-text); }
+  .amber .label { color: var(--accent-amber-text); }
+  .amber p { color: var(--accent-amber-text); }
+  .coral { background: var(--accent-coral-bg); border-color: var(--accent-coral-border); color: var(--accent-coral-text); }
+  .coral .label { color: var(--accent-coral-text); }
+  .coral p { color: var(--accent-coral-text); }
+  .purple { background: var(--accent-purple-bg); border-color: var(--accent-purple-border); color: var(--accent-purple-text); }
+  .purple .label { color: var(--accent-purple-text); }
+  .purple p { color: var(--accent-purple-text); }
+  .green { background: var(--accent-green-bg); border-color: var(--accent-green-border); color: var(--accent-green-text); }
+  .green .label { color: var(--accent-green-text); }
+  .green p { color: var(--accent-green-text); }
+  .red { background: var(--accent-red-bg); border-color: var(--accent-red-border); color: var(--accent-red-text); }
+  .red .label { color: var(--accent-red-text); }
+  .red p { color: var(--accent-red-text); }
+  .gray { background: var(--accent-gray-bg); border-color: var(--accent-gray-border); color: var(--accent-gray-text); }
+  .gray .label { color: var(--accent-gray-text); }
+  .gray p { color: var(--accent-gray-text); }
+  .divider {
+    border: none;
+    border-top: 0.5px solid var(--border);
+    margin: 3rem 0;
+  }
+  .toc {
+    background: var(--paper-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem 1.75rem;
+    margin: 2rem 0;
+    columns: 2;
+    column-gap: 2rem;
+  }
+  .toc a {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--ink-tertiary);
+    text-decoration: none;
+    padding: 0.2rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+    break-inside: avoid;
+  }
+  .toc a:hover { color: var(--accent-blue-border); }
+  .arch-diagram {
+    background: var(--paper-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.76rem;
+    line-height: 1.5;
+    color: var(--ink-secondary);
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 500;
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 0.15em 0.55em;
+    border-radius: 3px;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+    margin-right: 0.35rem;
+  }
+  .tag-blue { background: var(--accent-blue-bg); color: var(--accent-blue-text); }
+  .tag-teal { background: var(--accent-teal-bg); color: var(--accent-teal-text); }
+  .tag-amber { background: var(--accent-amber-bg); color: var(--accent-amber-text); }
+  .tag-coral { background: var(--accent-coral-bg); color: var(--accent-coral-text); }
+  .tag-purple { background: var(--accent-purple-bg); color: var(--accent-purple-text); }
+  .tag-green { background: var(--accent-green-bg); color: var(--accent-green-text); }
+  .tag-red { background: var(--accent-red-bg); color: var(--accent-red-text); }
+  .tag-gray { background: var(--accent-gray-bg); color: var(--accent-gray-text); }
+  .concept-title { font-family: 'DM Serif Display', serif; font-size: 1.6rem; font-weight: 400; line-height: 1.2; margin-bottom: 0.85rem; }
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1.25rem 0;
+  }
+  .compare-card {
+    background: var(--paper-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.1rem;
+  }
+  .compare-card h4 { font-size: 0.85rem; font-weight: 500; margin-bottom: 0.4rem; color: var(--ink); }
+  .compare-card p { font-size: 0.85rem; margin-bottom: 0; line-height: 1.55; }
+  .intro-rule { border: none; border-top: 3px solid var(--ink); margin: 2rem 0 2.5rem; width: 3rem; }
+</style>
+</head>
+<body>
+
+<div class="header-meta">SYSTEM DESIGN · CASE STUDY · 25 CONCEPTS</div>
+<h1>Building PayNova</h1>
+<div class="intro-rule"></div>
+
+<p style="font-size: 1.15rem; line-height: 1.7; color: var(--ink); margin-bottom: 1rem;">A rigorous engineering narrative for 25 foundational system design concepts, grounded in a single, realistic production scenario — a global real-time payment infrastructure platform processing $2 billion in daily transactions across 50 countries.</p>
+
+<div class="scenario-intro">
+  <h3 style="margin-top:0">The scenario</h3>
+  <p>PayNova is a B2B payment infrastructure platform — think Stripe combined with a SWIFT-grade clearing network. It serves three classes of clients: <strong>enterprise banks</strong> that embed PayNova into their own products via API, <strong>merchants</strong> that accept payments through PayNova's SDK, and <strong>consumers</strong> who interact through a web and mobile dashboard. At peak, PayNova handles 120,000 transactions per second with a p99 latency SLA of under 200ms and a financial correctness guarantee of 99.9999%. Every concept below is not hypothetical — it is a load-bearing architectural decision PayNova's engineers had to make or will inevitably face.</p>
+  <p>Reading these concepts in isolation is like reading individual words. This scenario is the sentence they form together.</p>
+</div>
+
+<div class="toc">
+  <a href="#c1">01 · API Gateway vs Load Balancer</a>
+  <a href="#c2">02 · Reverse Proxy vs Forward Proxy</a>
+  <a href="#c3">03 · Horizontal vs Vertical Scaling</a>
+  <a href="#c4">04 · Microservices vs Monolith</a>
+  <a href="#c5">05 · Caching Strategies</a>
+  <a href="#c6">06 · Rate Limiter</a>
+  <a href="#c7">07 · Single Sign-On (SSO)</a>
+  <a href="#c8">08 · Apache Kafka internals</a>
+  <a href="#c9">09 · Kafka vs ActiveMQ vs RabbitMQ</a>
+  <a href="#c10">10 · JWT, OAuth, and SAML</a>
+  <a href="#c11">11 · Database Scaling</a>
+  <a href="#c12">12 · Replication vs Sharding</a>
+  <a href="#c13">13 · JWT vs Session Auth</a>
+  <a href="#c14">14 · Consistent Hashing</a>
+  <a href="#c15">15 · Message Queues</a>
+  <a href="#c16">16 · REST vs gRPC</a>
+  <a href="#c17">17 · Leader Election (Raft/Paxos)</a>
+  <a href="#c18">18 · Circuit Breakers</a>
+  <a href="#c19">19 · Failover &amp; Disaster Recovery</a>
+  <a href="#c20">20 · Heartbeats &amp; Health Checks</a>
+  <a href="#c21">21 · CQRS</a>
+  <a href="#c22">22 · Event-Driven Design</a>
+  <a href="#c23">23 · Microservices vs Monolith (Evolution)</a>
+  <a href="#c24">24 · Saga Pattern</a>
+  <a href="#c25">25 · Idempotency</a>
+</div>
+
+<!-- ===== CONCEPT 1 ===== -->
+<div class="concept-block" id="c1">
+  <div class="concept-number">CONCEPT 01</div>
+  <div class="concept-title">API Gateway vs Load Balancer</div>
+
+  <p>PayNova exposes a public-facing API that merchant clients call to initiate payments, query statuses, and manage webhooks. Internally, this traffic must reach one of six distinct backend microservices: <code>payment-service</code>, <code>fraud-service</code>, <code>ledger-service</code>, <code>notification-service</code>, <code>identity-service</code>, and <code>analytics-service</code>. Two infrastructure components govern this: a <strong>Load Balancer</strong> and an <strong>API Gateway</strong>, and conflating them is the most common beginner mistake in system design.</p>
+
+  <p>The Load Balancer operates at OSI Layer 4 (transport) or Layer 7 (application) and has exactly one job: given N pods of the same service, pick one and forward the request. It understands IP addresses, TCP connections, and optionally HTTP — nothing more. PayNova runs AWS ALB (Application Load Balancer) in front of its payment-service pod fleet. When a pod is killed during a rolling deploy, the ALB stops routing to it within the health check interval. The ALB knows nothing about API versioning, authentication, or merchant identity. It is a traffic distributor, not a traffic interpreter.</p>
+
+  <p>The API Gateway, by contrast, operates as an intelligent front door. PayNova deploys Kong Gateway in front of the entire service mesh. Every inbound request — before touching any business logic — flows through Kong, which enforces: <strong>authentication</strong> (is this a valid merchant API key?), <strong>rate limiting</strong> (is this merchant within their plan quota?), <strong>request transformation</strong> (add a correlation ID header), <strong>routing</strong> (route <code>/v1/payments</code> to payment-service and <code>/v1/fraud</code> to fraud-service), and <strong>response transformation</strong> (strip internal headers before returning to the client). The API Gateway is, in essence, the contract layer between the outside world and the internal mesh.</p>
+
+  <div class="arch-diagram">Client Request
+    │
+    ▼
+┌─────────────────────────────────┐
+│         API GATEWAY (Kong)      │  ← Auth, Rate Limit, Route, Transform
+│  "Who are you? What do you want?│
+│   Are you allowed? Go here."    │
+└──────────────┬──────────────────┘
+               │ routes to correct service
+    ┌──────────┼───────────┐
+    ▼          ▼           ▼
+[payment]  [fraud]   [ledger]
+  service    service   service
+    │
+    ▼
+┌─────────────────────────────────┐
+│       LOAD BALANCER (ALB)       │  ← Distributes across pods of ONE service
+│  "I have 12 payment-service     │
+│   pods — you get pod #7."       │
+└─────────────────────────────────┘
+    │   │   │   │   │   │
+   [p1][p2][p3][p4][p5][p6]  ← payment-service pods</div>
+
+  <div class="insight-box blue">
+    <div class="label">Key insight</div>
+    <p>An API Gateway routes between different services based on semantics (the meaning of the request). A Load Balancer routes between identical instances of the same service for capacity. You need both, and they stack: the gateway sits upstream, the balancer sits in front of each service fleet.</p>
+  </div>
+
+  <p>A subtle but critical corollary: you should not put business logic into your Load Balancer. A PayNova engineer once attempted to implement merchant authentication at the ALB level using Lambda@Edge. It worked — until the authentication logic needed to call Redis for session data, and latency p99 shot to 450ms because the Lambda cold starts and Redis round-trips compounded. Moving authentication back to Kong (the gateway), which has persistent connection pools to Redis, reduced that p99 to 14ms. The Load Balancer is optimized for one thing: speed of distribution. Do not burden it with intelligence.</p>
+</div>
+
+<!-- ===== CONCEPT 2 ===== -->
+<div class="concept-block" id="c2">
+  <div class="concept-number">CONCEPT 02</div>
+  <div class="concept-title">Reverse Proxy vs Forward Proxy</div>
+
+  <p>PayNova's architecture contains both proxy types, and they serve opposite populations on opposite ends of a connection.</p>
+
+  <p>A <strong>forward proxy</strong> sits in front of clients, representing them to the outside world. PayNova's corporate employees use a Zscaler forward proxy. When an engineer's laptop connects to GitHub, it goes through Zscaler, which inspects the traffic, enforces DLP (data loss prevention) policies, and forwards the request. The GitHub servers see Zscaler's IP, not the engineer's. The forward proxy's job is to control and observe outbound traffic from a known set of clients. Clients are aware of and configured to use a forward proxy.</p>
+
+  <p>A <strong>reverse proxy</strong> sits in front of servers, representing them to the outside world. PayNova runs Nginx as a reverse proxy in front of its internal service APIs. When a merchant calls <code>api.paynova.com/v1/payments</code>, they are actually talking to Nginx. Nginx terminates TLS, buffers slow clients (preventing slow-loris attacks from tying up application threads), optionally caches responses, and forwards to the appropriate upstream. The merchant has no knowledge of or configuration for this — the proxy is transparent to them. The reverse proxy's job is to protect and present servers to the world. Servers are aware of the reverse proxy; clients are not.</p>
+
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h4>Forward proxy (Zscaler)</h4>
+      <p>Represents <em>clients</em> to servers. Clients know about it and route through it. Used for: egress control, anonymization, content filtering, corporate security policy. Example: employees browsing the internet.</p>
+    </div>
+    <div class="compare-card">
+      <h4>Reverse proxy (Nginx)</h4>
+      <p>Represents <em>servers</em> to clients. Clients have no awareness of it. Used for: TLS termination, load balancing, caching, DDoS mitigation. Example: every major web service in existence.</p>
+    </div>
+  </div>
+
+  <p>PayNova uses Nginx's reverse proxy capabilities for a specific production problem: slow client connections. When a merchant in a developing market on a 3G connection makes an API call, Nginx buffers the full response from the upstream payment-service (which takes 4ms to respond) and then streams it slowly to the client. Without this, the payment-service thread would be held open for 2–3 seconds waiting for the client to receive data — at 120,000 rps, that would require thousands of threads just for I/O buffering. Nginx, optimized for this exact workload using event-loop I/O, handles it with minimal resources.</p>
+
+  <div class="insight-box teal">
+    <div class="label">Mental model</div>
+    <p>The direction of "representation" is everything. Forward proxy: client is known, server is external. Reverse proxy: server is known, client is external. Most production systems primarily use reverse proxies. Forward proxies are predominantly a corporate networking and security concern.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 3 ===== -->
+<div class="concept-block" id="c3">
+  <div class="concept-number">CONCEPT 03</div>
+  <div class="concept-title">Horizontal vs Vertical Scaling</div>
+
+  <p>PayNova's Black Friday scale test revealed a 40× traffic spike in under 90 seconds. The engineering team had made different scaling decisions for different components of the system, and the reasons are illustrative.</p>
+
+  <p><strong>Horizontal scaling</strong> means adding more machines. PayNova's <code>payment-service</code> is horizontally scaled. Each instance is stateless — it reads merchant config from Redis, writes a payment event to Kafka, and returns. Because there is no state to synchronize between instances, you can trivially add a 13th pod when the 12th is at 70% CPU. Kubernetes does this automatically using a Horizontal Pod Autoscaler (HPA) targeting 60% CPU utilization. The architecture had to be designed for this: the service cannot hold anything in local memory that another instance would need. Everything shared lives in Redis or the database.</p>
+
+  <p><strong>Vertical scaling</strong> means making a single machine bigger. PayNova initially ran its primary PostgreSQL transaction database on an <code>r5.2xlarge</code> (8 vCPU, 64GB RAM). Under load, write throughput saturated first. The team vertically scaled to <code>r5.8xlarge</code> (32 vCPU, 256GB RAM), which bought 3 months of runway. The reason they chose vertical here rather than horizontal is critical: PostgreSQL's single-writer model means horizontal scaling of writes is not straightforwardly additive — you can't just add a second primary and expect writes to double without implementing sharding or a distributed database (both of which carry enormous complexity). Vertical scaling let them defer that complexity.</p>
+
+  <div class="insight-box amber">
+    <div class="label">The hard truth</div>
+    <p>Vertical scaling has a ceiling (the largest available machine) and causes downtime during resize. Horizontal scaling is theoretically infinite but requires stateless architecture and introduces distributed systems complexity. The real engineering decision is: "What is the cheapest architecture that solves the next 18 months of growth?" That is almost always some mix of both, applied to different layers.</p>
+  </div>
+
+  <p>A nuance that rarely appears in tutorials: vertical scaling also improves cache efficiency. When PayNova doubled the RAM on its PostgreSQL instance, the OS page cache could hold more of the hot dataset. Queries that previously went to disk (slow) now hit RAM (fast). This is an emergent benefit of vertical scaling that horizontal scaling of application servers cannot replicate — more application pods do not make the database's disk I/O disappear.</p>
+</div>
+
+<!-- ===== CONCEPT 4 ===== -->
+<div class="concept-block" id="c4">
+  <div class="concept-number">CONCEPT 04 &amp; 23</div>
+  <div class="concept-title">Microservices vs Monolithic Architecture (Covered Again in Concept 23)</div>
+
+  <p>PayNova did not begin as a microservices company. Version 1.0 was a Django monolith with a single PostgreSQL database and a Celery task queue. The founding team of 6 engineers could fit the entire mental model of the system in their heads. Deploying meant shipping one binary. Debugging meant reading one log stream. This was the correct architectural choice for the first 18 months.</p>
+
+  <p>The monolith's fatal flaw emerged at scale. <code>fraud_check()</code> and <code>process_payment()</code> shared the same database connection pool. A spike in fraud model computation (CPU-bound, analytical) starved the payment path of database connections, causing payment failures. Additionally, the fraud model needed to be updated 12 times per day using new ML training data. Deploying an update required redeploying the entire application — a 90-second outage window — 12 times daily, which was untenable.</p>
+
+  <p>PayNova decomposed the monolith incrementally. The <strong>Strangler Fig pattern</strong> was used: new functionality was built as separate services, and existing functionality was migrated service by service, never doing a "big bang" rewrite. The decomposition prioritized <strong>deployment independence</strong> (fraud model can now deploy without touching payment processing), <strong>failure isolation</strong> (a bug in notification-service cannot crash payment-service), and <strong>independent scaling</strong> (fraud-service scales based on fraud spike patterns, not payment volume).</p>
+
+  <div class="insight-box coral">
+    <div class="label">The cost of microservices</div>
+    <p>Every service boundary you introduce creates a network call instead of a function call. Network calls fail in ways function calls do not: latency spikes, timeouts, partial failures. PayNova now runs a full service mesh (Istio) and distributed tracing (Jaeger) to manage this complexity. These tools did not exist as requirements with the monolith. Microservices are not inherently superior — they are a trade of one category of complexity (deployment coupling) for another (distributed systems).</p>
+  </div>
+
+  <p>The rule of thumb PayNova settled on: a service boundary is justified when two pieces of code have <em>different scaling needs</em>, <em>different deployment cadences</em>, or <em>different failure tolerance requirements</em>. If neither of those conditions applies, the boundary adds network overhead with no compensating benefit.</p>
+</div>
+
+<!-- ===== CONCEPT 5 ===== -->
+<div class="concept-block" id="c5">
+  <div class="concept-number">CONCEPT 05</div>
+  <div class="concept-title">Caching Strategies</div>
+
+  <p>PayNova uses five distinct caching strategies, each justified by the specific read/write characteristics of the data it covers. Treating cache as a monolithic concept ("add Redis, go fast") is a beginner error — each pattern has specific failure modes.</p>
+
+  <p><strong>Cache-Aside (Lazy Loading)</strong> — used for merchant configuration. When payment-service needs to know a merchant's webhook URL and currency settings, it checks Redis first. On a cache miss, it reads from PostgreSQL and writes the result to Redis with a 5-minute TTL. The data is stale-tolerant (a merchant changing their webhook URL can tolerate a 5-minute propagation delay). The risk is the <em>thundering herd</em>: if the cache key expires and 1,000 concurrent requests all miss simultaneously, 1,000 threads race to query PostgreSQL. PayNova mitigates this with probabilistic early expiration — a small percentage of requests refresh the cache before the TTL expires, preventing the stampede.</p>
+
+  <p><strong>Write-Through Cache</strong> — used for fraud scores. When fraud-service computes a risk score for a user, it writes to both Redis and PostgreSQL simultaneously before returning. Reads always find data in Redis. The cost is double-write latency on every fraud computation, but the benefit is that the cache is never stale. For fraud decisions (which are time-critical and trust-sensitive), stale data is unacceptable — a risk score that is 5 minutes old could approve a fraudulent transaction.</p>
+
+  <p><strong>Write-Behind (Write-Back) Cache</strong> — used for analytics event counters. PayNova counts transactions per merchant per minute for real-time dashboard displays. Writes go to Redis only; a background worker flushes aggregated counts to PostgreSQL every 30 seconds. The risk is data loss if Redis crashes between flushes. PayNova accepts this risk because analytics counters (not financial records) can tolerate a 30-second gap — but this strategy would be catastrophically wrong for the ledger.</p>
+
+  <p><strong>Read-Through Cache</strong> — used for currency exchange rates, fetched from an external FX provider. Redis acts as the primary data store from the application's perspective; a cache miss triggers Redis itself to fetch from the FX provider and populate. The application code never speaks directly to the FX API.</p>
+
+  <p><strong>Eviction policies</strong> matter enormously. PayNova uses <code>allkeys-lru</code> for the session cache (evict the least-recently-used key when memory is full — reasonable for session data, where old sessions are less likely to be active) and <code>volatile-lfu</code> for merchant config (evict among keys with TTL set, using least-frequently-used — preserves high-traffic merchants' configs).</p>
+
+  <div class="insight-box green">
+    <div class="label">The caching interview trap</div>
+    <p>Interviewers who ask "how would you cache this?" are really asking: "how do you handle cache invalidation, thundering herd, and data consistency?" The answer to "add a cache" is trivial. The answer to "what happens when the cache and database diverge?" is the substance of the concept.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 6 ===== -->
+<div class="concept-block" id="c6">
+  <div class="concept-number">CONCEPT 06</div>
+  <div class="concept-title">Rate Limiter — Design and Mechanics</div>
+
+  <p>PayNova's rate limiter is one of its most mission-critical components and uses a <strong>Token Bucket algorithm</strong> implemented in Redis using Lua scripts for atomic operations. Understanding why each design choice was made is the pedagogical core of this concept.</p>
+
+  <p>The <strong>Token Bucket</strong> works as follows: each merchant has a bucket with a maximum capacity (e.g., 1,000 tokens). Tokens replenish at a fixed rate (e.g., 100 tokens/second). Each API call consumes one token. If the bucket is empty, the request is rejected with HTTP 429. The bucket naturally handles bursts: a merchant can send 1,000 requests simultaneously if they have accumulated enough tokens. This is appropriate for payment APIs, where legitimate merchants may have batch operations that create momentary spikes.</p>
+
+  <p>The alternative, <strong>Fixed Window Counter</strong>, counts requests per minute and resets the counter at the window boundary. Its flaw is the boundary attack: a merchant can send 1,000 requests at 11:59:59 and another 1,000 at 12:00:01, achieving 2,000 requests in 2 seconds while technically respecting the 1,000/minute limit. PayNova considered and rejected this algorithm.</p>
+
+  <p>The <strong>Sliding Window Log</strong> stores a timestamp for every request and counts only those within the last 60 seconds. It is precise but memory-intensive — at scale, storing per-request timestamps for thousands of merchants is impractical. The <strong>Sliding Window Counter</strong> approximates this by interpolating between two fixed windows, achieving ~98% accuracy at a fraction of the memory cost.</p>
+
+<pre>-- Redis Lua script for token bucket (atomic)
+local key = KEYS[1]            -- merchant rate limit key
+local capacity = tonumber(ARGV[1])   -- max tokens
+local refill_rate = tonumber(ARGV[2]) -- tokens/second
+local now = tonumber(ARGV[3])  -- current time (ms)
+
+local bucket = redis.call('HMGET', key, 'tokens', 'last_refill')
+local tokens = tonumber(bucket[1]) or capacity
+local last_refill = tonumber(bucket[2]) or now
+
+-- Calculate tokens earned since last call
+local elapsed = (now - last_refill) / 1000
+tokens = math.min(capacity, tokens + elapsed * refill_rate)
+
+if tokens >= 1 then
+  tokens = tokens - 1  -- consume one token
+  redis.call('HMSET', key, 'tokens', tokens, 'last_refill', now)
+  return 1  -- allowed
+else
+  return 0  -- rejected
+end</pre>
+
+  <div class="insight-box purple">
+    <div class="label">Distributed rate limiting subtlety</div>
+    <p>PayNova runs 8 Kong gateway instances. If each maintains its own in-memory token bucket, a merchant could send 8× their limit by rotating across gateways. The Lua script runs in Redis, which is the single source of truth — all 8 gateways check the same Redis key. The tradeoff is one network round-trip to Redis per request. PayNova accepts this because Redis at this scale responds in under 1ms.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 7 ===== -->
+<div class="concept-block" id="c7">
+  <div class="concept-number">CONCEPT 07</div>
+  <div class="concept-title">Single Sign-On (SSO)</div>
+
+  <p>PayNova has three distinct identity populations with different SSO requirements: its own employees (internal SaaS tools), enterprise bank clients (accessing the PayNova merchant dashboard), and PayNova's own engineers accessing internal infrastructure.</p>
+
+  <p>SSO solves a specific problem: a user should authenticate once and gain access to multiple applications without re-entering credentials. The alternative — each application maintaining its own user database — creates credential sprawl, makes offboarding dangerous (did you disable the ex-employee's account in all 14 internal tools?), and creates a poor user experience.</p>
+
+  <p>The mechanics of SSO involve three actors: the <strong>User</strong>, the <strong>Identity Provider (IdP)</strong> (who maintains the authoritative credential store), and the <strong>Service Provider (SP)</strong> (the application being accessed). The flow is: the user tries to access the SP, which redirects them to the IdP. The IdP authenticates the user (password, MFA, etc.) and issues a signed token/assertion back to the SP. The SP validates the signature using the IdP's public key and trusts the assertion without having stored any password itself.</p>
+
+  <p>PayNova's enterprise bank clients use <strong>SAML 2.0</strong>-based SSO. When Barclays Bank's treasury team accesses the PayNova dashboard, they are redirected to Barclays' own Active Directory Federation Services (ADFS) IdP. Barclays authenticates them (with their corporate credentials and hardware token), issues a SAML assertion, and the user lands in PayNova's dashboard without PayNova ever seeing their password. This is architecturally powerful: PayNova never inherits Barclays' compliance burden for credential management.</p>
+
+  <div class="insight-box blue">
+    <div class="label">SSO and the offboarding problem</div>
+    <p>When a Barclays employee leaves the company, Barclays disables their Active Directory account. The next time that person tries to access PayNova's dashboard, they are redirected to Barclays ADFS, which rejects them. PayNova's system automatically enforces the offboarding without any action from PayNova's IT team. This is the most practical security benefit of SSO that rarely gets mentioned in textbook descriptions.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 8 ===== -->
+<div class="concept-block" id="c8">
+  <div class="concept-number">CONCEPT 08</div>
+  <div class="concept-title">Apache Kafka — Internals and Performance</div>
+
+  <p>Every payment event in PayNova — initiated, authorized, settled, failed, refunded — is written as an immutable event to Apache Kafka before any downstream action is taken. Understanding <em>why</em> Kafka is fast requires understanding its physical architecture, not just its API.</p>
+
+  <p>Kafka's speed stems from three design decisions that most people never look up: <strong>sequential disk I/O</strong>, <strong>zero-copy transfer</strong>, and <strong>batch processing</strong>.</p>
+
+  <p><strong>Sequential disk I/O:</strong> Kafka writes messages by appending to a log file — the same sequential write pattern that makes databases fast when using WAL (write-ahead logs). Random disk I/O (seek to position, write, seek to next position) is roughly 100× slower than sequential I/O because the disk head must physically move. Appending to a log file is purely sequential. This is why Kafka can sustain millions of writes per second on spinning disk hardware that would be considered slow for random-access workloads.</p>
+
+  <p><strong>Zero-copy transfer:</strong> When a Kafka consumer reads messages, the traditional path is: disk → kernel buffer → user space → socket buffer → network. With zero-copy (Linux's <code>sendfile()</code> syscall), the path is: disk → kernel buffer → network. The kernel sends data directly from the page cache to the network card without copying it to user space. For a system consuming 50 GB/hour of payment events, this eliminates an enormous amount of CPU-bound memory copying.</p>
+
+  <p><strong>Partitioning:</strong> Kafka topics are divided into partitions. PayNova's <code>payment-events</code> topic has 64 partitions. A partition is the unit of parallelism — it can only be consumed by one consumer within a consumer group at a time. PayNova's ledger-service runs 64 consumer instances, one per partition. Each instance processes events from its partition in strict order, guaranteeing that debits and credits for the same account are processed sequentially without distributed locking.</p>
+
+<pre>PayNova Kafka Topic: payment-events
+  Partitions: 64
+  Partition key: merchant_id (mod 64)
+  Retention: 7 days (replayed for disaster recovery)
+  Replication factor: 3
+
+  Consumer Groups:
+  ├── fraud-consumer-group      (16 instances)
+  ├── ledger-consumer-group     (64 instances)  ← one per partition
+  ├── notification-group        (8 instances)
+  └── analytics-group           (16 instances)</pre>
+
+  <div class="insight-box teal">
+    <div class="label">The critical property: replay</div>
+    <p>Unlike a traditional message queue, Kafka retains messages for a configurable period (7 days for PayNova). If the fraud-service crashes and misprocesses 2 hours of events, it can reset its consumer offset to 2 hours ago and replay every event from Kafka — the source of truth. No data was lost. This property makes Kafka functionally an event store, not just a queue, and is central to PayNova's disaster recovery architecture.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 9 ===== -->
+<div class="concept-block" id="c9">
+  <div class="concept-number">CONCEPT 09</div>
+  <div class="concept-title">Kafka vs ActiveMQ vs RabbitMQ</div>
+
+  <p>PayNova uses all three messaging systems, and the reason is that they solve fundamentally different problems despite all looking like "message brokers" on the surface.</p>
+
+  <p><strong>Apache Kafka</strong> is a distributed event log optimized for high-throughput, durably ordered, replayable streams. PayNova uses it for the payment event backbone — the canonical record of every event that has ever occurred in the system. Kafka's model is pull-based: consumers read at their own pace and maintain their own offsets. Messages are retained indefinitely (subject to a TTL), not deleted on consumption. Kafka is the right choice when the primary need is durable, high-throughput, ordered event streaming with multiple independent consumers and replay capability.</p>
+
+  <p><strong>RabbitMQ</strong> is a traditional message broker using the AMQP protocol, optimized for smart routing and flexible delivery semantics. PayNova uses RabbitMQ for its email and SMS notification pipeline. When a payment is completed, a message is published to a RabbitMQ exchange. The exchange routes it based on routing keys: payment success → email queue, payment failure → SMS queue + email queue, fraud alert → SMS queue + compliance queue. RabbitMQ supports complex routing (fanout, topic, direct, headers exchanges), per-message TTLs, dead-letter queues, and priority queues. Messages are deleted from RabbitMQ once acknowledged — it is not a log. RabbitMQ is the right choice when routing intelligence, per-message delivery semantics, and transient task queues matter more than replay and throughput.</p>
+
+  <p><strong>ActiveMQ</strong> supports JMS (Java Messaging Service) and is deeply integrated into enterprise Java ecosystems. PayNova inherited an ActiveMQ integration when it acquired a smaller fintech whose core banking system used IBM WebSphere and JMS. ActiveMQ provides XA transactions (two-phase commit across message broker and database in a single ACID transaction), which was a hard requirement for that legacy integration. It remains in production for that specific use case and would not be chosen for a greenfield design.</p>
+
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h4><span class="tag tag-blue">Kafka</span> — use when</h4>
+      <p>High throughput (millions/sec), durable ordered log, replay, multiple independent consumer groups, event sourcing, stream processing.</p>
+    </div>
+    <div class="compare-card">
+      <h4><span class="tag tag-amber">RabbitMQ</span> — use when</h4>
+      <p>Smart routing, task queues, transient messages, per-message ACK/NACK, dead-letter handling, lower volume but rich delivery semantics.</p>
+    </div>
+  </div>
+
+  <div class="insight-box amber">
+    <div class="label">The deciding question</div>
+    <p>"Does the message need to be replayed by multiple consumers independently?" — if yes, Kafka. "Does the message need sophisticated routing logic and should disappear once processed?" — if yes, RabbitMQ. Choosing Kafka for task queues wastes its log-retention machinery. Choosing RabbitMQ for event streaming loses the replay guarantee that makes event sourcing coherent.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 10 ===== -->
+<div class="concept-block" id="c10">
+  <div class="concept-number">CONCEPT 10</div>
+  <div class="concept-title">JWT, OAuth 2.0, and SAML</div>
+
+  <p>These three are not interchangeable — they solve different problems at different layers of the authentication/authorization stack, and PayNova uses all three, each where appropriate.</p>
+
+  <p><strong>JWT (JSON Web Token)</strong> is a token format, not a protocol. A JWT is a Base64-encoded JSON object containing a header (algorithm), payload (claims: user ID, roles, expiry), and signature. Its power is that it is self-contained and verifiable without a database lookup — the receiving service just validates the signature using the issuer's public key. PayNova uses JWTs for service-to-service authentication within the mesh: when payment-service calls fraud-service, it includes a short-lived JWT signed by the internal identity service. Fraud-service validates the signature and trusts the caller's identity without hitting a database. The critical weakness: JWTs cannot be revoked before expiry. PayNova mitigates this by using a 60-second expiry for internal service JWTs — a compromised token is only dangerous for 60 seconds.</p>
+
+  <p><strong>OAuth 2.0</strong> is an authorization framework — a protocol that governs how an application can be granted access to resources on a user's behalf. When a PayNova merchant wants to connect their Shopify store to PayNova (so Shopify can initiate payments via PayNova's API), Shopify uses OAuth 2.0 to request access. The merchant authorizes this connection in PayNova's consent screen, PayNova issues Shopify an access token scoped to that merchant's account, and Shopify can now call PayNova's API on the merchant's behalf. OAuth does not define the token format (though JWT is commonly used for the token itself) — it defines the handshake protocol for obtaining that token.</p>
+
+  <p><strong>SAML 2.0</strong> is a mature XML-based protocol for federated identity, primarily for enterprise SSO (as discussed in concept 7). It is verbose and complex but deeply entrenched in enterprise identity infrastructure (Active Directory, Okta, PingFederate). PayNova supports SAML for enterprise bank clients because their IdPs require it. No new PayNova-native integration would choose SAML — OIDC (OpenID Connect, which runs on top of OAuth 2.0) is the modern equivalent.</p>
+
+  <div class="insight-box purple">
+    <div class="label">The mental model</div>
+    <p>JWT is an envelope format. OAuth 2.0 is the handshake protocol that determines who gets an envelope and what's in it. SAML is an older, XML-based handshake protocol that does the same thing as OAuth/OIDC but was designed for enterprise SSO before REST APIs existed. In a PayNova interview: "We'd use OAuth 2.0 for merchant API authorization, JWTs as the token format with short expiry for stateless service authentication, and SAML for enterprise clients whose IdP requires it."</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 11 ===== -->
+<div class="concept-block" id="c11">
+  <div class="concept-number">CONCEPT 11</div>
+  <div class="concept-title">Database Scaling</div>
+
+  <p>PayNova's database tier is the most constrained resource in the system. Unlike application servers (which are stateless and trivially scalable), databases carry state, and moving or replicating that state has strict correctness requirements — especially for a financial platform where two rows being slightly out of sync could mean a merchant receives payment twice.</p>
+
+  <p>PayNova's database evolution followed a predictable staircase: single primary PostgreSQL → read replicas → connection pooling (PgBouncer) → vertical scaling → functional partitioning (separate databases per service) → horizontal sharding of the payments table.</p>
+
+  <p><strong>Connection pooling</strong> is the most underappreciated scaling lever. Each PostgreSQL connection consumes approximately 10MB of server RAM and has a non-trivial setup cost. At 120,000 rps across 64 payment-service pods, each pod opening its own connections would overwhelm PostgreSQL's connection limit (default 100, reasonable max ~500). PgBouncer sits between the application and PostgreSQL in <em>transaction mode</em>: a database connection is held only for the duration of a transaction, then returned to the pool. This allows 64 application pods × 20 threads each = 1,280 application-level connections to multiplex over 80 actual PostgreSQL connections. The database sees 80 connections; the application sees 1,280 connection slots. This is not a trivial optimization — it extends the useful life of a single PostgreSQL instance by an order of magnitude.</p>
+
+  <div class="insight-box coral">
+    <div class="label">Functional partitioning before sharding</div>
+    <p>Before sharding the payments table, PayNova separated its single monolithic database into per-service databases: payments DB, fraud DB, analytics DB, identity DB. This immediately reduced load on each database and made each one independently scalable. Sharding within a single service's database is the last resort, not the first move. Every step of complexity added to a database makes correctness harder to guarantee.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 12 ===== -->
+<div class="concept-block" id="c12">
+  <div class="concept-number">CONCEPT 12</div>
+  <div class="concept-title">Database Replication vs Sharding</div>
+
+  <p>These two techniques scale different bottlenecks. Conflating them leads to applying the wrong solution to the problem at hand.</p>
+
+  <p><strong>Replication</strong> creates copies of the same data on multiple nodes. PayNova's payments database runs with one primary and three read replicas. The primary receives all writes. Changes are streamed to replicas via PostgreSQL's WAL-based streaming replication. Read traffic (merchant querying their payment history, analytics dashboards, risk dashboards) is routed to read replicas, completely offloading the primary. The primary processes only writes. Replication solves <strong>read throughput</strong> and <strong>read availability</strong> — if one replica fails, queries route to another. It does not solve write throughput: all writes still go to one primary, whose capacity has a ceiling.</p>
+
+  <p><strong>Sharding</strong> partitions data across multiple independent primary nodes. PayNova sharded its payments table by <code>merchant_id</code>. Merchant IDs 0–99 are in Shard A, 100–199 in Shard B, and so on. Each shard is a fully independent PostgreSQL instance with its own primary and replicas. Sharding solves <strong>write throughput</strong> and <strong>data volume</strong> by distributing both across multiple primaries. Its costs are severe: cross-shard queries (e.g., "find all failed payments across all merchants today") require querying all shards and merging results in the application layer. Foreign keys and database-level joins across shards are impossible. Transactions spanning two shards require distributed transactions (two-phase commit or Sagas). PayNova's analytics queries run against an Elasticsearch cluster (populated by a Kafka consumer that aggregates across shards) rather than querying shards directly.</p>
+
+  <div class="compare-grid">
+    <div class="compare-card">
+      <h4>Replication</h4>
+      <p>Same data, multiple copies. Solves read throughput and availability. All writes still go to one primary. No cross-node consistency challenges on reads (eventual consistency only).</p>
+    </div>
+    <div class="compare-card">
+      <h4>Sharding</h4>
+      <p>Different data, multiple primaries. Solves write throughput and storage at scale. Destroys cross-shard query simplicity. Requires shard-aware application logic.</p>
+    </div>
+  </div>
+
+  <div class="insight-box blue">
+    <div class="label">Replication lag is a real failure mode</div>
+    <p>PayNova discovered a production bug: a merchant submitted a payment, then immediately queried its status. The status query hit a read replica that was 280ms behind the primary — the payment didn't exist on the replica yet. The response was "payment not found." The fix: status queries for recently submitted payments route to the primary (read-your-own-writes guarantee). All historical queries route to replicas. Replication is not free — it requires careful routing logic to avoid anomalies.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 13 ===== -->
+<div class="concept-block" id="c13">
+  <div class="concept-number">CONCEPT 13</div>
+  <div class="concept-title">JWT vs Session-Based Authentication</div>
+
+  <p>PayNova's merchant-facing dashboard (a web app) and its public API use different authentication mechanisms, and the reason illuminates the core tradeoff of this concept.</p>
+
+  <p><strong>Session-based authentication</strong> works as follows: the user logs in, the server creates a session record in a session store (Redis, in PayNova's case) keyed by a random session ID. The session ID is sent to the browser as a cookie. Subsequent requests include the cookie, the server looks up the session ID in Redis, and retrieves the user's identity and permissions. The session store is the source of truth. Revocation is instant: delete the session from Redis and the user is immediately logged out, regardless of how many active browser tabs they have. PayNova uses session-based auth for the web dashboard. When a merchant's account is suspended for fraud, operations can revoke their session in Redis and they are kicked out of the dashboard in real time. This is non-negotiable for a payment platform.</p>
+
+  <p><strong>JWT-based authentication</strong> is stateless: the token itself contains the user's identity and roles, signed by the server's private key. No server-side state. Any service that knows the server's public key can independently validate any JWT. PayNova uses JWTs for API authentication by merchant applications. The token is issued once with a 1-hour expiry. This is ideal for API clients: they can be deployed across multiple data centers, and none of them need to share session state — every instance can independently validate the JWT. The irrevocability is managed by using short expiry times. If a JWT is compromised, the attacker's window is at most 1 hour, after which the token expires.</p>
+
+  <div class="insight-box amber">
+    <div class="label">The real distinction</div>
+    <p>Session auth centralizes truth in the server (flexible, instantly revocable, stateful). JWT auth distributes truth to the token itself (scalable, stateless, but revocation is hard). The choice follows the revocation requirement: if you need "kick this user out <em>right now</em>," session-based auth (or a token revocation list backed by Redis) is the only clean option. If revocation latency of up to token-expiry is acceptable, JWTs provide simpler horizontal scaling.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 14 ===== -->
+<div class="concept-block" id="c14">
+  <div class="concept-number">CONCEPT 14</div>
+  <div class="concept-title">Consistent Hashing</div>
+
+  <p>PayNova's fraud-service maintains an in-memory feature store: for each user, a rolling window of payment velocity, device fingerprints, and location clusters computed in the last 24 hours. This state is held across 16 fraud-service instances to fit in RAM (the full dataset is 800GB, 50GB per instance). The challenge: when a new payment arrives for user U, it must go to the same fraud-service instance that holds user U's feature state. How do you route requests to the correct instance consistently, even as instances are added or removed?</p>
+
+  <p>Naive modular hashing would route <code>user_id % N</code> to instance N. Adding a 17th instance changes N from 16 to 17, remapping every single key to a new instance — a complete cache invalidation. At PayNova's scale, this would mean 800GB of fraud feature state becomes instantly invalid every time an instance is added or replaced, requiring a full recompute from raw Kafka events (a multi-hour process).</p>
+
+  <p><strong>Consistent hashing</strong> places both instances and keys on a virtual ring of hash values (0 to 2³²). A key is assigned to the first instance encountered clockwise on the ring. Adding an instance only remaps the keys that fall between the new instance and its predecessor on the ring — on average, <code>K/N</code> keys remapped, where K is total keys and N is the number of instances. Adding the 17th fraud-service instance remaps roughly 1/17 of users (≈6%) to the new instance, recomputing feature state only for those users. The other 94% of users are unaffected.</p>
+
+<pre>Virtual ring (simplified):
+  Hash values: 0 ─────────────────────────── 2³²
+  
+  Instance positions: A(0.12) B(0.35) C(0.61) D(0.88)
+  
+  Key user_X → hash(user_X) = 0.45 → assigned to C (next clockwise)
+  Key user_Y → hash(user_Y) = 0.90 → assigned to A (wraps around)
+  
+  Add instance E at 0.50:
+    - Keys between 0.35 and 0.50 now route to E (were going to C)
+    - All other keys unchanged</pre>
+
+  <p>Consistent hashing also underpins PayNova's Redis cluster routing, Kafka partition assignment, and CDN cache node selection. It is a fundamental primitive for distributing work across a dynamically-sized pool of nodes without catastrophic rebalancing.</p>
+</div>
+
+<!-- ===== CONCEPT 15 ===== -->
+<div class="concept-block" id="c15">
+  <div class="concept-number">CONCEPT 15</div>
+  <div class="concept-title">Message Queues</div>
+
+  <p>When a payment is completed at PayNova, six things must happen: the merchant receives a webhook, the buyer receives an email receipt, the ledger records the debit and credit, the analytics pipeline receives an event, the fraud model updates its features, and the compliance audit log is written. If payment-service tried to do all six synchronously before returning an HTTP response to the caller, the response would take 800ms+ and introduce coupling — a bug in the email service would fail the entire payment. Message queues decouple the payment acceptance from its downstream consequences.</p>
+
+  <p>The mental model of a message queue is a post office, not a phone call. Payment-service drops a "payment completed" message in the queue and immediately returns success to the caller (200 OK). Downstream consumers — webhook-service, email-service, ledger-service — retrieve and process messages at their own pace, independently, and with their own retry logic. A failure in email-service does not affect the webhook-service. The payment-service has no knowledge of or coupling to any of these downstream services.</p>
+
+  <p>Queue semantics that matter in practice: <strong>at-least-once delivery</strong> guarantees the message is processed at least once, but possibly more (if the consumer crashes after processing but before acknowledging). <strong>At-most-once delivery</strong> never redelivers — if processing fails, the message is gone. <strong>Exactly-once semantics</strong> is the gold standard but requires coordination between the queue and the consumer's data store. PayNova's ledger-service requires exactly-once processing of credit/debit events (a double-processed debit would overdraft a real merchant). This is achieved by combining at-least-once delivery from Kafka with an idempotency key on the database write (concept 25).</p>
+
+  <div class="insight-box teal">
+    <div class="label">Queues as a resilience mechanism</div>
+    <p>When PayNova's email provider (SendGrid) had a 45-minute outage, payment processing continued normally. Email notifications were queued in RabbitMQ during the outage. When SendGrid recovered, RabbitMQ's dead-letter queue replayed the 2.1 million backed-up messages. Without the queue, 2.1 million payment confirmation emails would have been silently lost. The queue absorbed the shock of a dependency failure without surfacing it to the payment path.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 16 ===== -->
+<div class="concept-block" id="c16">
+  <div class="concept-number">CONCEPT 16</div>
+  <div class="concept-title">REST vs gRPC</div>
+
+  <p>PayNova uses REST for external-facing APIs and gRPC for internal service-to-service communication. The choice is not arbitrary — it reflects the fundamentally different requirements of these two communication surfaces.</p>
+
+  <p><strong>REST</strong> over HTTP/1.1 or HTTP/2 uses human-readable JSON payloads, universally understood by every HTTP client in every programming language. Merchants integrate PayNova using a REST API because they are using PHP, Python, Ruby, Java, Go, Node.js — the common denominator is HTTP and JSON. REST is also easy to debug (curl a URL, read the JSON response), version gracefully (<code>/v1/payments</code> → <code>/v2/payments</code>), and document (OpenAPI spec). Its costs: JSON serialization/deserialization is CPU-intensive and verbose (field names are repeated for every object), HTTP/1.1 is text-based and less efficient over the wire, and there is no code generation — clients must manually parse responses.</p>
+
+  <p><strong>gRPC</strong> (Google Remote Procedure Call) uses Protocol Buffers (protobuf) for serialization — a binary format that is 3–10× smaller than equivalent JSON and faster to serialize/deserialize. gRPC uses HTTP/2 natively, getting multiplexing (multiple concurrent requests over one connection), header compression, and bidirectional streaming. A <code>.proto</code> file defines the service interface; the gRPC toolchain generates client and server stubs in every target language. Inside PayNova's service mesh, payment-service calls fraud-service using gRPC: the protobuf payload is 200 bytes where equivalent JSON would be 1,400 bytes, and deserialization is 5× faster. At 120,000 rps crossing this boundary, the savings are significant.</p>
+
+<pre>// proto definition: FraudService
+service FraudService {
+  rpc AssessRisk(PaymentContext) returns (RiskScore);
+  rpc StreamRiskUpdates(MerchantID) returns (stream RiskScore);
+}
+
+message PaymentContext {
+  string payment_id = 1;
+  string user_id = 2;
+  double amount_usd = 3;
+  string merchant_id = 4;
+  DeviceFingerprint device = 5;  // nested object, no field-name overhead
+}
+
+// Generated client (Go):
+ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+defer cancel()
+score, err := fraudClient.AssessRisk(ctx, &pb.PaymentContext{...})</pre>
+
+  <div class="insight-box coral">
+    <div class="label">Why not gRPC for external APIs?</div>
+    <p>gRPC requires HTTP/2, which is not universally supported by all HTTP clients and reverse proxies. Debugging a gRPC call requires specialized tooling (grpcurl, grpcui) — you cannot just curl it. The .proto file must be distributed to every client and recompiled when the interface changes. These friction points are acceptable inside a controlled service mesh where PayNova controls both sides; they are dealbreakers for a public API used by thousands of merchants with diverse tech stacks.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 17 ===== -->
+<div class="concept-block" id="c17">
+  <div class="concept-number">CONCEPT 17</div>
+  <div class="concept-title">Leader Election — Raft and Paxos</div>
+
+  <p>PayNova runs a <strong>settlement job</strong> every hour: it aggregates all completed payments and calculates net positions for each merchant, then initiates bank transfers. This job must run exactly once per hour — not zero times (underpayment), not twice (double settlement). If three settlement-service instances are running for high availability, exactly one must be elected leader and run the job. The others must stand by silently, ready to take over if the leader fails.</p>
+
+  <p>This is the leader election problem. PayNova implements it using a distributed lock in etcd (a consistent key-value store built on <strong>Raft</strong>). Raft is a consensus algorithm: a cluster of nodes (etcd instances) elect a leader among themselves, and the leader handles all writes. The Raft leader grants a lease (a time-bounded distributed lock) to the settlement-service instance that successfully acquires it. This instance becomes the job leader. The lease has a TTL of 30 seconds; the leader must heartbeat every 10 seconds to renew it. If the leader dies, the lease expires and another settlement-service instance acquires it.</p>
+
+  <p><strong>Paxos</strong> is the theoretical precursor to Raft, proven correct by Leslie Lamport. Raft was designed explicitly to be <em>understandable</em> — Lamport's Paxos paper is notoriously difficult to implement correctly. Raft's key insight is separating leader election from log replication into distinct, clearly defined phases. In practice, most engineers reach for Raft-based tools (etcd, ZooKeeper) rather than implementing Paxos.</p>
+
+  <div class="insight-box green">
+    <div class="label">The split-brain problem</div>
+    <p>A network partition can cause two nodes to each believe they are the leader (a "split brain"). Raft prevents this using quorum: a node can only be elected or retain leadership if it receives acknowledgment from a majority (N/2 + 1) of the cluster. With 3 etcd nodes, 2 must agree. If the cluster partitions into two groups of 1 and 2 nodes, the group of 2 has quorum and can elect a leader; the group of 1 cannot. There is never a situation where two nodes both have quorum — arithmetic prevents it. This is why etcd and ZooKeeper clusters always have odd numbers of nodes.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 18 ===== -->
+<div class="concept-block" id="c18">
+  <div class="concept-number">CONCEPT 18</div>
+  <div class="concept-title">Circuit Breakers</div>
+
+  <p>PayNova's payment-service calls three external systems: the fraud-service (internal), the card network (Visa/Mastercard) authorization API (external), and the merchant's webhook endpoint (external, per-merchant). Each of these can fail, and the failure modes are different. Without circuit breakers, a slow or failing external dependency can cascade into a complete payment-service failure through thread exhaustion.</p>
+
+  <p>The scenario: Visa's authorization API starts responding in 8,000ms instead of its normal 150ms. Each payment-service thread waits up to 8,000ms for a response. With 100 threads per pod and 120,000 rps, threads accumulate faster than they complete. Within seconds, all threads are blocked waiting for Visa, payment-service is unable to accept new requests, and PayNova goes down — even though only the Visa API is degraded.</p>
+
+  <p>A <strong>Circuit Breaker</strong> (named after the electrical component) wraps a call to an external dependency and monitors its failure rate. It has three states: <strong>Closed</strong> (normal operation — requests pass through), <strong>Open</strong> (failure threshold exceeded — requests immediately fail with a fallback response, not waiting for the dependency), and <strong>Half-Open</strong> (after a timeout, a test request is sent; if it succeeds, the circuit closes; if it fails, it opens again). PayNova uses Resilience4j for circuit breaking. When Visa's API failure rate exceeds 50% over a 10-second sliding window, the circuit opens. Payment-service immediately returns a "temporarily unavailable" response to callers without making a network call, freeing threads instantly. The circuit attempts recovery every 30 seconds.</p>
+
+<pre>// Circuit breaker configuration (Resilience4j)
+CircuitBreakerConfig config = CircuitBreakerConfig.custom()
+    .failureRateThreshold(50)           // open if >50% fail
+    .slowCallRateThreshold(80)          // or if >80% are slow
+    .slowCallDurationThreshold(Duration.ofMillis(500))
+    .waitDurationInOpenState(Duration.ofSeconds(30))
+    .slidingWindowSize(10)             // over last 10 calls
+    .minimumNumberOfCalls(5)           // don't trigger on first call
+    .build();
+
+// Wrapped call
+Try<AuthorizationResponse> result = circuitBreaker.executeSupplier(
+    () -> visaAuthorizationClient.authorize(paymentRequest)
+);</pre>
+
+  <div class="insight-box red">
+    <div class="label">Bulkheads complement circuit breakers</div>
+    <p>Circuit breakers prevent call accumulation. Bulkheads prevent thread pool exhaustion. PayNova allocates a separate thread pool for each external dependency — 20 threads for Visa calls, 10 for Mastercard, 5 for fraud-service. If Visa's thread pool fills up, it affects only Visa calls. Mastercard processing continues on its own threads. Without bulkheads, all external calls share the same thread pool — one slow dependency starves all others.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 19 ===== -->
+<div class="concept-block" id="c19">
+  <div class="concept-number">CONCEPT 19</div>
+  <div class="concept-title">Failover and Disaster Recovery</div>
+
+  <p>PayNova operates in three AWS regions: <code>us-east-1</code> (primary), <code>eu-west-1</code> (secondary), and <code>ap-southeast-1</code> (tertiary). The DR architecture must satisfy two financial-grade SLAs: an <strong>RPO (Recovery Point Objective)</strong> of zero seconds for transaction data (no payment can be lost under any failure scenario) and an <strong>RTO (Recovery Time Objective)</strong> of 60 seconds for full payment processing capability.</p>
+
+  <p>RPO zero is achieved through synchronous replication. PayNova's primary PostgreSQL cluster in us-east-1 does not acknowledge a committed transaction to the application until at least one synchronous replica in eu-west-1 has confirmed it wrote to disk. This means every commit has cross-region latency added (typically 80–100ms for the transatlantic round-trip). This is the accepted cost for financial-grade durability — a payment that is lost because the data center burned down is worse than adding 100ms to the commit latency.</p>
+
+  <p>The Kafka event log is configured with <code>acks=all</code> and a replication factor of 3 across availability zones, plus a cross-region Kafka MirrorMaker that replicates all topics to eu-west-1 within seconds. If us-east-1 becomes unreachable, the eu-west-1 Kafka cluster has a complete copy of all events from which any service can reconstruct state.</p>
+
+  <p>Failover is initiated manually for full region failure (the engineering cost of a false trigger — routing all traffic to eu-west-1 during a brief network blip — is high). Individual service failures use automatic failover via load balancer health checks: a failing pod is removed from rotation within 10 seconds. Database primary failure uses Patroni (a PostgreSQL HA tool) to automatically promote a replica to primary within 30 seconds.</p>
+
+  <div class="insight-box gray">
+    <div class="label">The chaos engineering practice</div>
+    <p>PayNova runs quarterly chaos experiments using AWS Fault Injection Simulator: kill a random primary database, terminate a third of payment-service pods, inject 2-second latency on the fraud-service network interface. These experiments validate that the RTO of 60 seconds is achievable in practice, not just in theory. Disaster recovery plans that are never tested are not disaster recovery plans — they are fiction.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 20 ===== -->
+<div class="concept-block" id="c20">
+  <div class="concept-number">CONCEPT 20</div>
+  <div class="concept-title">Heartbeats and Health Checks</div>
+
+  <p>PayNova's infrastructure health monitoring operates at three levels, each serving a distinct purpose with different granularity and latency requirements.</p>
+
+  <p><strong>Liveness probes</strong> answer: "is this process alive?" Kubernetes sends an HTTP GET to <code>/healthz</code> every 10 seconds. If the response is not 200 OK within 2 seconds, the pod is considered dead and restarted. This catches situations where a JVM has deadlocked, a Go routine has panicked, or the process has entered an infinite loop. The liveness endpoint returns 200 if the process can respond — nothing more. PayNova deliberately keeps the liveness check trivially simple: if the web server can respond, the process is alive.</p>
+
+  <p><strong>Readiness probes</strong> answer: "is this instance ready to serve traffic?" This is distinct from liveness. A newly started payment-service pod may be alive (the process started) but not ready (it hasn't loaded merchant config into its local cache, or its database connection pool hasn't warmed up). The readiness probe at <code>/readyz</code> checks the database connection pool health and Redis connectivity. Until this returns 200, the pod is not added to the load balancer's rotation. This prevents cold-pod traffic loss: requests arriving before a pod is warm do not get routed to it.</p>
+
+  <p><strong>Application-level heartbeats</strong> go deeper. PayNova's settlement-service sends a heartbeat event to a dead man's switch (a Kafka topic monitored by an alerting service) every 60 seconds. If the alert service does not receive a heartbeat for 3 minutes, it triggers PagerDuty. This catches cases where the service is technically alive and passing Kubernetes health checks but is internally hung (e.g., the settlement job is blocked on a database lock that has been held for 10 minutes). Kubernetes does not know about application-level stalls — heartbeats extend health monitoring into the business logic layer.</p>
+
+  <div class="insight-box teal">
+    <div class="label">The difference that matters in production</div>
+    <p>A pod that fails its liveness probe gets restarted — this is appropriate for a hung process. A pod that fails its readiness probe is removed from load balancer rotation but not restarted — this is appropriate for a temporarily overloaded or warming instance. Getting this distinction wrong causes unnecessary restarts (which disrupt in-flight requests) or routes traffic to unhealthy pods (which fails those requests). Misconfigured health checks are a significant source of production incidents.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 21 ===== -->
+<div class="concept-block" id="c21">
+  <div class="concept-number">CONCEPT 21</div>
+  <div class="concept-title">CQRS — Command Query Responsibility Segregation</div>
+
+  <p>PayNova's payments database schema was initially designed for transactional correctness: normalized, indexed for write performance, with foreign key constraints ensuring data integrity. This schema is terrible for reporting. A merchant wanting to see "total revenue by currency by day for the past 90 days, broken down by payment method" requires joining payments, currency_conversions, payment_methods, and merchants tables, with GROUP BY and date truncation. On a 50-billion-row payments table, this query would run for minutes and compete with write traffic for database resources.</p>
+
+  <p><strong>CQRS</strong> separates the model for writing state (Commands) from the model for reading state (Queries). The write model (in PostgreSQL) is normalized and optimized for transactional correctness. The read model (in Elasticsearch and ClickHouse) is denormalized and pre-aggregated for query performance. When a payment is written to PostgreSQL, an event is emitted to Kafka. A ClickHouse consumer reads this event and writes a denormalized row into an analytics table designed for the exact queries the dashboard needs. The read and write paths are completely separate, optimized independently.</p>
+
+<pre>Command side (PostgreSQL, normalized):
+  payments(id, merchant_id, amount, currency, status, created_at)
+  payment_methods(id, payment_id, type, card_network)
+  currency_conversions(id, payment_id, from_currency, to_currency, rate)
+
+Query side (ClickHouse, denormalized):
+  payment_analytics(
+    payment_id, merchant_id, merchant_name,
+    amount_usd, amount_local, currency,
+    payment_method_type, card_network,
+    date, hour, day_of_week  -- pre-extracted for GROUP BY
+    -- No joins needed; all data is pre-joined at write time
+  )
+
+Merchant dashboard query (milliseconds, not minutes):
+  SELECT date, currency, SUM(amount_usd)
+  FROM payment_analytics
+  WHERE merchant_id = ? AND date >= now() - 90 days
+  GROUP BY date, currency</pre>
+
+  <div class="insight-box purple">
+    <div class="label">The cost of CQRS</div>
+    <p>The read model is eventually consistent with the write model — there is a propagation delay (typically 1–3 seconds via Kafka) before a new payment appears in the dashboard. For PayNova's analytics use case, this is completely acceptable. If a use case requires reading data that was just written (such as "does this payment already exist?"), it must query the write model directly. CQRS adds operational complexity; apply it only where the query-performance benefit justifies that complexity.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 22 ===== -->
+<div class="concept-block" id="c22">
+  <div class="concept-number">CONCEPT 22</div>
+  <div class="concept-title">Event-Driven Design</div>
+
+  <p>PayNova's entire architecture is organized around events, not requests. The distinction is more profound than it sounds. In a request-driven architecture, Service A calls Service B and waits for a response — the two are temporally and logically coupled. In an event-driven architecture, Service A emits "PaymentInitiated" to Kafka and its job is done. Fraud-service, ledger-service, notification-service, and analytics-service each independently react to that event on their own timeline, in their own way, with no knowledge of each other's existence.</p>
+
+  <p>This changes the dependency graph from a web of synchronous calls (payment-service → fraud-service, payment-service → ledger-service, payment-service → notification-service) to a star topology with Kafka at the center (all services publish to and consume from Kafka). Adding a new consumer — say, a compliance reporting service that needs to archive every payment — requires zero changes to payment-service. The compliance team subscribes a new consumer group to the <code>payment-events</code> topic and begins receiving all events from the beginning of Kafka's retention window.</p>
+
+  <p>PayNova's event catalog is the single most important architecture document in the company. Every event has a published schema, versioning policy, and ownership. Events are treated as APIs: changing an event schema in a breaking way requires a migration plan and a deprecation period. This discipline prevents the chaos of an event-driven system where nobody knows what is emitting what, or what the fields mean.</p>
+
+  <div class="insight-box coral">
+    <div class="label">Event sourcing as an extension</div>
+    <p>PayNova goes one step further: the Kafka event log <em>is</em> the system of record for payment state. The current state of any payment is derived by replaying its events (PaymentInitiated → FraudApproved → CardAuthorized → PaymentSettled). The PostgreSQL database contains a materialized view of this state for efficient querying, but in the event of data corruption, the entire database can be rebuilt from the Kafka event log. This is event sourcing: state as a projection of events, not events as a side effect of state changes.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 24 ===== -->
+<div class="concept-block" id="c24">
+  <div class="concept-number">CONCEPT 24</div>
+  <div class="concept-title">Saga Pattern</div>
+
+  <p>Processing a PayNova payment involves a sequence of operations that each touch a different service and database: (1) debit the merchant's reserved balance in identity-service, (2) run fraud assessment in fraud-service, (3) authorize with the card network, (4) credit the merchant's available balance in ledger-service, (5) send confirmation to notification-service. This is a distributed transaction — a logical unit of work that spans multiple independent services, each with their own database.</p>
+
+  <p>The ACID approach to distributed transactions is two-phase commit (2PC): a coordinator asks all participants to prepare (lock resources), then tells them all to commit. If any participant cannot commit, all roll back. PayNova evaluated and rejected 2PC for the payment path: it holds distributed locks across services for the duration of the transaction (blocking other operations), is vulnerable to coordinator failure, and has terrible performance at scale.</p>
+
+  <p>The <strong>Saga pattern</strong> replaces a single distributed transaction with a sequence of local transactions, each publishing an event upon completion. If any step fails, compensating transactions are executed to undo the effect of all preceding steps. PayNova uses the <strong>Choreography-based Saga</strong> for simple payment flows (each service listens for events and reacts) and the <strong>Orchestration-based Saga</strong> for complex ones (a saga orchestrator explicitly sequences and coordinates each step).</p>
+
+<pre>Payment Saga (Orchestrated):
+  ┌─────────────────────────────────────────────────┐
+  │              Payment Orchestrator               │
+  └──┬────────────────────────────────────────────┘
+     │ 1. ReserveBalance → success
+     │ 2. AssessFraud → success
+     │ 3. AuthorizeCard → success
+     │ 4. CreditMerchant → FAIL
+     │
+     │ Compensating transactions (reverse order):
+     │ 4b. (nothing to undo — credit never happened)
+     │ 3b. VoidCardAuthorization
+     │ 2b. (fraud assessment is read-only, no undo)
+     │ 1b. ReleaseReservedBalance</pre>
+
+  <div class="insight-box green">
+    <div class="label">The fundamental tradeoff</div>
+    <p>Sagas achieve availability over consistency (AP in CAP theorem terms). Between step 2 and step 4, the system is in an intermediate state: balance is reserved but the card is not yet authorized. Other services may observe this intermediate state. In contrast, 2PC provides strong consistency (all-or-nothing) at the cost of availability (blocking locks). For a payment system where partial failure must be handled gracefully and availability is paramount, Sagas are the pragmatic choice — but they require designing compensating transactions for every step, which is significant engineering effort.</p>
+  </div>
+</div>
+
+<!-- ===== CONCEPT 25 ===== -->
+<div class="concept-block" id="c25">
+  <div class="concept-number">CONCEPT 25</div>
+  <div class="concept-title">Idempotency</div>
+
+  <p>Idempotency is arguably the most financially critical concept in this entire list. An operation is idempotent if executing it multiple times produces the same result as executing it once. For a payment API, the question is brutally simple: if a merchant's server sends a payment request, the network drops the response, and their server retries — do you charge the customer once or twice?</p>
+
+  <p>PayNova requires every merchant to include an <code>Idempotency-Key</code> header with every payment request — a UUID generated by the merchant's system, unique per payment attempt. PayNova stores a mapping of <code>Idempotency-Key → payment result</code> in a Redis cache with a 24-hour TTL (and durably in PostgreSQL). When a request arrives, PayNova checks this mapping first. If the key exists, it returns the stored result without re-executing the payment. The payment is processed exactly once regardless of how many times the retry logic re-submits.</p>
+
+<pre>POST /v1/payments
+Idempotency-Key: a7f9c3d1-2b5e-4f8a-9c6d-1e3b5a7f9c3d
+{
+  "amount": 9999,
+  "currency": "USD",
+  "merchant_id": "merch_XYZ"
+}
+
+// First call: payment processed, result stored
+// Retry 1 (network timeout, merchant retries): 
+//   key found in Redis → return stored result, no re-processing
+// Retry 2 (same): identical behavior</pre>
+
+  <p>Idempotency goes deeper than the API layer. PayNova's Kafka consumers must also be idempotent. Kafka guarantees at-least-once delivery — a message may be delivered more than once if the consumer crashes after processing but before committing its offset. When ledger-service processes a "credit merchant $9999" event, it writes the credit using an <code>INSERT ... ON CONFLICT DO NOTHING</code> query keyed on the payment_id. If the same event is delivered twice, the second insert is a no-op. The database enforces idempotency at the storage layer.</p>
+
+  <div class="insight-box blue">
+    <div class="label">Idempotency is a contract, not just code</div>
+    <p>The idempotency key must be generated by the <em>client</em> before the request is sent, not by the server after receiving it. If the server generates the key, a retry that never reaches the server generates a new key and the operation executes again. The client-generated key survives network failures, server crashes, and load balancer restarts because it lives in the client's system, not the server's. This architectural point — who generates the idempotency key and when — is the question that distinguishes engineers who have debugged double-charge incidents from those who haven't.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<p style="font-size: 0.85rem; color: var(--ink-tertiary); font-family: 'IBM Plex Mono', monospace;">PayNova is a composite scenario synthesizing patterns from Stripe, Adyen, PayPal, and modern payment infrastructure. All 25 concepts are load-bearing in this architecture — removing any one of them creates a specific, describable failure mode. That is the test of whether a system design concept is truly understood: can you articulate what breaks without it?</p>
+
+</body>
+</html>

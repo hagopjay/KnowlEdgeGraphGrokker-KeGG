@@ -1,0 +1,2268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Math Graphics Masterclass</title>
+<style>
+  :root {
+    --neon-blue: #00d4ff;
+    --neon-purple: #b44fff;
+    --neon-green: #00ff88;
+    --neon-orange: #ff6b35;
+    --neon-pink: #ff2d78;
+    --dark-bg: #050510;
+    --card-bg: #0a0a1a;
+    --card-border: #1a1a3a;
+    --text-primary: #e8e8ff;
+    --text-secondary: #8888aa;
+    --text-dim: #444466;
+    --gold: #ffd700;
+    --silver: #c0c0c0;
+    --bronze: #cd7f32;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark-bg);
+    color: var(--text-primary);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ── STARFIELD ── */
+  #starfield {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .star {
+    position: absolute;
+    border-radius: 50%;
+    animation: twinkle var(--dur) ease-in-out infinite alternate;
+    background: white;
+  }
+
+  @keyframes twinkle {
+    from { opacity: var(--min-op); transform: scale(1); }
+    to   { opacity: var(--max-op); transform: scale(1.6); }
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 60px 20px 40px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+  }
+
+  .hero-badge {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--neon-blue);
+    border: 1px solid var(--neon-blue);
+    padding: 4px 16px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    animation: pulse-border 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 4px var(--neon-blue); }
+    50%       { box-shadow: 0 0 18px var(--neon-blue), 0 0 40px rgba(0,212,255,0.3); }
+  }
+
+  h1.main-title {
+    font-size: clamp(2.2rem, 6vw, 5rem);
+    font-weight: 900;
+    line-height: 1.1;
+    background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple), var(--neon-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 30px rgba(180,79,255,0.5));
+    margin-bottom: 16px;
+  }
+
+  .subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 700px;
+    margin: 0 auto 30px;
+    line-height: 1.7;
+  }
+
+  .progress-overview {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .level-pill {
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .level-pill.beginner  { background: rgba(0,255,136,0.1); border-color: var(--neon-green);  color: var(--neon-green); }
+  .level-pill.basic     { background: rgba(0,212,255,0.1); border-color: var(--neon-blue);   color: var(--neon-blue); }
+  .level-pill.inter     { background: rgba(180,79,255,0.1);border-color: var(--neon-purple); color: var(--neon-purple); }
+  .level-pill.advanced  { background: rgba(255,45,120,0.1);border-color: var(--neon-pink);   color: var(--neon-pink); }
+  .level-pill.ninja     { background: rgba(255,107,53,0.1);border-color: var(--neon-orange); color: var(--neon-orange); }
+
+  .level-pill:hover { transform: translateY(-2px); filter: brightness(1.3); }
+
+  /* ── CANVAS DEMO STRIP ── */
+  .canvas-strip {
+    position: relative;
+    z-index: 5;
+    width: 100%;
+    height: 160px;
+    display: flex;
+    gap: 2px;
+    overflow: hidden;
+  }
+
+  .canvas-strip canvas {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main-container {
+    position: relative;
+    z-index: 5;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  /* ── SECTION HEADERS ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 50px 0 24px;
+  }
+
+  .section-icon {
+    width: 50px; height: 50px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+
+  .section-icon.green  { background: rgba(0,255,136,0.15); box-shadow: 0 0 20px rgba(0,255,136,0.2); }
+  .section-icon.blue   { background: rgba(0,212,255,0.15); box-shadow: 0 0 20px rgba(0,212,255,0.2); }
+  .section-icon.purple { background: rgba(180,79,255,0.15);box-shadow: 0 0 20px rgba(180,79,255,0.2); }
+  .section-icon.pink   { background: rgba(255,45,120,0.15);box-shadow: 0 0 20px rgba(255,45,120,0.2); }
+  .section-icon.orange { background: rgba(255,107,53,0.15);box-shadow: 0 0 20px rgba(255,107,53,0.2); }
+
+  .section-title-group h2 {
+    font-size: 1.6rem;
+    font-weight: 800;
+  }
+
+  .section-title-group p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 3px;
+  }
+
+  .level-ribbon {
+    margin-left: auto;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  /* ── CARD GRID ── */
+  .card-grid {
+    display: grid;
+    gap: 18px;
+  }
+
+  .grid-2 { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .grid-4 { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+
+  /* ── MODULE CARD ── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent, var(--neon-blue));
+    transform: scaleX(0);
+    transition: transform 0.3s;
+    transform-origin: left;
+  }
+
+  .card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.1); }
+  .card:hover::before { transform: scaleX(1); }
+
+  .card.green  { --accent: var(--neon-green); }
+  .card.blue   { --accent: var(--neon-blue); }
+  .card.purple { --accent: var(--neon-purple); }
+  .card.pink   { --accent: var(--neon-pink); }
+  .card.orange { --accent: var(--neon-orange); }
+
+  .card:hover { box-shadow: 0 8px 40px rgba(0,0,0,0.4), 0 0 0 1px var(--accent, var(--neon-blue)) inset; }
+
+  .card-glow {
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: var(--accent, var(--neon-blue));
+    opacity: 0.04;
+    filter: blur(30px);
+    transition: opacity 0.3s;
+  }
+
+  .card:hover .card-glow { opacity: 0.12; }
+
+  .card-num {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--accent, var(--neon-blue));
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-num::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--accent, var(--neon-blue));
+    opacity: 0.3;
+  }
+
+  .card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+
+  .card p {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    color: var(--text-secondary);
+    border: 1px solid var(--card-border);
+    letter-spacing: 0.5px;
+  }
+
+  .card-mini-visual {
+    width: 100%;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-mini-visual canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .duration {
+    font-size: 11px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .difficulty-dots {
+    display: flex;
+    gap: 4px;
+  }
+
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--card-border);
+    transition: background 0.3s;
+  }
+
+  .dot.filled { background: var(--accent, var(--neon-blue)); }
+
+  /* ── WIDE FEATURED CARD ── */
+  .featured-card {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 0;
+    overflow: hidden;
+    min-height: 220px;
+  }
+
+  .featured-card .card-content { padding: 28px; }
+
+  .featured-card canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  @media (max-width: 700px) {
+    .featured-card { grid-template-columns: 1fr; }
+    .featured-card canvas { height: 140px; }
+  }
+
+  /* ── CONCEPT INSIGHT BOXES ── */
+  .insight-box {
+    background: linear-gradient(135deg, rgba(0,0,0,0.5), rgba(20,0,40,0.5));
+    border: 1px solid var(--neon-purple);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .insight-box::before {
+    content: '💡';
+    position: absolute;
+    top: -10px; right: 16px;
+    font-size: 40px;
+    opacity: 0.15;
+  }
+
+  .insight-box h4 {
+    color: var(--neon-purple);
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .insight-box p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  /* ── PRO TIP BOX ── */
+  .protip-box {
+    background: linear-gradient(135deg, rgba(0,212,255,0.04), rgba(0,255,136,0.04));
+    border: 1px solid rgba(0,212,255,0.3);
+    border-left: 3px solid var(--neon-blue);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .protip-box strong {
+    color: var(--neon-blue);
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* ── MATH FORMULA DISPLAY ── */
+  .formula-strip {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 12px 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--neon-blue) transparent;
+  }
+
+  .formula-chip {
+    flex-shrink: 0;
+    background: rgba(0,212,255,0.05);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: var(--neon-blue);
+    white-space: nowrap;
+    transition: all 0.3s;
+    cursor: default;
+  }
+
+  .formula-chip:hover {
+    background: rgba(0,212,255,0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,212,255,0.2);
+  }
+
+  /* ── PROGRESS TRACK ── */
+  .journey-track {
+    position: relative;
+    padding: 30px 0;
+    margin: 40px 0;
+  }
+
+  .journey-line {
+    position: absolute;
+    left: 28px;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(
+      180deg,
+      var(--neon-green),
+      var(--neon-blue) 25%,
+      var(--neon-purple) 50%,
+      var(--neon-pink) 75%,
+      var(--neon-orange)
+    );
+    opacity: 0.4;
+  }
+
+  .journey-node {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 28px;
+    position: relative;
+  }
+
+  .node-dot {
+    width: 58px; height: 58px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+    border: 2px solid transparent;
+    transition: all 0.3s;
+  }
+
+  .node-dot:hover { transform: scale(1.1); }
+
+  .node-dot.n1 { background: rgba(0,255,136,0.15);  border-color: var(--neon-green); }
+  .node-dot.n2 { background: rgba(0,212,255,0.15);  border-color: var(--neon-blue); }
+  .node-dot.n3 { background: rgba(180,79,255,0.15); border-color: var(--neon-purple); }
+  .node-dot.n4 { background: rgba(255,45,120,0.15); border-color: var(--neon-pink); }
+  .node-dot.n5 { background: rgba(255,107,53,0.15); border-color: var(--neon-orange); }
+
+  .node-content { padding-top: 8px; }
+  .node-content h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+  .node-content p  { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.6; }
+
+  /* ── NINJA ZONE ── */
+  .ninja-zone {
+    background: linear-gradient(135deg, #0a0012, #150020, #0a0012);
+    border: 1px solid rgba(255,45,120,0.3);
+    border-radius: 20px;
+    padding: 40px;
+    margin: 40px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ninja-zone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(255,45,120,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(180,79,255,0.08) 0%, transparent 60%);
+  }
+
+  .ninja-warning {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,45,120,0.1);
+    border: 1px solid var(--neon-pink);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--neon-pink);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .ninja-zone h2 {
+    font-size: 2rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--neon-pink), var(--neon-orange), var(--neon-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+
+  .ninja-zone > p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    max-width: 700px;
+    margin-bottom: 30px;
+  }
+
+  .ninja-topics {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+
+  .ninja-chip {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,45,120,0.2);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .ninja-chip:hover {
+    border-color: var(--neon-pink);
+    background: rgba(255,45,120,0.05);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(255,45,120,0.15);
+  }
+
+  .ninja-chip .icon { font-size: 24px; margin-bottom: 8px; }
+  .ninja-chip h4 { font-size: 0.88rem; font-weight: 700; margin-bottom: 4px; color: var(--text-primary); }
+  .ninja-chip p  { font-size: 0.75rem; color: var(--text-dim); line-height: 1.5; }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    margin: 30px 0;
+  }
+
+  .stat-item {
+    text-align: center;
+    padding: 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    transition: all 0.3s;
+  }
+
+  .stat-item:hover { border-color: var(--neon-blue); transform: translateY(-2px); }
+
+  .stat-item .num {
+    font-size: 2.2rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-item .label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ── INTERACTIVE DEMO PANEL ── */
+  .demo-panel {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin: 30px 0;
+  }
+
+  .demo-tabs {
+    display: flex;
+    overflow-x: auto;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  .demo-tab {
+    padding: 12px 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s;
+    white-space: nowrap;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+
+  .demo-tab.active {
+    color: var(--neon-blue);
+    border-bottom-color: var(--neon-blue);
+    background: rgba(0,212,255,0.05);
+  }
+
+  .demo-tab:hover:not(.active) { color: var(--text-secondary); }
+
+  .demo-content { padding: 24px; display: none; }
+  .demo-content.active { display: block; }
+
+  .demo-canvas-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  @media (max-width: 640px) {
+    .demo-canvas-wrap { grid-template-columns: 1fr; }
+  }
+
+  .demo-canvas-wrap canvas {
+    width: 100%;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.5);
+  }
+
+  .demo-explain h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 10px; color: var(--neon-blue); }
+  .demo-explain p  { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px; }
+
+  .code-snippet {
+    background: rgba(0,0,0,0.6);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--neon-green);
+    overflow-x: auto;
+    line-height: 1.6;
+  }
+
+  .code-snippet .kw  { color: var(--neon-purple); }
+  .code-snippet .fn  { color: var(--neon-blue); }
+  .code-snippet .num { color: var(--neon-orange); }
+  .code-snippet .cm  { color: #445566; }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 5;
+    text-align: center;
+    padding: 60px 20px;
+    border-top: 1px solid var(--card-border);
+    margin-top: 60px;
+  }
+
+  .footer-glow {
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 200px;
+    background: radial-gradient(ellipse, rgba(180,79,255,0.08), transparent 70%);
+    pointer-events: none;
+  }
+
+  footer h3 { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+  footer p  { color: var(--text-secondary); font-size: 0.85rem; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--neon-purple); }
+
+  /* ── UTILITY ── */
+  .mt-8  { margin-top: 8px; }
+  .mb-20 { margin-bottom: 20px; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--card-border), transparent);
+    margin: 20px 0;
+  }
+
+  /* Animate cards in on scroll */
+  .card, .ninja-chip, .stat-item {
+    animation: fadeUp 0.5s ease both;
+    animation-play-state: paused;
+  }
+
+  .card.visible, .ninja-chip.visible, .stat-item.visible {
+    animation-play-state: running;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- STARFIELD -->
+<div id="starfield"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="hero-badge">✦ The Ultimate Masterclass ✦</div>
+  <h1 class="main-title">3D Math &amp; Graphics</h1>
+  <p class="subtitle">
+    From your very first vector to riding quaternion hyperspace — a complete, living map of
+    3D mathematics and graphics programming. No PhD required. Curiosity essential.
+  </p>
+  <div class="progress-overview">
+    <span class="level-pill beginner" onclick="goToSection('sec-beginner')">🌱 Foundations</span>
+    <span class="level-pill basic"    onclick="goToSection('sec-basic')">⚡ Core Mechanics</span>
+    <span class="level-pill inter"    onclick="goToSection('sec-inter')">🔮 Intermediate</span>
+    <span class="level-pill advanced" onclick="goToSection('sec-advanced')">🔥 Advanced</span>
+    <span class="level-pill ninja"    onclick="goToSection('sec-ninja')">🥷 Ninja Territory</span>
+  </div>
+</header>
+
+<!-- CANVAS DEMO STRIP -->
+<div class="canvas-strip">
+  <canvas id="cs1"></canvas>
+  <canvas id="cs2"></canvas>
+  <canvas id="cs3"></canvas>
+  <canvas id="cs4"></canvas>
+  <canvas id="cs5"></canvas>
+  <canvas id="cs6"></canvas>
+</div>
+
+<!-- MAIN -->
+<div class="main-container">
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-item"><div class="num">47</div><div class="label">Modules</div></div>
+    <div class="stat-item"><div class="num">5</div><div class="label">Levels</div></div>
+    <div class="stat-item"><div class="num">∞</div><div class="label">Rabbit Holes</div></div>
+    <div class="stat-item"><div class="num">12</div><div class="label">Live Demos</div></div>
+    <div class="stat-item"><div class="num">360°</div><div class="label">Coverage</div></div>
+  </div>
+
+  <!-- JOURNEY ROADMAP -->
+  <div class="section-header" style="margin-top:20px">
+    <div class="section-icon purple">🗺️</div>
+    <div class="section-title-group">
+      <h2>Your Journey</h2>
+      <p>A living progression from zero to 3D ninja</p>
+    </div>
+  </div>
+
+  <div class="journey-track">
+    <div class="journey-line"></div>
+    <div class="journey-node">
+      <div class="node-dot n1">🌱</div>
+      <div class="node-content">
+        <h3 style="color:var(--neon-green)">Foundations — "Numbers Have Directions"</h3>
+        <p>Coordinates, vectors, basic trig, the right-hand rule, thinking in space. This is where the intuition is born. Don't rush it — every advanced topic traces back here.</p>
+      </div>
+    </div>
+    <div class="journey-node">
+      <div class="node-dot n2">⚡</div>
+      <div class="node-content">
+        <h3 style="color:var(--neon-blue)">Core Mechanics — "Matrices Are Superpowers"</h3>
+        <p>Dot products, cross products, matrix transforms, homogeneous coordinates, the view frustum, basic lighting. Where theory becomes a pipeline.</p>
+      </div>
+    </div>
+    <div class="journey-node">
+      <div class="node-dot n3">🔮</div>
+      <div class="node-content">
+        <h3 style="color:var(--neon-purple)">Intermediate — "Smooth, Beautiful, Correct"</h3>
+        <p>Quaternions, interpolation, normal maps, shadow maps, PBR fundamentals, spatial data structures, skeletal animation. This is the meat. Plan to live here a while.</p>
+      </div>
+    </div>
+    <div class="journey-node">
+      <div class="node-dot n4">🔥</div>
+      <div class="node-content">
+        <h3 style="color:var(--neon-pink)">Advanced — "The Pipeline Bends to Your Will"</h3>
+        <p>Global illumination concepts, GPU architecture, deferred shading, Monte Carlo methods, SDF raymarching, GPGPU, cloth/fluid simulation math.</p>
+      </div>
+    </div>
+    <div class="journey-node">
+      <div class="node-dot n5">🥷</div>
+      <div class="node-content">
+        <h3 style="color:var(--neon-orange)">Ninja Territory — "Here Be Dragons"</h3>
+        <p>Spectral rendering, neural radiance fields, real-time GI, tensor math for ML on the GPU, projective geometry at its deepest. A glimpse of what lies beyond the map.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- SECTION 1 — FOUNDATIONS -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <div id="sec-beginner" class="section-header">
+    <div class="section-icon green">🌱</div>
+    <div class="section-title-group">
+      <h2 style="color:var(--neon-green)">Section 1 — Foundations</h2>
+      <p>The soil everything else grows from. Deceptively simple. Permanently important.</p>
+    </div>
+    <div class="level-ribbon" style="background:rgba(0,255,136,0.1);border:1px solid var(--neon-green);color:var(--neon-green)">BEGINNER</div>
+  </div>
+
+  <div class="insight-box">
+    <h4>Why This Section Matters</h4>
+    <p>Every shader, physics engine, and rendering algorithm in existence is built on coordinate systems and vectors. Skipping this is like learning to drive before understanding roads exist. Master the intuition here and advanced topics will click in hours instead of weeks.</p>
+  </div>
+
+  <div class="protip-box">
+    <strong>🎯 Learning Strategy</strong>
+    Resist the urge to memorize formulas. Focus on <em>why</em> each operation makes geometric sense. If you understand why |v| = √(x²+y²+z²), you'll never forget it. Memorization is fragile; geometric intuition is bulletproof.
+  </div>
+
+  <div class="card-grid grid-2">
+    <!-- Card 1.1 -->
+    <div class="card green">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 1.1</div>
+      <div class="card-mini-visual"><canvas id="mv1"></canvas></div>
+      <h3>Coordinate Systems &amp; Thinking in Space</h3>
+      <p>Cartesian, left-hand vs right-hand, world space vs screen space. Why the Y-axis points up (and sometimes down). The philosophical leap of describing the universe with triples of numbers — and why different engines make different choices that will trip you up.</p>
+      <div class="card-tags">
+        <span class="tag">XYZ</span><span class="tag">Cartesian</span><span class="tag">Handedness</span><span class="tag">World Space</span>
+      </div>
+      <div class="card-footer">
+        <span class="duration">⏱ 45 min</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 1.2 -->
+    <div class="card green">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 1.2</div>
+      <div class="card-mini-visual"><canvas id="mv2"></canvas></div>
+      <h3>Vectors — Direction + Magnitude</h3>
+      <p>What a vector really is (not just "an arrow"). Addition, subtraction, scalar multiplication, magnitude, unit vectors. The critical difference between a point and a direction — a distinction that will save you from countless bugs in your first shader.</p>
+      <div class="card-tags">
+        <span class="tag">Vectors</span><span class="tag">Magnitude</span><span class="tag">Normalize</span><span class="tag">Direction</span>
+      </div>
+      <div class="card-footer">
+        <span class="duration">⏱ 60 min</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 1.3 -->
+    <div class="card green">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 1.3</div>
+      <div class="card-mini-visual"><canvas id="mv3"></canvas></div>
+      <h3>Trigonometry for 3D — Sin, Cos, and You</h3>
+      <p>Unit circle intuition, sin/cos as projections, atan2 for angles in the wild, the identity sin²+cos²=1 and why it secretly describes a circle (and then a sphere). Practical usage in rotation formulas and why atan2 beats atan everywhere.</p>
+      <div class="card-tags">
+        <span class="tag">Trig</span><span class="tag">Unit Circle</span><span class="tag">atan2</span><span class="tag">Identities</span>
+      </div>
+      <div class="card-footer">
+        <span class="duration">⏱ 75 min</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 1.4 -->
+    <div class="card green">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 1.4</div>
+      <div class="card-mini-visual"><canvas id="mv4"></canvas></div>
+      <h3>Parametric Equations — The Generator's Mindset</h3>
+      <p>Parametric lines, circles, and curves. Why "t" is the most powerful variable in graphics. Tracing paths through space by animating a single number — the foundation of all motion, interpolation, and procedural generation.</p>
+      <div class="card-tags">
+        <span class="tag">Parametric</span><span class="tag">Lines</span><span class="tag">Curves</span><span class="tag">Parameter t</span>
+      </div>
+      <div class="card-footer">
+        <span class="duration">⏱ 50 min</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="formula-strip">
+    <div class="formula-chip">v = (x, y, z)</div>
+    <div class="formula-chip">|v| = √(x²+y²+z²)</div>
+    <div class="formula-chip">v̂ = v / |v|</div>
+    <div class="formula-chip">P(t) = A + t(B-A)</div>
+    <div class="formula-chip">sin²θ + cos²θ = 1</div>
+    <div class="formula-chip">θ = atan2(y, x)</div>
+    <div class="formula-chip">x = r·cos(θ), y = r·sin(θ)</div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- SECTION 2 — CORE MECHANICS -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <div id="sec-basic" class="section-header">
+    <div class="section-icon blue">⚡</div>
+    <div class="section-title-group">
+      <h2 style="color:var(--neon-blue)">Section 2 — Core Mechanics</h2>
+      <p>The toolkit every 3D programmer uses every single day. Know these cold.</p>
+    </div>
+    <div class="level-ribbon" style="background:rgba(0,212,255,0.1);border:1px solid var(--neon-blue);color:var(--neon-blue)">BASIC → EARLY INTERMEDIATE</div>
+  </div>
+
+  <div class="insight-box">
+    <h4>The Compounding Power of Core Mechanics</h4>
+    <p>The dot product, the cross product, and the 4×4 matrix are not separate tools — they are three faces of the same gem. The dot product measures alignment, the cross product manufactures perpendicularity, and the matrix composes both into an arbitrary transform. Master all three as a unified system, not as isolated formulas.</p>
+  </div>
+
+  <!-- INTERACTIVE DEMO PANEL -->
+  <div class="demo-panel">
+    <div class="demo-tabs">
+      <button class="demo-tab active" onclick="switchTab(this,'dot')">Dot Product</button>
+      <button class="demo-tab"        onclick="switchTab(this,'cross')">Cross Product</button>
+      <button class="demo-tab"        onclick="switchTab(this,'matrix')">Matrix Transform</button>
+      <button class="demo-tab"        onclick="switchTab(this,'proj')">Projection</button>
+    </div>
+
+    <div class="demo-content active" id="tab-dot">
+      <div class="demo-canvas-wrap">
+        <canvas id="demo-dot" height="220"></canvas>
+        <div class="demo-explain">
+          <h4>The Dot Product — Similarity in One Number</h4>
+          <p>A·B = |A||B|cos(θ). When both vectors are unit length, the dot product IS the cosine of the angle between them. This single insight powers diffuse lighting, backface culling, specular highlights, and frustum culling.</p>
+          <p>Key insight: dot product is <em>positive</em> when vectors agree, <em>zero</em> when perpendicular, <em>negative</em> when opposing. The dashed line shows the shadow (projection) of A onto B.</p>
+          <div class="code-snippet">
+<span class="cm">// Diffuse lighting — one line!</span>
+<span class="kw">float</span> diff = <span class="fn">max</span>(<span class="fn">dot</span>(normal, lightDir), <span class="num">0.0</span>);
+color *= diff;
+
+<span class="cm">// Backface culling check</span>
+<span class="kw">if</span> (<span class="fn">dot</span>(faceNormal, viewDir) &lt; <span class="num">0.0</span>) <span class="fn">discard</span>();
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-content" id="tab-cross">
+      <div class="demo-canvas-wrap">
+        <canvas id="demo-cross" height="220"></canvas>
+        <div class="demo-explain">
+          <h4>The Cross Product — Birth of a New Direction</h4>
+          <p>A×B produces a vector perpendicular to both A and B. Its magnitude equals |A||B|sin(θ) — the area of the parallelogram formed by A and B. Fundamental for computing normals, tangent spaces, and orientation.</p>
+          <p>Direction follows the right-hand rule. Order matters: A×B = −(B×A). Reversing the order flips the normal — which is exactly how winding order determines front/back faces.</p>
+          <div class="code-snippet">
+<span class="cm">// Normal from triangle verts</span>
+vec3 edge1 = B - A;
+vec3 edge2 = C - A;
+vec3 normal = <span class="fn">normalize</span>(<span class="fn">cross</span>(edge1, edge2));
+
+<span class="cm">// Area of triangle = 0.5 * |cross|</span>
+<span class="kw">float</span> area = <span class="num">0.5</span> * <span class="fn">length</span>(<span class="fn">cross</span>(edge1, edge2));
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-content" id="tab-matrix">
+      <div class="demo-canvas-wrap">
+        <canvas id="demo-matrix" height="220"></canvas>
+        <div class="demo-explain">
+          <h4>Matrix Transforms — Linear Algebra Made Visual</h4>
+          <p>A 3×3 matrix transforms a vector. Its columns tell you exactly where the basis vectors (î, ĵ, k̂) land after the transform. Composition of transforms = matrix multiplication. The entire 3D pipeline is a chain of matrix multiplications.</p>
+          <p>The animated grid shows your space being stretched and rotated simultaneously — this is what a matrix <em>does</em> to every point in space at once.</p>
+          <div class="code-snippet">
+<span class="cm">// MVP transform (order matters!)</span>
+gl_Position = proj * view * model * vec4(pos, <span class="num">1.0</span>);
+
+<span class="cm">// Columns = where basis vectors land</span>
+<span class="cm">// mat[0] = new î, mat[1] = new ĵ</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-content" id="tab-proj">
+      <div class="demo-canvas-wrap">
+        <canvas id="demo-proj" height="220"></canvas>
+        <div class="demo-explain">
+          <h4>Perspective Projection — Depth Creates Illusion</h4>
+          <p>Dividing X and Y by Z gives perspective foreshortening — objects farther away appear smaller. The projection matrix encodes the field of view, aspect ratio, near/far planes and maps everything to NDC space [-1,1]³.</p>
+          <p>Why does dividing by Z work? Because the further something is, the smaller the angle it subtends. Division by depth is the mathematical encoding of that angular shrinkage.</p>
+          <div class="code-snippet">
+x_ndc = x / (z * <span class="fn">tan</span>(fov/<span class="num">2</span>));
+y_ndc = y / (z * <span class="fn">tan</span>(fov/<span class="num">2</span>));
+
+<span class="cm">// z is preserved (non-linearly) for depth test</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-grid grid-2">
+    <div class="card blue">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 2.1</div>
+      <h3>Dot &amp; Cross Products — Deep Dive</h3>
+      <p>Every application of both products across a 3D graphics pipeline: lighting, culling, projection, normal generation, tangent frames, area calculation, winding order. Geometric proofs and intuition side-by-side. You'll wonder how you described space without them.</p>
+      <div class="card-tags"><span class="tag">Dot</span><span class="tag">Cross</span><span class="tag">Lighting</span><span class="tag">Normals</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 90 min</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card blue">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 2.2</div>
+      <h3>Matrices — Transform Everything</h3>
+      <p>Matrix multiplication geometry, 2D transforms in 3×3, 3D transforms in 4×4, homogeneous coordinates and why W=1 for points vs W=0 for directions, the model/view/projection chain. Transpose and inverse and when to use which — and why transforming normals requires the inverse transpose.</p>
+      <div class="card-tags"><span class="tag">4×4 Matrix</span><span class="tag">MVP</span><span class="tag">Homogeneous</span><span class="tag">Inverse</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 120 min</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card blue featured-card">
+      <div class="card-content">
+        <div class="card-glow"></div>
+        <div class="card-num">MODULE 2.3 — FEATURED</div>
+        <h3>The Rendering Pipeline End-to-End</h3>
+        <p>Object space → World space → Camera/View space → Clip space → NDC → Viewport. Every transformation explained, every matrix derived. Why the pipeline is designed exactly this way. Where the GPU does the work and where you write your code to guide it.</p>
+        <div class="card-tags">
+          <span class="tag">Pipeline</span><span class="tag">Vertex Shader</span><span class="tag">Clip Space</span><span class="tag">NDC</span><span class="tag">Rasterization</span>
+        </div>
+        <div class="card-footer">
+          <span class="duration">⏱ 3 hours</span>
+          <div class="difficulty-dots">
+            <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span>
+          </div>
+        </div>
+      </div>
+      <canvas id="pipeline-canvas"></canvas>
+    </div>
+
+    <div class="card blue">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 2.4</div>
+      <h3>Phong &amp; Blinn-Phong Lighting</h3>
+      <p>Ambient + Diffuse + Specular decomposition. The reflect() function demystified — it's just one dot product and a subtraction. Blinn's half-vector shortcut and why it's more physically plausible than Phong. Implementing both in GLSL from scratch and seeing the visual difference.</p>
+      <div class="card-tags"><span class="tag">Lighting</span><span class="tag">GLSL</span><span class="tag">Specular</span><span class="tag">Reflect</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 90 min</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card blue">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 2.5</div>
+      <h3>Euler Angles — Power &amp; Peril</h3>
+      <p>Pitch, yaw, roll. Rotation order matters critically (XYZ ≠ ZYX — always check your engine's convention). Gimbal lock explained visually — the moment two axes align and you lose a degree of freedom. Why you'll graduate to quaternions soon, and why Euler angles still belong in your toolbox for authoring and UI.</p>
+      <div class="card-tags"><span class="tag">Euler</span><span class="tag">Gimbal Lock</span><span class="tag">Rotation Order</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 70 min</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card blue">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 2.6</div>
+      <h3>UV Mapping &amp; Texture Coordinates</h3>
+      <p>Mapping 2D texture space on 3D geometry. Tiling, mirroring, atlases. Bilinear and trilinear filtering. Mipmaps: why they exist and how they save performance and quality simultaneously by pre-computing the right resolution for each distance. Texture wrap modes and anisotropic filtering.</p>
+      <div class="card-tags"><span class="tag">UVs</span><span class="tag">Mipmaps</span><span class="tag">Filtering</span><span class="tag">Atlases</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 80 min</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="formula-strip">
+    <div class="formula-chip">A·B = AₓBₓ + AᵧBᵧ + A_zB_z</div>
+    <div class="formula-chip">A×B = (AᵧB_z - A_zBᵧ, ...)</div>
+    <div class="formula-chip">MVP = Proj × View × Model</div>
+    <div class="formula-chip">x_ndc = x_clip / w_clip</div>
+    <div class="formula-chip">I = Kd·max(N·L, 0)</div>
+    <div class="formula-chip">R = 2(N·L)N - L</div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- SECTION 3 — INTERMEDIATE (The Meat) -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <div id="sec-inter" class="section-header">
+    <div class="section-icon purple">🔮</div>
+    <div class="section-title-group">
+      <h2 style="color:var(--neon-purple)">Section 3 — Intermediate (The Meat)</h2>
+      <p>Where 3D graphics actually gets made. Expect to spend most of your time here.</p>
+    </div>
+    <div class="level-ribbon" style="background:rgba(180,79,255,0.1);border:1px solid var(--neon-purple);color:var(--neon-purple)">INTERMEDIATE</div>
+  </div>
+
+  <div class="insight-box">
+    <h4>The Intermediate Truth</h4>
+    <p>Intermediate is not "a little harder than basic." It's a different country with its own geography. Quaternions feel alien at first. PBR has surprising mathematical depth. Shadows are deceptively complex. But every "aha" moment here is proportionally more rewarding — and everything you build from here will actually look good.</p>
+  </div>
+
+  <div class="card-grid grid-3">
+
+    <div class="card purple">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.1</div>
+      <h3>Quaternions — Rotation Without Regret</h3>
+      <p>q = w + xi + yj + zk. The four dimensions explained intuitively. Why quaternions avoid gimbal lock. Conjugate, inverse, magnitude. Rotating a vector with q·v·q*. Unit quaternions as rotations on the 4D unit sphere (S³) projected into 3D. SLERP for smooth interpolation.</p>
+      <div class="card-tags"><span class="tag">Quaternions</span><span class="tag">SLERP</span><span class="tag">No Gimbal</span><span class="tag">Rotation</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 4 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card purple">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.2</div>
+      <h3>Interpolation — The Art of Between</h3>
+      <p>LERP, SLERP, NLERP. Cubic Hermite, Catmull-Rom, Bezier. Smoothstep and its derivatives. Why linear interpolation of rotations creates wobble (and how SLERP fixes it by walking the great circle). Ease-in/ease-out as mathematical functions and the psychology of motion.</p>
+      <div class="card-tags"><span class="tag">LERP</span><span class="tag">SLERP</span><span class="tag">Bezier</span><span class="tag">Catmull-Rom</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 3 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card purple">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.3</div>
+      <h3>Normal Maps &amp; Tangent Space</h3>
+      <p>Why normals need their own coordinate frame. TBN matrix construction (Tangent-Bitangent-Normal). Transforming normals correctly — it's the inverse transpose of the model matrix, not the model matrix itself. Common normal map artifacts and fixes. Mikkt tangent space and why it became the standard.</p>
+      <div class="card-tags"><span class="tag">Normal Maps</span><span class="tag">TBN</span><span class="tag">Tangent Space</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 2.5 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card purple">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.4</div>
+      <h3>Shadow Maps — Light Sees First</h3>
+      <p>Render the scene from the light's point of view. Compare depths. The elegance and the problems: shadow acne, peter-panning, the bias tradeoff. PCF for soft shadows. Cascaded shadow maps (CSM) for large outdoor scenes. Omnidirectional shadows with cubemaps. VSM and MSM as alternative approaches.</p>
+      <div class="card-tags"><span class="tag">Shadow Maps</span><span class="tag">PCF</span><span class="tag">Bias</span><span class="tag">CSM</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 3 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card purple">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.5</div>
+      <h3>PBR — Physically Based Rendering Fundamentals</h3>
+      <p>The rendering equation. BRDF intuition. Microfacet theory: D (normal distribution), F (Fresnel), G (geometry/shadowing). Metallic-roughness workflow. Image-based lighting (IBL). Energy conservation and why it matters visually — an object cannot reflect more light than it receives.</p>
+      <div class="card-tags"><span class="tag">PBR</span><span class="tag">BRDF</span><span class="tag">Fresnel</span><span class="tag">IBL</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 5 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card purple">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.6</div>
+      <h3>Spatial Data Structures</h3>
+      <p>BVH (Bounding Volume Hierarchy), Octrees, KD-Trees, Grids. Why naïve ray-triangle intersection doesn't scale to millions of triangles. Building and traversing acceleration structures. AABB vs sphere vs OBB tests. Modern GPU-friendly BVH layouts used in hardware ray tracing.</p>
+      <div class="card-tags"><span class="tag">BVH</span><span class="tag">Octree</span><span class="tag">AABB</span><span class="tag">Ray Queries</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 3.5 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card purple">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.7</div>
+      <h3>Skeletal Animation Math</h3>
+      <p>Bone hierarchies, local vs world bone transforms, bind pose and the inverse bind matrix, linear blend skinning (LBS), dual-quaternion skinning (DQS) and why it eliminates the "candy-wrapper" artifact. Blend trees for animation blending. IK solvers: CCD and FABRIK explained geometrically.</p>
+      <div class="card-tags"><span class="tag">Skinning</span><span class="tag">Bone Hierarchy</span><span class="tag">DQS</span><span class="tag">Blend Trees</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 4 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card purple">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.8</div>
+      <h3>Post-Processing &amp; Screen-Space Effects</h3>
+      <p>SSAO (Screen-Space Ambient Occlusion) math — random hemisphere sampling in view space. Bloom: HDR render + luminance threshold + separable Gaussian blur + composite. Tone mapping: Reinhard, ACES filmic. Chromatic aberration, depth of field, motion blur — the artist's mathematical toolbox.</p>
+      <div class="card-tags"><span class="tag">SSAO</span><span class="tag">Bloom</span><span class="tag">Tone Mapping</span><span class="tag">HDR</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 3 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card purple">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.9</div>
+      <h3>Ray-Triangle &amp; Ray-AABB Intersection</h3>
+      <p>Möller–Trumbore algorithm step by step. Barycentric coordinates as the natural language of triangles — interpolating any attribute across a surface. Ray-sphere, ray-plane, ray-AABB (slab method). Numerical robustness — why floating point lies and how to detect the truth anyway.</p>
+      <div class="card-tags"><span class="tag">Möller-Trumbore</span><span class="tag">Barycentric</span><span class="tag">Slab Method</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 2.5 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card purple">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.10</div>
+      <h3>Noise Functions — The Generator of Worlds</h3>
+      <p>Value noise, gradient noise, Perlin noise (and its fix, Simplex). Octaves, lacunarity, persistence. Domain warping (Inigo Quilez's black magic). Voronoi / cellular noise. Building procedural terrains, clouds, fire, and marble with math alone — no textures required.</p>
+      <div class="card-tags"><span class="tag">Perlin</span><span class="tag">Simplex</span><span class="tag">Voronoi</span><span class="tag">Procedural</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 3.5 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card purple">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.11</div>
+      <h3>SDF Raymarching Fundamentals</h3>
+      <p>Signed distance functions as implicit geometry — the distance field encodes the shape. Sphere tracing algorithm. Union, intersection, subtraction operators. Smooth min (smin) for organic blending. Building a complete scene from SDFs in a fragment shader with zero mesh data.</p>
+      <div class="card-tags"><span class="tag">SDF</span><span class="tag">Raymarching</span><span class="tag">Implicit</span><span class="tag">smin</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 4 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card purple">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 3.12</div>
+      <h3>Collision Detection &amp; Response Math</h3>
+      <p>GJK algorithm intuition, EPA for penetration depth, separating axis theorem (SAT) for convex shapes. Impulse-based collision response: coefficient of restitution, friction forces, angular impulses. The math that makes things feel real when they collide — and why getting it right changes everything.</p>
+      <div class="card-tags"><span class="tag">GJK</span><span class="tag">SAT</span><span class="tag">Impulse</span><span class="tag">Physics</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 5 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="formula-strip">
+    <div class="formula-chip">q = cos(θ/2) + sin(θ/2)·(xi+yj+zk)</div>
+    <div class="formula-chip">slerp(q1,q2,t) = q1(q1⁻¹q2)^t</div>
+    <div class="formula-chip">Lo = ∫ fr·Li·(N·L) dωi</div>
+    <div class="formula-chip">F = F0 + (1-F0)(1-cosθ)⁵</div>
+    <div class="formula-chip">Möller: t,u,v = solve(O+tD = A+uE1+vE2)</div>
+    <div class="formula-chip">smin(a,b,k) = -log(e^(-ka)+e^(-kb))/k</div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- SECTION 4 — ADVANCED -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <div id="sec-advanced" class="section-header">
+    <div class="section-icon pink">🔥</div>
+    <div class="section-title-group">
+      <h2 style="color:var(--neon-pink)">Section 4 — Advanced</h2>
+      <p>The pipeline bends to your will. Theory and implementation converge.</p>
+    </div>
+    <div class="level-ribbon" style="background:rgba(255,45,120,0.1);border:1px solid var(--neon-pink);color:var(--neon-pink)">ADVANCED</div>
+  </div>
+
+  <div class="insight-box" style="border-color:var(--neon-pink)">
+    <h4 style="color:var(--neon-pink)">The Advanced Mindset Shift</h4>
+    <p>At this level, you stop asking "how do I implement X?" and start asking "what are the tradeoffs of every known approach to X?" You read GPU vendor whitepapers. You profile before you optimize. You understand why a technique that looks expensive on paper is cheap in practice — and vice versa. The math is the easy part now; the engineering judgment is what separates good from great.</p>
+  </div>
+
+  <div class="card-grid grid-3">
+
+    <div class="card pink">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 4.1</div>
+      <h3>Deferred Rendering &amp; G-Buffer Architecture</h3>
+      <p>Forward vs deferred rendering tradeoffs. The G-Buffer: position, normal, albedo, material packing. MRT (Multiple Render Targets). The light pass and why it decouples geometry complexity from light count. Tiled and clustered deferred extensions for thousands of lights.</p>
+      <div class="card-tags"><span class="tag">Deferred</span><span class="tag">G-Buffer</span><span class="tag">MRT</span><span class="tag">Clustered</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 5 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card pink">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 4.2</div>
+      <h3>Monte Carlo Methods &amp; Path Tracing</h3>
+      <p>Probability distributions on spheres. Importance sampling and its variance reduction magic. The path tracing algorithm: bouncing rays and accumulating radiance. Russian roulette termination. Why more samples = less noise, and why the convergence rate is √N — not N.</p>
+      <div class="card-tags"><span class="tag">Monte Carlo</span><span class="tag">Path Tracing</span><span class="tag">Importance Sampling</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 6 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card pink">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 4.3</div>
+      <h3>GPU Architecture &amp; Shader Optimization</h3>
+      <p>Warps/wavefronts, SIMD execution, divergence and why if/else in shaders is costly. Register pressure, occupancy, memory coalescing. GPU profiling workflow with RenderDoc and NSight. Compute shaders and when to reach for them. The mental model that makes you write faster code.</p>
+      <div class="card-tags"><span class="tag">GPU</span><span class="tag">Warps</span><span class="tag">Occupancy</span><span class="tag">Compute</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 5 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card pink">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 4.4</div>
+      <h3>Temporal Techniques — TAA &amp; Reprojection</h3>
+      <p>Temporal Anti-Aliasing: jitter, reprojection via previous-frame MVP, exponential moving average blending. Ghosting and disocclusion detection. Velocity buffers. How modern engines get sub-pixel quality from 1 sample per pixel per frame — and the math that keeps the history stable.</p>
+      <div class="card-tags"><span class="tag">TAA</span><span class="tag">Reprojection</span><span class="tag">Jitter</span><span class="tag">Temporal</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 4 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card pink">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 4.5</div>
+      <h3>Cloth &amp; Fluid Simulation Math</h3>
+      <p>Mass-spring systems for cloth, constraint solving (Verlet integration, XPBD). Navier-Stokes at an intuitive level — pressure, viscosity, advection. Staggered grids (MAC grid), pressure solve, divergence-free velocity fields. The bridge between visual art and numerical physics.</p>
+      <div class="card-tags"><span class="tag">XPBD</span><span class="tag">Cloth</span><span class="tag">Navier-Stokes</span><span class="tag">Fluids</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 6 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card pink">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 4.6</div>
+      <h3>Volumetric Rendering — Participating Media</h3>
+      <p>The radiative transfer equation. Absorption, scattering, emission. Phase functions (Henyey-Greenstein). Raymarching through density fields. Exponential transmittance and Beer-Lambert law. Volumetric shadows and God rays. Efficient single-scattering approximations for real-time fog and clouds.</p>
+      <div class="card-tags"><span class="tag">Volumetrics</span><span class="tag">Beer-Lambert</span><span class="tag">Phase Functions</span><span class="tag">Fog</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 5 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card pink">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 4.7</div>
+      <h3>Geometry Shaders &amp; Tessellation</h3>
+      <p>The geometry shader stage: amplifying and culling primitives on the GPU. Tessellation: hull shader, domain shader, displacement maps. Hardware tessellation for terrain LOD. Bezier patch evaluation in hardware. When to tessellate and when to use a different approach entirely.</p>
+      <div class="card-tags"><span class="tag">Tessellation</span><span class="tag">Geometry Shader</span><span class="tag">Displacement</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 4 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card pink">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 4.8</div>
+      <h3>Advanced SDF — The Full Toolbox</h3>
+      <p>Domain repetition (infinite geometry for free), domain warping (folding space), orbit traps for coloring fractals, distance-aided ambient occlusion, soft shadows from SDFs. Full SDF scene with lighting, reflections, and fog — all in one fragment shader, zero vertices.</p>
+      <div class="card-tags"><span class="tag">SDF Advanced</span><span class="tag">Fractals</span><span class="tag">Domain Warp</span><span class="tag">Shader</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 5 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card pink">
+      <div class="card-glow"></div>
+      <div class="card-num">MODULE 4.9</div>
+      <h3>Ambient Occlusion — Global Hints in Local Math</h3>
+      <p>SSAO revisited with correct hemisphere distribution. HBAO+ horizon-based approach for better quality. Ray-traced AO from mesh, from SDF, and from voxels. Bent normals for directional AO. Multi-bounce AO approximations for inter-object AO without a full ray tracer.</p>
+      <div class="card-tags"><span class="tag">AO</span><span class="tag">HBAO</span><span class="tag">Bent Normals</span><span class="tag">Multi-Bounce</span></div>
+      <div class="card-footer">
+        <span class="duration">⏱ 4 hours</span>
+        <div class="difficulty-dots">
+          <span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span><span class="dot filled"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="formula-strip">
+    <div class="formula-chip">T(x) = e^(-∫σ ds) · Beer-Lambert</div>
+    <div class="formula-chip">G(v,l,α) = G1(v)·G1(l) (Smith)</div>
+    <div class="formula-chip">E[I] ≈ (1/N)·Σ f(x)/p(x)</div>
+    <div class="formula-chip">clip_w = near·far / (z·(near-far)+far)</div>
+    <div class="formula-chip">XPBD: Δx = M⁻¹·∇C·(C/k)</div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <!-- SECTION 5 — NINJA TERRITORY -->
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <div id="sec-ninja">
+  <div class="ninja-zone">
+    <div class="ninja-warning">⚔️ WARNING: ADVANCED TERRITORY AHEAD</div>
+    <h2>🥷 The Ninja Jungles</h2>
+    <p>
+      Beyond the intermediate plateau lies a vast, often sparsely documented wilderness. Papers replace tutorials. 
+      Notation gets dense. The math prerequisites multiply. But the rewards — rendering that defies intuition, 
+      simulations of breathtaking fidelity, algorithms that feel like magic — are proportional to the commitment. 
+      This is a <em>glimpse</em> of what awaits. Consider it your treasure map.
+    </p>
+
+    <div class="ninja-topics">
+      <div class="ninja-chip">
+        <div class="icon">🌈</div>
+        <h4>Spectral Rendering</h4>
+        <p>Wavelength-based light transport. Dispersion, diffraction, metamerism. Hero wavelength sampling for accurate color.</p>
+      </div>
+      <div class="ninja-chip">
+        <div class="icon">🧠</div>
+        <h4>Neural Radiance Fields (NeRF)</h4>
+        <p>Implicit scene representation via neural networks. Volume rendering + gradient descent = 3D from photos.</p>
+      </div>
+      <div class="ninja-chip">
+        <div class="icon">🌍</div>
+        <h4>Real-Time Global Illumination</h4>
+        <p>Lumen, DDGI, RTXGI. Radiance caching, irradiance probes, world-space reservoirs (ReSTIR).</p>
+      </div>
+      <div class="ninja-chip">
+        <div class="icon">📐</div>
+        <h4>Projective &amp; Geometric Algebra</h4>
+        <p>Dual numbers, PGA (Projective Geometric Algebra), bivectors. A unified language for all geometric transforms.</p>
+      </div>
+      <div class="ninja-chip">
+        <div class="icon">🎭</div>
+        <h4>Bidirectional Path Tracing</h4>
+        <p>Connect eye and light subpaths. Multiple Importance Sampling. Metropolis Light Transport for caustics.</p>
+      </div>
+      <div class="ninja-chip">
+        <div class="icon">🖥️</div>
+        <h4>GPU-Driven Rendering</h4>
+        <p>Indirect draw calls, GPU culling, meshlets (task/mesh shaders), visibility buffer architecture.</p>
+      </div>
+      <div class="ninja-chip">
+        <div class="icon">🌀</div>
+        <h4>Differentiable Rendering</h4>
+        <p>Backprop through the renderer. Gradient-based inverse rendering for reconstruction and generation.</p>
+      </div>
+      <div class="ninja-chip">
+        <div class="icon">💎</div>
+        <h4>Subsurface Scattering (Advanced)</h4>
+        <p>Separable SSS, BSSRDF, photon diffusion profiles, real-time approximations for skin, wax, and marble.</p>
+      </div>
+      <div class="ninja-chip">
+        <div class="icon">⚡</div>
+        <h4>ReSTIR — Reservoir Resampling</h4>
+        <p>Spatiotemporal reservoir importance resampling. Real-time direct+indirect lighting at incredible quality.</p>
+      </div>
+      <div class="ninja-chip">
+        <div class="icon">🔬</div>
+        <h4>Micro-geometry &amp; Wave Optics</h4>
+        <p>Sub-pixel geometry effects. Iridescence, glints from microflakes, diffraction gratings in BRDF models.</p>
+      </div>
+      <div class="ninja-chip">
+        <div class="icon">🧊</div>
+        <h4>SPH &amp; Position-Based Fluids</h4>
+        <p>Smoothed particle hydrodynamics. PCISPH, IISPH solvers. Real-time PBF for games and VFX.</p>
+      </div>
+      <div class="ninja-chip">
+        <div class="icon">🗺️</div>
+        <h4>Virtual Texturing &amp; Sparse Textures</h4>
+        <p>Megatexture, tiled virtual texturing, feedback buffers, streaming, indirection maps at massive scale.</p>
+      </div>
+      <div class="ninja-chip">
+        <div class="icon">🤖</div>
+        <h4>AI Upscaling &amp; Denoising</h4>
+        <p>DLSS/FSR internals. Temporal accumulation networks, convolutional denoisers for path tracing, OIDN.</p>
+      </div>
+      <div class="ninja-chip">
+        <div class="icon">🔷</div>
+        <h4>Mesh Shaders &amp; Meshlets</h4>
+        <p>The new GPU pipeline: task + mesh shaders replacing VS/GS. LOD, culling, and amplification in one pass.</p>
+      </div>
+      <div class="ninja-chip">
+        <div class="icon">🌊</div>
+        <h4>Atmospheric Scattering</h4>
+        <p>Rayleigh and Mie scattering. Precomputed transmittance LUTs. Bruneton's sky model for real planets.</p>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- CLOSING INSIGHT -->
+  <div class="insight-box" style="border-color:var(--neon-orange)">
+    <h4 style="color:var(--neon-orange)">The Eternal Truth of 3D Math</h4>
+    <p>Every topic in the ninja zone is built from the same bricks you laid in Section 1. Quaternions are just complex numbers taken seriously. Path tracing is just the dot product applied recursively. Geometric algebra is just vectors finally allowed to multiply. The further you go, the more you realise the foundations weren't basics — they were the whole thing, in seed form. Plant them deep.</p>
+  </div>
+
+</div><!-- /main-container -->
+
+<footer>
+  <div class="footer-glow"></div>
+  <h3>The Map Is Not the Territory</h3>
+  <p>Open a code editor. Break things. The math only lives when you make it move.</p>
+  <p style="margin-top:8px;font-size:0.75rem;color:var(--text-dim)">47 modules · Infinite depth · One journey</p>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// STARFIELD
+// ═══════════════════════════════════════════════════════════
+(function(){
+  const sf = document.getElementById('starfield');
+  for(let i=0; i<180; i++){
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random()*2.5+0.5;
+    s.style.cssText = `
+      width:${sz}px;height:${sz}px;
+      left:${Math.random()*100}%;
+      top:${Math.random()*100}%;
+      --dur:${(Math.random()*4+2).toFixed(1)}s;
+      --min-op:${(Math.random()*0.2+0.05).toFixed(2)};
+      --max-op:${(Math.random()*0.6+0.3).toFixed(2)};
+      animation-delay:${(Math.random()*6).toFixed(1)}s;
+    `;
+    sf.appendChild(s);
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════
+function switchTab(btn, id){
+  document.querySelectorAll('.demo-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.demo-content').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════
+// SCROLL-TO — renamed to avoid shadowing window.scrollTo
+// ═══════════════════════════════════════════════════════════
+function goToSection(id){
+  document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ═══════════════════════════════════════════════════════════
+// RESIZE CANVAS TO DISPLAY SIZE
+// ═══════════════════════════════════════════════════════════
+function resizeCanvas(c){
+  c.width  = c.offsetWidth  || c.clientWidth  || 300;
+  c.height = c.offsetHeight || c.clientHeight || 160;
+}
+
+// ═══════════════════════════════════════════════════════════
+// CANVAS STRIP — 6 animated mini-demos
+// ═══════════════════════════════════════════════════════════
+function initStrip(){
+  const strips = [
+    {id:'cs1', fn: drawVectorField},
+    {id:'cs2', fn: drawSineWave},
+    {id:'cs3', fn: drawRotatingCube},
+    {id:'cs4', fn: drawDotProductViz},
+    {id:'cs5', fn: drawFractalNoise},
+    {id:'cs6', fn: drawSphereTrace},
+  ];
+  strips.forEach(({id,fn})=>{
+    const c = document.getElementById(id);
+    if(!c) return;
+    resizeCanvas(c);
+    const ctx = c.getContext('2d');
+    fn(ctx, c);
+  });
+}
+
+// ── Vector field ──
+function drawVectorField(ctx, c){
+  let t=0;
+  function frame(){
+    resizeCanvas(c);
+    const W=c.width, H=c.height;
+    ctx.fillStyle='#050510';
+    ctx.fillRect(0,0,W,H);
+    const step=28;
+    for(let x=step/2;x<W;x+=step){
+      for(let y=step/2;y<H;y+=step){
+        const nx=(x/W*2-1), ny=(y/H*2-1);
+        let ang = Math.atan2(ny,nx)+Math.sin(t*0.6+nx)*0.8;
+        const len = 10+Math.sin(t*0.4+nx*2+ny*2)*4;
+        const ex=x+Math.cos(ang)*len, ey=y+Math.sin(ang)*len;
+        const hue=(ang/Math.PI*180+t*20)%360;
+        ctx.strokeStyle=`hsla(${hue},100%,60%,0.7)`;
+        ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(ex,ey); ctx.stroke();
+        ctx.fillStyle=`hsla(${hue},100%,80%,0.9)`;
+        ctx.beginPath(); ctx.arc(ex,ey,2,0,Math.PI*2); ctx.fill();
+      }
+    }
+    t+=0.016;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ── Sine wave ──
+function drawSineWave(ctx,c){
+  let t=0;
+  function frame(){
+    resizeCanvas(c);
+    const W=c.width,H=c.height,cx=H/2;
+    ctx.fillStyle='rgba(5,5,16,0.15)';
+    ctx.fillRect(0,0,W,H);
+    [
+      {col:'#00d4ff',off:0,   amp:0.35,freq:0.04},
+      {col:'#b44fff',off:1.5, amp:0.25,freq:0.06},
+      {col:'#00ff88',off:3.0, amp:0.15,freq:0.09},
+    ].forEach(({col,off,amp,freq})=>{
+      ctx.strokeStyle=col; ctx.lineWidth=2; ctx.shadowColor=col; ctx.shadowBlur=8;
+      ctx.beginPath();
+      for(let x=0;x<W;x++){
+        const y=cx+Math.sin(x*freq+t+off)*cx*amp*2;
+        x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    });
+    ctx.shadowBlur=0;
+    t+=0.03;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ── Rotating cube ──
+function drawRotatingCube(ctx,c){
+  let t=0;
+  const verts=[[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]];
+  const edges=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+  function project(v,W,H){
+    const z=v[2]+5;
+    return [W/2+v[0]/z*W*0.25, H/2+v[1]/z*H*0.25];
+  }
+  function frame(){
+    resizeCanvas(c);
+    const W=c.width,H=c.height;
+    ctx.fillStyle='rgba(5,5,16,0.2)';
+    ctx.fillRect(0,0,W,H);
+    const rx=t*0.4, ry=t*0.7;
+    const cr=Math.cos(rx),sr=Math.sin(rx),cy=Math.cos(ry),sy=Math.sin(ry);
+    const tv=verts.map(([x,y,z])=>{
+      const y2=y*cr-z*sr, z2=y*sr+z*cr;
+      const x3=x*cy+z2*sy, z3=-x*sy+z2*cy;
+      return [x3,y2,z3];
+    });
+    edges.forEach(([a,b],i)=>{
+      const p1=project(tv[a],W,H), p2=project(tv[b],W,H);
+      const hue=(i*30+t*60)%360;
+      ctx.strokeStyle=`hsla(${hue},100%,65%,0.85)`;
+      ctx.lineWidth=1.5; ctx.shadowColor=`hsl(${hue},100%,65%)`; ctx.shadowBlur=6;
+      ctx.beginPath(); ctx.moveTo(...p1); ctx.lineTo(...p2); ctx.stroke();
+    });
+    ctx.shadowBlur=0; t+=0.02;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ── Dot product viz ──
+function drawDotProductViz(ctx,c){
+  let t=0;
+  function frame(){
+    resizeCanvas(c);
+    const W=c.width,H=c.height,ox=W/2,oy=H/2;
+    ctx.fillStyle='rgba(5,5,16,0.25)';
+    ctx.fillRect(0,0,W,H);
+    const a1=t*0.5, a2=t*0.3+0.8;
+    const r=Math.min(W,H)*0.35;
+    const ax=Math.cos(a1)*r, ay=Math.sin(a1)*r;
+    const bx=Math.cos(a2)*r, by=Math.sin(a2)*r;
+    const dot=(ax*bx+ay*by)/(r*r);
+    // Draw A
+    ctx.strokeStyle='#00d4ff'; ctx.lineWidth=2.5; ctx.shadowColor='#00d4ff'; ctx.shadowBlur=10;
+    ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ox+ax,oy+ay); ctx.stroke();
+    // Draw B
+    ctx.strokeStyle='#b44fff'; ctx.shadowColor='#b44fff';
+    ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ox+bx,oy+by); ctx.stroke();
+    // Angle arc
+    ctx.strokeStyle=`hsla(${dot>0?120:0},100%,60%,0.6)`; ctx.lineWidth=1; ctx.shadowBlur=0;
+    ctx.beginPath(); ctx.arc(ox,oy,30,Math.atan2(ay,ax),Math.atan2(by,bx),dot>0); ctx.stroke();
+    // dot product bar
+    const bw=60, bh=10;
+    ctx.fillStyle='#0a0a1a'; ctx.fillRect(W-bw-10,H-bh-10,bw,bh);
+    ctx.fillStyle=dot>0?'#00ff88':'#ff2d78';
+    ctx.fillRect(W-bw-10,H-bh-10,bw*(dot*0.5+0.5),bh);
+    ctx.fillStyle='#888'; ctx.font='10px monospace';
+    ctx.fillText(`dot:${dot.toFixed(2)}`,W-bw-10,H-bh-14);
+    ctx.shadowBlur=0; t+=0.015;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ── Fractal noise ──
+function drawFractalNoise(ctx,c){
+  let t=0;
+  function hash(x,y){ return Math.sin(x*127.1+y*311.7)*43758.5453%1; }
+  function noise(x,y){
+    const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;
+    const a=hash(ix,iy),b=hash(ix+1,iy),cc=hash(ix,iy+1),d=hash(ix+1,iy+1);
+    const ux=fx*fx*(3-2*fx),uy=fy*fy*(3-2*fy);
+    return a+(b-a)*ux+(cc-a)*uy+(a-b-cc+d)*ux*uy;
+  }
+  function fbm(x,y,oct){let v=0,amp=0.5,freq=1;for(let i=0;i<oct;i++){v+=noise(x*freq,y*freq)*amp;freq*=2.1;amp*=0.5;}return v;}
+  function frame(){
+    resizeCanvas(c);
+    const W=c.width,H=c.height;
+    const id=ctx.createImageData(W,H);
+    for(let y=0;y<H;y+=2) for(let x=0;x<W;x+=2){
+      const v=fbm(x/80+t*0.1,y/80+t*0.05,5);
+      const r=Math.floor(v*80), g=Math.floor(v*40+v*60), b=Math.floor(v*180);
+      for(let dy=0;dy<2;dy++) for(let dx=0;dx<2;dx++){
+        const i=((y+dy)*W+(x+dx))*4;
+        id.data[i]=r;id.data[i+1]=g;id.data[i+2]=b;id.data[i+3]=255;
+      }
+    }
+    ctx.putImageData(id,0,0);
+    t+=0.018;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ── SDF sphere trace ──
+function drawSphereTrace(ctx,c){
+  let t=0;
+  function sdf(x,y,z){ const r=1.2; return Math.sqrt(x*x+y*y+z*z)-r; }
+  function frame(){
+    resizeCanvas(c);
+    const W=c.width,H=c.height;
+    const id=ctx.createImageData(W,H);
+    for(let py=0;py<H;py+=2) for(let px=0;px<W;px+=2){
+      const ux=(px/W*2-1)*(W/H), uy=-(py/H*2-1);
+      let rx=ux,ry=uy,rz=2.5,rd=0;
+      const lx=Math.cos(t)*2,lz=Math.sin(t)*2+2;
+      let hit=false,total=0;
+      for(let i=0;i<64;i++){
+        const d=sdf(rx,ry,rz);
+        if(d<0.01){hit=true;break;}
+        if(total>8)break;
+        rx+=ux/2.5*d;ry+=uy/2.5*d;rz-=d;total+=d;
+      }
+      let r=5,g=5,b=15;
+      if(hit){
+        const e=0.01;
+        const nx=sdf(rx+e,ry,rz)-sdf(rx-e,ry,rz);
+        const ny=sdf(rx,ry+e,rz)-sdf(rx,ry-e,rz);
+        const nz=sdf(rx,ry,rz+e)-sdf(rx,ry,rz-e);
+        const nl=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
+        const nnx=nx/nl,nny=ny/nl,nnz=nz/nl;
+        const ldx=lx-rx,ldy=-1-ry,ldz=lz-rz;
+        const ll=Math.sqrt(ldx*ldx+ldy*ldy+ldz*ldz)||1;
+        const diff=Math.max(0,(nnx*ldx+nny*ldy+nnz*ldz)/ll);
+        const fr=(rx/1.2*0.5+0.5);
+        r=Math.floor(20+fr*100*diff+diff*100);
+        g=Math.floor(10+diff*80);
+        b=Math.floor(30+(1-fr)*180*diff+diff*120);
+      }
+      for(let dy=0;dy<2;dy++) for(let dx=0;dx<2;dx++){
+        const i=((py+dy)*W+(px+dx))*4;
+        id.data[i]=r;id.data[i+1]=g;id.data[i+2]=b;id.data[i+3]=255;
+      }
+    }
+    ctx.putImageData(id,0,0);
+    t+=0.025;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ═════════════════════════════════════════════════════
+// PIPELINE CANVAS — flowing pipeline visualization
+// ═════════════════════════════════════════════════════
+function initPipelineCanvas(){
+  const c=document.getElementById('pipeline-canvas'); if(!c)return;
+  let t=0;
+  const stages=['Object Space','World Space','View Space','Clip Space','NDC','Screen'];
+  const ctx=c.getContext('2d');
+  function frame(){
+    resizeCanvas(c);
+    const W=c.width,H=c.height;
+    ctx.fillStyle='rgba(5,5,16,0.2)'; ctx.fillRect(0,0,W,H);
+    const n=stages.length;
+    const bw=W/n, pad=8;
+    stages.forEach((s,i)=>{
+      const x=i*bw, pulse=Math.sin(t*2-i*0.8)*0.5+0.5;
+      const hue=200+i*20;
+      // box
+      ctx.fillStyle=`hsla(${hue},70%,12%,0.8)`;
+      ctx.fillRect(x+pad,H*0.2,bw-pad*2,H*0.6);
+      ctx.strokeStyle=`hsla(${hue},100%,50%,${0.4+pulse*0.5})`;
+      ctx.lineWidth=1.5;
+      ctx.shadowColor=`hsl(${hue},100%,60%)`; ctx.shadowBlur=pulse*15;
+      ctx.strokeRect(x+pad,H*0.2,bw-pad*2,H*0.6);
+      // label
+      ctx.fillStyle=`hsla(${hue},100%,70%,1)`;
+      ctx.font=`bold ${Math.min(11,bw/7)}px sans-serif`;
+      ctx.textAlign='center'; ctx.shadowBlur=0;
+      ctx.fillText(s,x+bw/2,H*0.5+4);
+      // arrow
+      if(i<n-1){
+        const ax=x+bw-pad;
+        ctx.strokeStyle=`hsla(${hue+20},100%,60%,0.8)`;
+        ctx.lineWidth=2; ctx.shadowColor=`hsl(${hue+20},100%,60%)`; ctx.shadowBlur=8;
+        ctx.beginPath();ctx.moveTo(ax,H/2);ctx.lineTo(ax+pad*2-4,H/2);ctx.stroke();
+        ctx.fillStyle=`hsl(${hue+20},100%,60%)`;
+        ctx.beginPath();ctx.moveTo(ax+pad*2,H/2);ctx.lineTo(ax+pad*2-6,H/2-4);ctx.lineTo(ax+pad*2-6,H/2+4);ctx.closePath();ctx.fill();
+      }
+      // animated dot
+      const dot_t=(t*0.5+i/n)%1;
+      if(dot_t<1/n){
+        const dx=x+pad+(dot_t*n)*(bw-pad*2);
+        ctx.fillStyle='#fff'; ctx.shadowColor='#fff'; ctx.shadowBlur=10;
+        ctx.beginPath(); ctx.arc(dx,H*0.5,3,0,Math.PI*2); ctx.fill();
+      }
+    });
+    ctx.shadowBlur=0; ctx.textAlign='left';
+    t+=0.016;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ═══════════════════════════════════════════════════════════
+// DEMO PANEL CANVASES
+// ═══════════════════════════════════════════════════════════
+function initDemoPanels(){
+  demoDot();
+  demoCross();
+  demoMatrix();
+  demoProj();
+}
+
+function demoDot(){
+  const c=document.getElementById('demo-dot');if(!c)return;
+  let t=0;
+  function frame(){
+    resizeCanvas(c);const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='#050510';ctx.fillRect(0,0,W,H);
+    const ox=W/2,oy=H/2,r=Math.min(W,H)*0.32;
+    const a1=t*0.6, a2=-t*0.4+0.5;
+    const ax=Math.cos(a1)*r,ay=Math.sin(a1)*r;
+    const bx=Math.cos(a2)*r,by=Math.sin(a2)*r;
+    const dot=(ax*bx+ay*by)/(r*r);
+    // glow bg
+    const grd=ctx.createRadialGradient(ox,oy,0,ox,oy,r);
+    grd.addColorStop(0,`rgba(0,212,255,${Math.max(0,dot)*0.06})`);
+    grd.addColorStop(1,'transparent');
+    ctx.fillStyle=grd;ctx.fillRect(0,0,W,H);
+    // vectors
+    [[ax,ay,'#00d4ff','A'],[bx,by,'#b44fff','B']].forEach(([vx,vy,col,lbl])=>{
+      ctx.strokeStyle=col;ctx.lineWidth=3;ctx.shadowColor=col;ctx.shadowBlur=12;
+      ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(ox+vx,oy+vy);ctx.stroke();
+      ctx.fillStyle=col;ctx.font='bold 14px monospace';ctx.shadowBlur=0;
+      ctx.fillText(lbl,ox+vx+6,oy+vy+6);
+    });
+    // projection shadow of A onto B
+    const blen=Math.sqrt(bx*bx+by*by);
+    const proj_len=(ax*bx+ay*by)/blen;
+    const psx=ox+bx/blen*proj_len,psy=oy+by/blen*proj_len;
+    ctx.strokeStyle='rgba(0,212,255,0.3)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(ox+ax,oy+ay);ctx.lineTo(psx,psy);ctx.stroke();
+    ctx.setLineDash([]);
+    // dot readout
+    const col=dot>0?'#00ff88':dot<-0.05?'#ff2d78':'#ffaa00';
+    ctx.fillStyle=col;ctx.font='bold 13px monospace';
+    ctx.fillText(`A·B = ${dot.toFixed(3)}`,10,20);
+    ctx.fillStyle='#555';ctx.font='11px monospace';
+    ctx.fillText(dot>0.1?'FACING →':'AWAY ↔',10,36);
+    ctx.shadowBlur=0;t+=0.018;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function demoCross(){
+  const c=document.getElementById('demo-cross');if(!c)return;
+  let t=0;
+  function frame(){
+    resizeCanvas(c);const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='#050510';ctx.fillRect(0,0,W,H);
+    const ox=W*0.45,oy=H*0.55;
+    // 2.5D projection
+    const project=([x,y,z])=>[ox+x*40-z*20,oy-y*40+z*10];
+    const a1=t*0.5,a2=t*0.3+1.2;
+    const A=[Math.cos(a1)*1.5,Math.sin(a1)*0.5,0];
+    const B=[Math.cos(a2)*0.5,Math.cos(a2)*0.5,Math.sin(a2)*1.5];
+    const C=[A[1]*B[2]-A[2]*B[1],A[2]*B[0]-A[0]*B[2],A[0]*B[1]-A[1]*B[0]];
+    const clen=Math.sqrt(C[0]*C[0]+C[1]*C[1]+C[2]*C[2])||1;
+    const CN=[C[0]/clen,C[1]/clen,C[2]/clen];
+    [[A,'#00d4ff','A'],[B,'#b44fff','B'],[CN,'#00ff88','A×B']].forEach(([v,col,lbl])=>{
+      const s=project([0,0,0]),e=project(v.map(x=>x*1.5));
+      ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.shadowColor=col;ctx.shadowBlur=10;
+      ctx.beginPath();ctx.moveTo(...s);ctx.lineTo(...e);ctx.stroke();
+      ctx.fillStyle=col;ctx.font='bold 12px monospace';ctx.shadowBlur=0;
+      ctx.fillText(lbl,e[0]+5,e[1]+5);
+    });
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(...project([0,0,0]),4,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;t+=0.018;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function demoMatrix(){
+  const c=document.getElementById('demo-matrix');if(!c)return;
+  let t=0;
+  function frame(){
+    resizeCanvas(c);const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='rgba(5,5,16,0.2)';ctx.fillRect(0,0,W,H);
+    // grid transform
+    const ox=W/2,oy=H/2;
+    const s=Math.sin(t)*0.4+1.2,cs=Math.cos(t),sn=Math.sin(t);
+    // transform matrix: rotation + scale
+    const m=[cs*s,-sn*s,sn*s,cs*s];
+    const transform=(x,y)=>[ox+m[0]*x+m[1]*y, oy+m[2]*x+m[3]*y];
+    const step=25,range=3;
+    // grid lines
+    for(let i=-range;i<=range;i++){
+      ctx.strokeStyle=`rgba(255,255,255,${i===0?0.15:0.06})`;ctx.lineWidth=1;
+      const p1=transform(i*step,-range*step),p2=transform(i*step,range*step);
+      const q1=transform(-range*step,i*step),q2=transform(range*step,i*step);
+      ctx.beginPath();ctx.moveTo(...p1);ctx.lineTo(...p2);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(...q1);ctx.lineTo(...q2);ctx.stroke();
+    }
+    // basis vectors
+    [[1,0,'#ff4466','î'],[0,1,'#44ff88','ĵ']].forEach(([x,y,col,lbl])=>{
+      const e=transform(x*step*2,y*step*2);
+      ctx.strokeStyle=col;ctx.lineWidth=3;ctx.shadowColor=col;ctx.shadowBlur=12;
+      ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(...e);ctx.stroke();
+      ctx.fillStyle=col;ctx.font='bold 13px monospace';ctx.shadowBlur=0;
+      ctx.fillText(lbl,e[0]+5,e[1]+5);
+    });
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ox,oy,5,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;t+=0.018;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function demoProj(){
+  const c=document.getElementById('demo-proj');if(!c)return;
+  let t=0;
+  const cubeV=[[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]];
+  const cubeE=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+  function frame(){
+    resizeCanvas(c);const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='rgba(5,5,16,0.2)';ctx.fillRect(0,0,W,H);
+    const fov=Math.PI/4;
+    const proj=([x,y,z])=>{
+      const zz=z+4.5+Math.sin(t)*0.5;
+      const f=1/Math.tan(fov/2);
+      return [W/2+x/zz*f*(H/2), H/2+y/zz*f*(H/2)];
+    };
+    const ry=t*0.7,rx=t*0.3;
+    const tv=cubeV.map(([x,y,z])=>{
+      const y2=y*Math.cos(rx)-z*Math.sin(rx),z2=y*Math.sin(rx)+z*Math.cos(rx);
+      const x3=x*Math.cos(ry)+z2*Math.sin(ry),z3=-x*Math.sin(ry)+z2*Math.cos(ry);
+      return [x3,y2,z3];
+    });
+    cubeE.forEach(([a,b],i)=>{
+      const p1=proj(tv[a]),p2=proj(tv[b]);
+      const hue=(i*30+t*40)%360;
+      ctx.strokeStyle=`hsla(${hue},100%,65%,0.8)`;
+      ctx.lineWidth=1.8;ctx.shadowColor=`hsl(${hue},100%,65%)`;ctx.shadowBlur=6;
+      ctx.beginPath();ctx.moveTo(...p1);ctx.lineTo(...p2);ctx.stroke();
+    });
+    ctx.shadowBlur=0;t+=0.02;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODULE MINI CANVASES
+// ═══════════════════════════════════════════════════════════
+function initMiniCanvases(){
+  drawAxes('mv1');
+  drawVectorArrow('mv2');
+  drawUnitCircle('mv3');
+  drawParametric('mv4');
+}
+
+function drawAxes(id){
+  const c=document.getElementById(id); if(!c)return;
+  let t=0;
+  function frame(){
+    resizeCanvas(c); const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='rgba(5,5,16,0.3)'; ctx.fillRect(0,0,W,H);
+    const ox=W*0.4,oy=H*0.55;
+    const axes=[[1,0,0,'X','#ff4466'],[0,-1,0,'Y','#44ff88'],[0.5,0.5,0,'Z','#4488ff']];
+    axes.forEach(([dx,dy,,lbl,col],i)=>{
+      const rx=dx+Math.sin(t+i)*0.05, ry=dy+Math.cos(t+i)*0.03;
+      const ex=ox+rx*50, ey=oy+ry*50;
+      ctx.strokeStyle=col; ctx.lineWidth=2.5; ctx.shadowColor=col; ctx.shadowBlur=8;
+      ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ex,ey); ctx.stroke();
+      ctx.fillStyle=col; ctx.font='bold 12px monospace'; ctx.shadowBlur=0;
+      ctx.fillText(lbl,ex+4,ey+4);
+    });
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(ox,oy,4,0,Math.PI*2); ctx.fill();
+    t+=0.015;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function drawVectorArrow(id){
+  const c=document.getElementById(id); if(!c)return;
+  let t=0;
+  function frame(){
+    resizeCanvas(c); const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='rgba(5,5,16,0.2)'; ctx.fillRect(0,0,W,H);
+    const ox=W*0.25,oy=H*0.7;
+    const ang=-0.8+Math.sin(t)*0.3;
+    const len=Math.min(W,H)*0.5;
+    const ex=ox+Math.cos(ang)*len,ey=oy+Math.sin(ang)*len;
+    // shadow
+    ctx.strokeStyle='rgba(0,212,255,0.15)'; ctx.lineWidth=8;
+    ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(ex,ey);ctx.stroke();
+    // main arrow
+    ctx.strokeStyle='#00d4ff'; ctx.lineWidth=2.5; ctx.shadowColor='#00d4ff'; ctx.shadowBlur=12;
+    ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(ex,ey);ctx.stroke();
+    // arrowhead
+    const hl=16,ba=ang+Math.PI;
+    ctx.fillStyle='#00d4ff';
+    ctx.beginPath();
+    ctx.moveTo(ex,ey);
+    ctx.lineTo(ex+Math.cos(ba-0.4)*hl,ey+Math.sin(ba-0.4)*hl);
+    ctx.lineTo(ex+Math.cos(ba+0.4)*hl,ey+Math.sin(ba+0.4)*hl);
+    ctx.closePath();ctx.fill();
+    // magnitude label
+    ctx.fillStyle='#8888aa'; ctx.font='11px monospace'; ctx.shadowBlur=0;
+    ctx.fillText(`|v| = ${len.toFixed(0)}`,ex+8,ey-8);
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(ox,oy,4,0,Math.PI*2); ctx.fill();
+    t+=0.018;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function drawUnitCircle(id){
+  const c=document.getElementById(id); if(!c)return;
+  let t=0;
+  function frame(){
+    resizeCanvas(c); const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='rgba(5,5,16,0.25)'; ctx.fillRect(0,0,W,H);
+    const ox=W/2,oy=H/2,r=Math.min(W,H)*0.36;
+    // circle
+    ctx.strokeStyle='rgba(180,79,255,0.3)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(ox,oy,r,0,Math.PI*2); ctx.stroke();
+    // axes
+    ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(ox-r-10,oy);ctx.lineTo(ox+r+10,oy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(ox,oy-r-10);ctx.lineTo(ox,oy+r+10);ctx.stroke();
+    const ang=t;
+    const px=ox+Math.cos(ang)*r, py=oy+Math.sin(ang)*r;
+    // sin/cos projections
+    ctx.strokeStyle='rgba(0,255,136,0.5)'; ctx.lineWidth=1.5; ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(px,oy);ctx.lineTo(px,py);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(ox,py);ctx.lineTo(px,py);ctx.stroke();
+    ctx.setLineDash([]);
+    // radius
+    ctx.strokeStyle='#b44fff'; ctx.lineWidth=2; ctx.shadowColor='#b44fff'; ctx.shadowBlur=10;
+    ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(px,py);ctx.stroke();
+    // point
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py,5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#00ff88'; ctx.font='10px monospace'; ctx.shadowBlur=0;
+    ctx.fillText(`cos:${Math.cos(ang).toFixed(2)}`,4,H-18);
+    ctx.fillStyle='#4488ff';
+    ctx.fillText(`sin:${Math.sin(ang).toFixed(2)}`,4,H-6);
+    t+=0.025;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function drawParametric(id){
+  const c=document.getElementById(id); if(!c)return;
+  let t=0;
+  const pts=[];
+  function frame(){
+    resizeCanvas(c); const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='rgba(5,5,16,0.15)'; ctx.fillRect(0,0,W,H);
+    const px=W/2+Math.cos(t)*Math.cos(3*t)*(W*0.35);
+    const py=H/2+Math.sin(t)*Math.sin(2*t)*(H*0.35);
+    pts.push([px,py]); if(pts.length>200) pts.shift();
+    if(pts.length>1){
+      pts.forEach(([x,y],i)=>{
+        const hue=(i/pts.length*360+t*20)%360;
+        ctx.strokeStyle=`hsla(${hue},100%,65%,${i/pts.length})`;
+        ctx.lineWidth=2; ctx.shadowColor=`hsl(${hue},100%,65%)`; ctx.shadowBlur=6;
+        ctx.beginPath();
+        if(i>0){ctx.moveTo(pts[i-1][0],pts[i-1][1]);ctx.lineTo(x,y);ctx.stroke();}
+      });
+    }
+    ctx.fillStyle='#fff'; ctx.shadowBlur=15; ctx.shadowColor='#fff';
+    ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    t+=0.04;
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// ═══════════════════════════════════════════════════════════
+// INTERSECTION OBSERVER — animate cards in
+// ═══════════════════════════════════════════════════════════
+function initScrollAnimations(){
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting) e.target.classList.add('visible');
+    });
+  },{threshold:0.1});
+  document.querySelectorAll('.card,.ninja-chip,.stat-item').forEach((el,i)=>{
+    el.style.animationDelay=`${(i%6)*0.07}s`;
+    obs.observe(el);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  initStrip();
+  initMiniCanvases();
+  initPipelineCanvas();
+  initDemoPanels();
+  initScrollAnimations();
+});
+</script>
+</body>
+</html>

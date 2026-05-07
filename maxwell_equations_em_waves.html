@@ -1,0 +1,227 @@
+
+<h2 class="sr-only">Interactive Maxwell's equations explainer showing all four laws of electromagnetism with an animated electromagnetic wave and connections to real-world applications like WiFi, GPS, and light.</h2>
+
+<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap" id="eq-tabs">
+  <button class="eq-tab active" onclick="showEq(0)">Gauss — Electric</button>
+  <button class="eq-tab" onclick="showEq(1)">Gauss — Magnetic</button>
+  <button class="eq-tab" onclick="showEq(2)">Faraday</button>
+  <button class="eq-tab" onclick="showEq(3)">Ampère–Maxwell</button>
+</div>
+
+<style>
+.eq-tab{font-size:12px}
+.eq-tab.active{background:var(--color-background-info);border-color:var(--color-border-info);color:var(--color-text-info)}
+</style>
+
+<div id="eq-panels">
+  <div class="eq-panel" id="ep0">
+    <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px 16px;margin-bottom:10px">
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:6px">Law 1 · Gauss's Law for Electricity</div>
+      <div style="font-family:var(--font-mono);font-size:18px;letter-spacing:1px;margin-bottom:8px">∇ · <strong style="color:#3B8BD4">E</strong> = ρ / ε₀</div>
+      <div style="font-size:13px;color:var(--color-text-secondary);line-height:1.6">Electric field lines (<strong style="font-weight:500;color:var(--color-text-primary)">E</strong>) diverge from positive charges and converge on negative ones. The total flux through any closed surface equals the enclosed charge (ρ) divided by ε₀. This is how we know every electron has a field that reaches to infinity — and how capacitors store energy.</div>
+    </div>
+    <canvas id="gc0" width="680" height="160" style="width:100%;border-radius:var(--border-radius-md)"></canvas>
+  </div>
+  <div class="eq-panel" id="ep1" style="display:none">
+    <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px 16px;margin-bottom:10px">
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:6px">Law 2 · Gauss's Law for Magnetism</div>
+      <div style="font-family:var(--font-mono);font-size:18px;letter-spacing:1px;margin-bottom:8px">∇ · <strong style="color:#E24B4A">B</strong> = 0</div>
+      <div style="font-size:13px;color:var(--color-text-secondary);line-height:1.6">Magnetic field lines (<strong style="font-weight:500;color:var(--color-text-primary)">B</strong>) always form closed loops — they never start or end anywhere. This means there are no magnetic monopoles. Cut a magnet in half and you get two smaller magnets, each with a north and south pole. Every MRI machine, compass, and hard drive depends on this truth.</div>
+    </div>
+    <canvas id="gc1" width="680" height="160" style="width:100%;border-radius:var(--border-radius-md)"></canvas>
+  </div>
+  <div class="eq-panel" id="ep2" style="display:none">
+    <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px 16px;margin-bottom:10px">
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:6px">Law 3 · Faraday's Law of Induction</div>
+      <div style="font-family:var(--font-mono);font-size:18px;letter-spacing:1px;margin-bottom:8px">∇ × <strong style="color:#3B8BD4">E</strong> = −∂<strong style="color:#E24B4A">B</strong>/∂t</div>
+      <div style="font-size:13px;color:var(--color-text-secondary);line-height:1.6">A <em>changing</em> magnetic field creates a curling electric field. This is why every generator, transformer, and induction cooktop works. It's also the first hint of the deep bond between E and B — they are not independent. Change one and you inevitably disturb the other.</div>
+    </div>
+    <canvas id="gc2" width="680" height="160" style="width:100%;border-radius:var(--border-radius-md)"></canvas>
+  </div>
+  <div class="eq-panel" id="ep3" style="display:none">
+    <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px 16px;margin-bottom:10px">
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:6px">Law 4 · Ampère–Maxwell Law</div>
+      <div style="font-family:var(--font-mono);font-size:18px;letter-spacing:1px;margin-bottom:8px">∇ × <strong style="color:#E24B4A">B</strong> = μ₀(<strong style="color:#639922">J</strong> + ε₀ ∂<strong style="color:#3B8BD4">E</strong>/∂t)</div>
+      <div style="font-size:13px;color:var(--color-text-secondary);line-height:1.6">A changing electric field — or an actual current (<strong style="font-weight:500;color:var(--color-text-primary)">J</strong>) — creates a curling magnetic field. Maxwell's genius was adding ε₀ ∂E/∂t: this displacement current predicted that EM waves could travel in empty space. Solving the four equations together yields c = 1/√(μ₀ε₀) = 299,792,458 m/s — the speed of light.</div>
+    </div>
+    <canvas id="gc3" width="680" height="160" style="width:100%;border-radius:var(--border-radius-md)"></canvas>
+  </div>
+</div>
+
+<div style="margin:16px 0 8px;font-size:12px;color:var(--color-text-secondary)">Electromagnetic wave — E field (blue) ⊥ B field (red), propagating at c</div>
+<canvas id="waveCanvas" width="680" height="140" style="width:100%;border-radius:var(--border-radius-md);display:block"></canvas>
+
+<div style="display:flex;gap:8px;margin:10px 0;flex-wrap:wrap" id="freq-btns">
+  <button class="f-btn active" onclick="setFreq(0)" data-f="0">Radio / Wi-Fi</button>
+  <button class="f-btn" onclick="setFreq(1)" data-f="1">Microwave</button>
+  <button class="f-btn" onclick="setFreq(2)" data-f="2">Infrared</button>
+  <button class="f-btn" onclick="setFreq(3)" data-f="3">Visible light</button>
+  <button class="f-btn" onclick="setFreq(4)" data-f="4">X-ray / GPS</button>
+</div>
+<style>
+.f-btn{font-size:12px}
+.f-btn.active{background:var(--color-background-info);border-color:var(--color-border-info);color:var(--color-text-info)}
+</style>
+
+<div id="freq-info" style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px;font-size:13px;color:var(--color-text-secondary);line-height:1.6;margin-top:2px"></div>
+
+<script>
+const freqs = [
+  {name:'Radio / Wi-Fi', speed:0.5, wl:'12 cm – 1 km', info:'Your Wi-Fi router oscillates an electric field at 2.4 or 5 GHz. Maxwell\'s equations tell us exactly how that wave propagates through walls and bounces off surfaces — engineers use these same equations to design antenna shapes and channel bandwidths.'},
+  {name:'Microwave', speed:0.9, wl:'1 mm – 30 cm', info:'Microwaves excite water molecules at 2.45 GHz — the resonant frequency of the H-O-H bond. Your microwave oven is a Maxwell solver in a metal box, bouncing EM waves until they\'re absorbed by food.'},
+  {name:'Infrared', speed:1.4, wl:'780 nm – 1 mm', info:'Every warm object radiates infrared. Thermal cameras and night-vision goggles detect these EM waves invisibly emanating from bodies at ~37°C. The same physics governs heat loss through windows and greenhouse gas absorption.'},
+  {name:'Visible light', speed:2.0, wl:'380 – 700 nm', info:'The narrow slice of the EM spectrum your eyes evolved to detect. Maxwell proved light IS an electromagnetic wave — there is no "luminous ether." Colour is simply frequency. This unified optics and electromagnetism into a single theory.'},
+  {name:'X-ray / GPS', speed:2.8, wl:'0.01 – 10 nm', info:'GPS satellites broadcast at ~1.5 GHz. Your phone measures the tiny time difference between satellite signals — accurate to nanoseconds. Relativity corrects the clocks; Maxwell\'s equations govern the propagation. X-rays penetrate soft tissue because their sub-nanometre wavelength is close to atomic spacing.'}
+];
+
+let currentFreq = 0, phase = 0, waveAnim = null;
+let currentEq = 0;
+
+function setFreq(i){
+  currentFreq = i;
+  document.querySelectorAll('.f-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+  document.getElementById('freq-info').textContent = freqs[i].info;
+}
+setFreq(0);
+
+function showEq(i){
+  currentEq = i;
+  document.querySelectorAll('.eq-panel').forEach((p,j)=>p.style.display=j===i?'block':'none');
+  document.querySelectorAll('.eq-tab').forEach((b,j)=>b.classList.toggle('active',j===i));
+  drawEqDiagram(i);
+}
+
+function drawEqDiagram(i){
+  const id = 'gc'+i;
+  const c = document.getElementById(id);
+  const ctx = c.getContext('2d');
+  const W=680, H=160;
+  ctx.fillStyle='#0b0f18'; ctx.fillRect(0,0,W,H);
+
+  if(i===0){
+    // Gauss: field lines radiating from a charge
+    const cx=W/2, cy=H/2;
+    for(let a=0;a<12;a++){
+      const ang=(a/12)*Math.PI*2;
+      const r1=14, r2=65;
+      const x1=cx+Math.cos(ang)*r1, y1=cy+Math.sin(ang)*r1;
+      const x2=cx+Math.cos(ang)*r2, y2=cy+Math.sin(ang)*r2;
+      ctx.strokeStyle='rgba(59,139,212,0.6)'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      const ax=cx+Math.cos(ang)*(r2-4), ay=cy+Math.sin(ang)*(r2-4);
+      ctx.fillStyle='rgba(59,139,212,0.8)';
+      ctx.beginPath();
+      ctx.arc(x2,y2,2.5,0,Math.PI*2); ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(cx,cy,12,0,Math.PI*2);
+    ctx.fillStyle='#F2A623'; ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('+',cx,cy+5);
+    ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.font='11px sans-serif';
+    ctx.fillText('Electric charge ρ',cx,H-16);
+    ctx.fillText('E field lines radiate outward',cx,H-4);
+
+    // Negative charge
+    const cx2=cx+180, cy2=cy;
+    for(let a=0;a<12;a++){
+      const ang=(a/12)*Math.PI*2;
+      const r1=14, r2=65;
+      const x1=cx2+Math.cos(ang)*r1, y1=cy2+Math.sin(ang)*r1;
+      const x2=cx2+Math.cos(ang)*r2, y2=cy2+Math.sin(ang)*r2;
+      ctx.strokeStyle='rgba(226,75,74,0.6)'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(x2,y2); ctx.lineTo(x1,y1); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(cx2,cy2,12,0,Math.PI*2);
+    ctx.fillStyle='#6aaeff'; ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('−',cx2,cy2+5);
+  } else if(i===1){
+    // Gauss magnetic: closed field loops
+    const cx=W/2, cy=H/2;
+    for(let r=25;r<80;r+=20){
+      ctx.strokeStyle=`rgba(226,75,74,${0.7-r/130})`; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.ellipse(cx,cy,r,r*0.55,0,0,Math.PI*2); ctx.stroke();
+    }
+    ctx.fillStyle='#888'; ctx.fillRect(cx-30,cy-6,60,12);
+    ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Closed B field loops — no monopoles',cx,H-6);
+  } else if(i===2){
+    // Faraday: changing B → E curl
+    const cx=280, cy=H/2;
+    for(let r=20;r<75;r+=22){
+      ctx.strokeStyle=`rgba(226,75,74,${0.9-r/100})`; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.ellipse(cx,cy,r*0.5,r,0,0,Math.PI*2); ctx.stroke();
+    }
+    ctx.fillStyle='rgba(59,139,212,0.6)'; ctx.lineWidth=1.5;
+    for(let a=0;a<8;a++){
+      const ang=(a/8)*Math.PI*2+0.3;
+      const r=50;
+      ctx.beginPath();
+      ctx.arc(cx+260,cy,r,ang,ang+0.5);
+      ctx.stroke();
+    }
+    ctx.strokeStyle='rgba(59,139,212,0.8)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(cx+180,cy-10); ctx.lineTo(cx+220,cy-10); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Changing B (left) → curling E field (right)',cx+130,H-6);
+  } else {
+    // Ampere-Maxwell: current → B curl
+    const cx=200, cy=H/2;
+    ctx.strokeStyle='rgba(99,153,34,0.8)'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(cx,20); ctx.lineTo(cx,H-20); ctx.stroke();
+    ctx.fillStyle='rgba(99,153,34,0.8)'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('J (current)',cx,H-6);
+    for(let y=30;y<H-20;y+=22){
+      ctx.strokeStyle=`rgba(226,75,74,0.6)`; ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.ellipse(cx+100,y,50,10,0,0,Math.PI*2); ctx.stroke();
+    }
+    ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.font='11px sans-serif';
+    ctx.fillText('B field loops surround current',cx+100,H-6);
+  }
+}
+
+drawEqDiagram(0);
+
+function drawWave(){
+  const c = document.getElementById('waveCanvas');
+  const ctx = c.getContext('2d');
+  const W=680, H=140, mid=H/2;
+  ctx.fillStyle='#0b0f18'; ctx.fillRect(0,0,W,H);
+
+  const speed = freqs[currentFreq].speed;
+  phase += speed*0.04;
+  const wl = 120;
+  const amp = 45;
+
+  // E field (blue)
+  ctx.strokeStyle='#3B8BD4'; ctx.lineWidth=2.5;
+  ctx.beginPath();
+  for(let x=0;x<W;x+=2){
+    const y = mid - amp*Math.sin(2*Math.PI*(x/wl - phase));
+    x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // B field (red, 90° rotated visually as amplitude modulation)
+  ctx.strokeStyle='#E24B4A'; ctx.lineWidth=2.5;
+  ctx.beginPath();
+  for(let x=0;x<W;x+=2){
+    const y = mid - amp*Math.sin(2*Math.PI*(x/wl - phase) + Math.PI/2)*0.5;
+    x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // Propagation arrow
+  ctx.fillStyle='rgba(255,255,255,0.4)';
+  ctx.font='11px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('→ c = 299,792 km/s',8,14);
+
+  // Wavelength label
+  ctx.fillStyle='rgba(255,255,255,0.3)';
+  ctx.font='10px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('λ = '+freqs[currentFreq].wl, W/2, H-6);
+
+  waveAnim = requestAnimationFrame(drawWave);
+}
+drawWave();
+</script>

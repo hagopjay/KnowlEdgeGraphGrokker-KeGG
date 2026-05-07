@@ -1,0 +1,806 @@
+
+<h2 class="sr-only">Discrete Mathematics Masterclass: interactive encyclopedic explorer from ZFC set theory through spectral graphs, knowledge graphs, graph neural networks, and transfinite cardinal arithmetic</h2>
+<style>
+.dmr{display:flex;height:720px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;margin-top:4px}
+.dmnav{width:186px;min-width:186px;overflow-y:auto;border-right:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);padding:4px 0 12px}
+.dmcon{flex:1;overflow-y:auto;padding:20px 24px 28px;min-width:0}
+.tl{font-size:9.5px;font-weight:500;color:var(--color-text-tertiary);letter-spacing:.08em;padding:14px 12px 3px;text-transform:uppercase}
+.ni{padding:5px 10px;cursor:pointer;border-radius:5px;margin:1px 6px;font-size:12px;color:var(--color-text-secondary);display:flex;align-items:center;gap:6px;transition:background .1s}
+.ni:hover,.ni.active{background:var(--color-background-primary);color:var(--color-text-primary)}
+.ni.active{font-weight:500}
+.tb{font-size:9px;padding:2px 5px;border-radius:3px;font-weight:500;flex-shrink:0;font-family:var(--font-mono)}
+.t1b{background:var(--color-background-info);color:var(--color-text-info)}
+.t2b{background:var(--color-background-success);color:var(--color-text-success)}
+.t3b{background:var(--color-background-warning);color:var(--color-text-warning)}
+.ttl{font-size:16px;font-weight:500;margin:0 0 4px;color:var(--color-text-primary)}
+.sub{font-size:12.5px;color:var(--color-text-secondary);margin:0 0 12px;line-height:1.6}
+.sh{font-size:12.5px;font-weight:500;margin:16px 0 6px;display:flex;align-items:center;gap:7px;color:var(--color-text-primary)}
+.sh::before{content:'';display:block;width:3px;height:13px;background:var(--color-border-secondary);border-radius:2px;flex-shrink:0}
+.pr{font-size:12.5px;color:var(--color-text-secondary);line-height:1.72;margin:0 0 10px}
+.mb{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:6px;padding:10px 14px;margin:8px 0;font-family:var(--font-mono);font-size:11px;line-height:1.9;color:var(--color-text-primary);white-space:pre}
+.cb{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:6px;padding:11px 14px;margin:8px 0;font-family:var(--font-mono);font-size:11px;line-height:1.75;color:var(--color-text-primary);overflow-x:auto;white-space:pre}
+.ib{background:var(--color-background-warning);border:0.5px solid var(--color-border-warning);border-radius:6px;padding:9px 13px;margin:10px 0;font-size:12px;color:var(--color-text-warning);line-height:1.65}
+.kb{border-left:2.5px solid var(--color-border-info);padding:8px 12px;margin:10px 0;background:var(--color-background-info);border-radius:0 6px 6px 0;font-size:12px;color:var(--color-text-info);line-height:1.65}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 14px}
+.tag{background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);color:var(--color-text-secondary);font-size:10px;padding:2px 7px;border-radius:10px;font-family:var(--font-mono)}
+.kw{color:var(--color-text-info)}.cm{color:var(--color-text-secondary);font-style:italic}.st{color:var(--color-text-success)}.nu{color:var(--color-text-warning)}.fn{font-weight:500}
+</style>
+
+<div class="dmr">
+<nav class="dmnav">
+  <div class="tl">Tier 1 · Foundations</div>
+  <div class="ni active" id="n-sets" onclick="show('sets')"><span class="tb t1b">∅</span>Set theory / ZFC</div>
+  <div class="ni" id="n-logic" onclick="show('logic')"><span class="tb t1b">⊢</span>Propositional logic</div>
+  <div class="ni" id="n-pred" onclick="show('pred')"><span class="tb t1b">∀</span>Predicate logic / FOL</div>
+  <div class="ni" id="n-bool" onclick="show('bool')"><span class="tb t1b">⊕</span>Boolean algebra</div>
+  <div class="tl">Tier 2 · Intermediate</div>
+  <div class="ni" id="n-comb" onclick="show('comb')"><span class="tb t2b">Σ</span>Combinatorics</div>
+  <div class="ni" id="n-bigo" onclick="show('bigo')"><span class="tb t2b">O</span>Asymptotic analysis</div>
+  <div class="ni" id="n-rel" onclick="show('rel')"><span class="tb t2b">≤</span>Relations & orders</div>
+  <div class="ni" id="n-nt" onclick="show('nt')"><span class="tb t2b">ℤ</span>Number theory</div>
+  <div class="ni" id="n-rec" onclick="show('rec')"><span class="tb t2b">T</span>Recurrences</div>
+  <div class="tl">Tier 3 · Advanced</div>
+  <div class="ni" id="n-gr" onclick="show('gr')"><span class="tb t3b">G</span>Graph theory</div>
+  <div class="ni" id="n-spec" onclick="show('spec')"><span class="tb t3b">λ</span>Spectral graphs</div>
+  <div class="ni" id="n-kg" onclick="show('kg')"><span class="tb t3b">KG</span>Knowledge graphs</div>
+  <div class="ni" id="n-gnn" onclick="show('gnn')"><span class="tb t3b">ψ</span>Graph neural nets</div>
+  <div class="ni" id="n-inf" onclick="show('inf')"><span class="tb t3b">∞</span>Transfinite math</div>
+</nav>
+<main class="dmcon" id="dmc"></main>
+</div>
+
+<script>
+const T={
+sets:`<p class="ttl">Set Theory — ZFC Axiomatic Foundations</p>
+<p class="sub">The bedrock of all discrete mathematics: Zermelo–Fraenkel + Choice (ZFC). Every mathematical object is ontologically a set — numbers, functions, relations, even other axiom systems.</p>
+<div class="tags"><span class="tag">ZFC axioms</span><span class="tag">cardinality</span><span class="tag">power set 𝒫(S)</span><span class="tag">Cantor–Bernstein–Schröder</span><span class="tag">Russell's paradox</span><span class="tag">ordinals</span></div>
+<div class="sh">The 9 ZFC Axioms</div>
+<p class="pr">ZFC replaces naive set theory (which births Russell's paradox R={x:x∉x}) with a carefully restricted axiom schema. The <em>Axiom of Regularity</em> forbids x∈x; <em>Replacement</em> allows images of sets under definable functions; the <em>Axiom of Choice</em> (AC) is independent of ZF — both ZF+AC and ZF+¬AC are consistent (Gödel 1938, Cohen 1963).</p>
+<div class="mb">Extensionality:  ∀A∀B [∀x(x∈A ↔ x∈B) → A=B]
+Power Set:       ∀A ∃P ∀x [x∈P ↔ x⊆A]       ⟹ |𝒫(A)| = 2^|A|
+Infinity:        ∃ω [∅∈ω ∧ ∀x∈ω (x∪{x}∈ω)]  gives von Neumann ℕ
+Separation:      ∀A∀φ ∃B ∀x [x∈B ↔ x∈A ∧ φ(x)]  (no unrestricted {x:φ(x)}!)
+Replacement:     ∀A∀F(func) ∃B∀y [y∈B ↔ ∃x∈A F(x)=y]
+Regularity:      ∀A≠∅ ∃x∈A [x∩A=∅]  — no infinite ∈-descending chains
+Choice (AC):     ∀𝒜(pairwise disjoint, nonempty) ∃C ∀A∈𝒜 |C∩A|=1</div>
+<div class="sh">Cardinality: Cantor, Schröder–Bernstein, Diagonal</div>
+<div class="kb">Cantor's Theorem: |A| &lt; |𝒫(A)| for ANY set A (including infinite). Proof: suppose surjection f:A→𝒫(A). Let D={x∈A : x∉f(x)}. If D=f(d) then d∈D ↔ d∉D. Contradiction. Therefore no surjection exists, hence |A|&lt;|𝒫(A)|. Corollary: ℵ₀ &lt; 2^ℵ₀ = |ℝ| &lt; 2^|ℝ| &lt; ···</div>
+<div class="mb">Cantor–Bernstein–Schröder: |A|≤|B| ∧ |B|≤|A|  ⟹  |A|=|B|  (no AC needed!)
+Equinumerosity via bijection: |ℕ|=|ℤ|=|ℚ|=ℵ₀  (all countably infinite)
+|ℝ|=|ℝⁿ|=|𝒫(ℕ)|=2^ℵ₀ = ℶ₁                    (all "continuum"-sized)
+Diagonal: the sequence space {0,1}^ω is uncountable — Cantor's 1874 proof.</div>
+<div class="sh">Python — Power sets, set algebra, countability demo</div>
+<div class="cb"><span class="kw">from</span> itertools <span class="kw">import</span> combinations
+<span class="kw">from</span> fractions <span class="kw">import</span> Fraction
+<span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> <span class="fn">power_set</span>(S):
+    <span class="cm"># 𝒫(S): 2^|S| elements — exponential, use with care!</span>
+    lst = list(S)
+    <span class="kw">return</span> frozenset(
+        frozenset(c) <span class="kw">for</span> r <span class="kw">in</span> range(len(lst)+<span class="nu">1</span>)
+        <span class="kw">for</span> c <span class="kw">in</span> combinations(lst, r))
+
+A, B = {<span class="nu">1</span>,<span class="nu">2</span>,<span class="nu">3</span>}, {<span class="nu">2</span>,<span class="nu">3</span>,<span class="nu">4</span>}
+print(A | B)   <span class="cm"># union:         {1,2,3,4}</span>
+print(A & B)   <span class="cm"># intersection:  {2,3}</span>
+print(A ^ B)   <span class="cm"># symmetric diff: {1,4} = (A∪B)∖(A∩B)</span>
+print(len(power_set(A)))  <span class="cm"># 8 = 2^3</span>
+
+<span class="cm"># ℚ is countable: Calkin–Wilf bijection ℕ↔ℚ⁺</span>
+<span class="kw">def</span> <span class="fn">rationals_gen</span>():
+    q = deque([Fraction(<span class="nu">1</span>,<span class="nu">1</span>)])
+    <span class="kw">while True</span>:
+        r = q.popleft(); <span class="kw">yield</span> r
+        n, d = r.numerator, r.denominator
+        q.append(Fraction(n, n+d)); q.append(Fraction(n+d, d))
+
+<span class="cm"># Cantor diagonal — finite simulation</span>
+<span class="kw">def</span> <span class="fn">diagonalize</span>(rows):
+    <span class="cm"># Given purported enumeration of binary strings, construct one missing</span>
+    <span class="kw">return</span> ''.join(<span class="st">'1'</span> <span class="kw">if</span> r[i]==<span class="st">'0'</span> <span class="kw">else</span> <span class="st">'0'</span> <span class="kw">for</span> i,r <span class="kw">in</span> enumerate(rows) <span class="kw">if</span> i&lt;len(r))</div>
+<div class="ib">⚡ Pythonic: <code>frozenset</code> is immutable/hashable — use it to represent sets as elements of other sets (e.g. elements of 𝒫(S)). Mutable <code>set</code> is unhashable and cannot be nested. Also: Python's built-in set operations are implemented as hash-table operations — O(min(|A|,|B|)) for intersection, NOT O(|A|·|B|).</div>`,
+
+logic:`<p class="ttl">Propositional Logic, Normal Forms & SAT</p>
+<p class="sub">Syntax, semantics, CNF/DNF, resolution refutation, DPLL/CDCL, and the Cook–Levin theorem. The gateway between discrete math and computational complexity theory.</p>
+<div class="tags"><span class="tag">wff</span><span class="tag">CNF/DNF</span><span class="tag">Tseitin transform</span><span class="tag">resolution</span><span class="tag">DPLL/CDCL</span><span class="tag">SAT ∈ NP-complete</span></div>
+<div class="sh">Normal forms & Tseitin transformation</div>
+<p class="pr">Every propositional formula is equivalent to CNF (conjunction of clauses) and DNF (disjunction of cubes). Conversion to CNF can be exponential naively (via truth tables), but the <strong>Tseitin transformation</strong> introduces auxiliary variable yᵢ per subformula node, yielding an equisatisfiable (not equivalent!) CNF in linear O(|φ|) time/space — crucial for industrial SAT solving.</p>
+<div class="mb">CNF:  (p ∨ ¬q ∨ r) ∧ (¬p ∨ s) ∧ (q ∨ ¬r)          [k-clauses]
+DNF:  (p ∧ ¬q) ∨ (¬p ∧ q ∧ r)                       [k-cubes]
+
+Resolution rule: {A∨p} , {B∨¬p}  ⊢  {A∨B}           (resolvent)
+  Complete: if φ is UNSAT → resolution derives □ (empty clause) in finite steps.
+  Proof of UNSAT: refutation tree whose root is □.
+
+DPLL  = Branch + Unit Propagation + Pure Literal Elimination
+CDCL  = DPLL + Conflict-Driven Clause Learning + Non-Chronological Backjumping
+         (z3, CaDiCaL, Glucose4 — handles millions of variables)</div>
+<div class="kb">Cook–Levin (1971): SAT is NP-complete. Every NP language L reduces to SAT in polytime via encoding the O(nᵏ)-step nondeterministic TM accepting computation as a CNF formula (tableau method). Proving SAT∈P would immediately give P=NP.</div>
+<div class="sh">Python — truth table generator + minimal DPLL</div>
+<div class="cb"><span class="kw">from</span> itertools <span class="kw">import</span> product
+
+<span class="kw">def</span> <span class="fn">truth_table</span>(formula, vars):
+    <span class="cm"># Exhaustive evaluation — O(2^n), only for small n</span>
+    <span class="kw">for</span> vals <span class="kw">in</span> product([<span class="nu">False</span>,<span class="nu">True</span>], repeat=len(vars)):
+        env = dict(zip(vars, vals))
+        print(env, <span class="st">"→"</span>, formula(**env))
+
+<span class="cm"># Verify De Morgan: ¬(p∧q) ≡ (¬p∨¬q)</span>
+truth_table(<span class="kw">lambda</span> p,q: (<span class="kw">not</span>(p <span class="kw">and</span> q)) == (<span class="kw">not</span> p <span class="kw">or not</span> q), [<span class="st">'p'</span>,<span class="st">'q'</span>])
+
+<span class="cm"># DPLL — CNF as list[frozenset[signed int]], +n means literal n, -n means ¬n</span>
+<span class="kw">def</span> <span class="fn">dpll</span>(clauses, asgn={}):
+    <span class="cm"># Simplify given current partial assignment</span>
+    clauses = [c - {-v <span class="kw">for</span> v,t <span class="kw">in</span> asgn.items() <span class="kw">if</span> t}
+               <span class="kw">for</span> c <span class="kw">in</span> clauses
+               <span class="kw">if not</span> c & {v <span class="kw">for</span> v,t <span class="kw">in</span> asgn.items() <span class="kw">if</span> t}]
+    <span class="kw">if not</span> clauses: <span class="kw">return</span> asgn             <span class="cm"># SAT</span>
+    <span class="kw">if</span> any(len(c)==<span class="nu">0</span> <span class="kw">for</span> c <span class="kw">in</span> clauses): <span class="kw">return None</span>  <span class="cm"># UNSAT</span>
+    lit = next(iter(clauses[<span class="nu">0</span>]))
+    <span class="kw">return</span> (dpll(clauses, {**asgn, abs(lit): lit><span class="nu">0</span>}) <span class="kw">or</span>
+            dpll(clauses, {**asgn, abs(lit): lit&lt;<span class="nu">0</span>}))
+
+<span class="cm"># 3-SAT example: (1∨2∨¬3) ∧ (¬1∨3) ∧ (¬2∨¬3)</span>
+f = [frozenset([<span class="nu">1</span>,<span class="nu">2</span>,-<span class="nu">3</span>]), frozenset([-<span class="nu">1</span>,<span class="nu">3</span>]), frozenset([-<span class="nu">2</span>,-<span class="nu">3</span>])]
+print(dpll(f))   <span class="cm"># {1:True, 3:False, 2:False} or similar</span></div>
+<div class="ib">⚡ For production SAT use <code>python-sat</code> (PySAT) wrapping Glucose4/CaDiCaL, or <code>z3-solver</code> for SMT (SAT + theories: linear arithmetic, arrays, bit-vectors). Modern CDCL handles industrial problems with 10⁷+ clauses via clause learning + VSIDS/LRB branching heuristics — exponentially faster than bare DPLL in practice.</div>`,
+
+pred:`<p class="ttl">First-Order Predicate Logic (FOL) — Quantifiers, Completeness & Incompleteness</p>
+<p class="sub">FOL is the lingua franca of mathematics. Gödel proved it is semantically complete (every valid sentence is provable) yet arithmetically incomplete (some true sentences are unprovable).</p>
+<div class="tags"><span class="tag">quantifiers ∀∃</span><span class="tag">prenex normal form</span><span class="tag">Skolemization</span><span class="tag">Robinson unification</span><span class="tag">Herbrand universe</span><span class="tag">Gödel completeness/incompleteness</span></div>
+<div class="sh">Syntax, semantics, decidability spectrum</div>
+<p class="pr">A FOL signature Σ=(F,P) has function symbols and predicate symbols with arities. A first-order structure 𝔐=(D,I) interprets Σ over domain D. Validity (⊨φ, true in all structures) is co-semi-decidable; satisfiability is semi-decidable. FOL is undecidable (Church–Turing 1936). The monadic fragment and guarded fragment ARE decidable.</p>
+<div class="mb">Prenex Normal Form (PNF): pull all quantifiers to prefix.
+  ∀x[P(x)→∃y Q(x,y)]  ≡  ∀x∃y[¬P(x)∨Q(x,y)]
+
+Skolemization (equisatisfiable, for resolution):
+  ∀x∃y Q(x,y)     →   ∀x Q(x, f(x))         [f: Skolem function]
+  ∃x∀y Q(x,y)     →   ∀y Q(c, y)             [c: Skolem constant]
+  ∀x∀z∃y R(x,y,z) →   ∀x∀z R(x, g(x,z), z)  [g: 2-ary Skolem fn]
+
+Robinson Unification: find substitution θ: Aθ = Bθ
+  unify(P(x,f(a)), P(g(y),f(y))) → {x↦g(a), y↦a}</div>
+<div class="kb">Gödel Completeness (1929): ⊨φ ↔ ⊢φ — every first-order tautology is provable in first-order calculus. Gödel Incompleteness I (1931): Any consistent, recursively axiomatizable theory T extending Robinson arithmetic has a true sentence G_T (Gödel sentence) such that T⊬G_T and T⊬¬G_T. Löwenheim–Skolem: if T has an infinite model, T has models of every infinite cardinality — showing first-order logic cannot pin down cardinality.</div>
+<div class="sh">Python — Unification algorithm (foundation of Prolog, type inference)</div>
+<div class="cb"><span class="kw">def</span> <span class="fn">unify</span>(x, y, subst=None):
+    <span class="cm">"""Robinson unification. Terms: strings=vars if lowercase, lists=compounds."""</span>
+    <span class="kw">if</span> subst <span class="kw">is None</span>: subst = {}
+    <span class="kw">if</span> subst <span class="kw">is False</span>: <span class="kw">return False</span>
+    <span class="kw">if</span> x == y:   <span class="kw">return</span> subst
+    <span class="kw">elif</span> isinstance(x,str) <span class="kw">and</span> x[<span class="nu">0</span>].islower(): <span class="kw">return</span> unify_var(x,y,subst)
+    <span class="kw">elif</span> isinstance(y,str) <span class="kw">and</span> y[<span class="nu">0</span>].islower(): <span class="kw">return</span> unify_var(y,x,subst)
+    <span class="kw">elif</span> isinstance(x,list) <span class="kw">and</span> isinstance(y,list):
+        <span class="kw">if</span> x[<span class="nu">0</span>]!=y[<span class="nu">0</span>] <span class="kw">or</span> len(x)!=len(y): <span class="kw">return False</span>
+        <span class="kw">for</span> xi,yi <span class="kw">in</span> zip(x[<span class="nu">1</span>:],y[<span class="nu">1</span>:]):
+            subst = unify(xi,yi,subst)
+        <span class="kw">return</span> subst
+    <span class="kw">return False</span>
+
+<span class="kw">def</span> <span class="fn">unify_var</span>(var, x, subst):
+    <span class="kw">if</span> var <span class="kw">in</span> subst:   <span class="kw">return</span> unify(subst[var], x, subst)
+    <span class="kw">if</span> isinstance(x,str) <span class="kw">and</span> x <span class="kw">in</span> subst: <span class="kw">return</span> unify(var, subst[x], subst)
+    <span class="cm"># Occur check omitted for brevity (Prolog also omits by default)</span>
+    <span class="kw">return</span> {**subst, var: x}
+
+<span class="cm"># unify(['P','x',['f','a']], ['P',['g','y'],['f','y']])</span>
+<span class="cm"># → {'x': ['g', 'y'], 'y': 'a'}</span>
+print(unify([<span class="st">'P'</span>,<span class="st">'x'</span>,[<span class="st">'f'</span>,<span class="st">'a'</span>]], [<span class="st">'P'</span>,[<span class="st">'g'</span>,<span class="st">'y'</span>],[<span class="st">'f'</span>,<span class="st">'y'</span>]]))</div>`,
+
+bool:`<p class="ttl">Boolean Algebra — Lattices, Minimization & Logic Synthesis</p>
+<p class="sub">Boolean algebra is a complemented distributive lattice. Every finite Boolean algebra is isomorphic to a power-set algebra 𝒫(S). These structures underpin digital logic, circuit synthesis, and formal verification.</p>
+<div class="tags"><span class="tag">Huntington axioms</span><span class="tag">De Morgan duality</span><span class="tag">Shannon expansion</span><span class="tag">Karnaugh maps</span><span class="tag">Quine–McCluskey</span><span class="tag">ESPRESSO</span><span class="tag">BDDs</span></div>
+<div class="sh">Huntington postulates & derived laws</div>
+<div class="mb">Commutativity:   a+b=b+a,  ab=ba
+Distributivity:  a(b+c)=ab+ac,  a+(bc)=(a+b)(a+c)   [both directions!]
+Identity:        a+0=a,  a·1=a
+Complement:      a+ā=1,  a·ā=0
+
+Derived:
+  Idempotency:   a+a=a,  aa=a
+  Absorption:    a+ab=a,  a(a+b)=a
+  De Morgan:     ‾(a+b)=ā·b̄,  ‾(ab)=ā+b̄         [duality principle]
+  Involution:    ā̄=a
+  Shannon:       f(x,…)=x·f(1,…)+x̄·f(0,…)         [cofactor decomposition]</div>
+<div class="sh">Minimization: K-map → Quine–McCluskey → ESPRESSO → BDDs</div>
+<p class="pr"><strong>Karnaugh maps</strong> visually group 2ᵏ adjacent minterms (Gray-code adjacency) into prime implicants. <strong>Quine–McCluskey</strong> is the exact tabular algorithm — exponential worst-case but exhaustive. <strong>ESPRESSO</strong> (Brayton, Berkeley 1984) uses heuristic expand/irredundant/reduce to find near-minimal SOPs — the industrial standard in ABC/Yosys logic synthesis. <strong>Binary Decision Diagrams (BDDs)</strong> — Reduced Ordered BDDs are canonical representations; polynomial operations on BDDs enable hardware model checking.</p>
+<div class="mb">f(A,B,C)=Σm(0,1,3,7)   [minterms where f=1]
+Quine–McCluskey grouping by Hamming weight:
+  Group-0: 000(m0)
+  Group-1: 001(m1)
+  Group-2: 011(m3)
+  Group-3: 111(m7)
+Combine: (m0,m1)→00-,  (m1,m3)→0-1,  (m3,m7)→-11
+Essential prime implicants cover all minterms → minimal SOP.
+χ(G,k) = k(k-1)^{n-1} for trees; 4-color theorem: χ(planar)≤4.</div>
+<div class="sh">Python — Boolean minimization via sympy</div>
+<div class="cb"><span class="kw">from</span> sympy.logic.boolalg <span class="kw">import</span> SOPform, POSform, to_cnf, simplify_logic
+<span class="kw">from</span> sympy <span class="kw">import</span> symbols
+
+A, B, C = symbols(<span class="st">'A B C'</span>)
+
+<span class="cm"># Quine-McCluskey minimization (sympy wraps it)</span>
+minterms = [<span class="nu">0</span>,<span class="nu">1</span>,<span class="nu">3</span>,<span class="nu">7</span>]
+print(SOPform([A,B,C], minterms))     <span class="cm"># minimal sum-of-products</span>
+print(POSform([A,B,C], minterms))     <span class="cm"># minimal product-of-sums</span>
+
+<span class="cm"># Shannon expansion: f = x·f|x=1 + x'·f|x=0</span>
+<span class="kw">def</span> <span class="fn">shannon</span>(f, var):
+    <span class="kw">return</span> (var & f.subs(var,<span class="nu">True</span>)) | (~var & f.subs(var,<span class="nu">False</span>))
+
+f = (A&B) | (~A&C) | (B&C)
+print(simplify_logic(f))              <span class="cm"># (A&B) | (A&C) | (B&C) — majority fn</span>
+print(to_cnf(f, simplify=<span class="nu">True</span>))      <span class="cm"># CNF form</span>
+
+<span class="cm"># BDD concept: variable ordering critically affects BDD size</span>
+<span class="cm"># worst ordering: exponential nodes; best: polynomial</span>
+<span class="cm"># NP-hard to find optimal ordering (use dynamic variable reordering in practice)</span></div>
+<div class="ib">⚡ Universal gate completeness: {NAND} alone suffices for any Boolean function — NAND is functionally complete (so is NOR). Why CMOS uses NAND/NOR: fewer transistors than AND/OR equivalents (NAND needs 4 vs 6 for AND). The deep connection: Boolean algebra ↔ propositional logic ↔ set algebra — same axioms, different interpretations.</div>`,
+
+comb:`<p class="ttl">Combinatorics — Generating Functions, Pólya Enumeration & Ramsey Theory</p>
+<p class="sub">The mathematics of structured counting: from bijective proofs and the twelvefold way to algebraic generating function machinery, Burnside–Pólya enumeration, and Ramsey's theorem.</p>
+<div class="tags"><span class="tag">PIE</span><span class="tag">OGF/EGF</span><span class="tag">Burnside/Pólya</span><span class="tag">Catalan numbers</span><span class="tag">Stirling numbers</span><span class="tag">Bell numbers</span><span class="tag">Ramsey R(r,s)</span></div>
+<div class="sh">Principle of Inclusion-Exclusion (PIE)</div>
+<div class="mb">|A₁∪…∪Aₙ| = Σ|Aᵢ| - Σ|Aᵢ∩Aⱼ| + Σ|Aᵢ∩Aⱼ∩Aₖ| - …
+           = Σ_{∅≠S⊆[n]} (-1)^{|S|+1} |∩_{i∈S} Aᵢ|
+
+Derangements: D(n) = n!·Σ_{k=0}^n (-1)^k/k! ≈ n!/e  [PIE on fixed-point sets]
+Euler totient: φ(n) = n·∏_{p|n}(1-1/p)               [PIE on prime factors]
+Surjections from [n]→[k]: Σ_{j=0}^k (-1)^j C(k,j)(k-j)^n</div>
+<div class="sh">Generating functions (OGF & EGF)</div>
+<p class="pr">The <strong>OGF</strong> F(x)=Σaₙxⁿ encodes sequence (aₙ); multiplication = convolution. The <strong>EGF</strong> F(x)=Σaₙxⁿ/n! is used for labeled structures. If A(x), B(x) are EGFs of labeled structure types A, B, then A(x)·B(x) counts labeled structures that are an A-part paired with a B-part (with canonical relabeling). The exponential formula: if C counts connected structures, then exp(C(x)) counts all structures (disjoint union of connected components).</p>
+<div class="mb">OGF: Σxⁿ=1/(1-x),  Σ C(n+k,k)xⁿ = 1/(1-x)^{k+1}  [k-multisets]
+EGF: eˣ=Σxⁿ/n!  encodes sets;  1/(1-x)=Σn!xⁿ/n!  encodes permutations
+
+Catalan: Cₙ=C(2n,n)/(n+1)=1,1,2,5,14,42,132,…
+  OGF: C(x)=(1-√(1-4x))/(2x)  satisfying C(x)=1+x·C(x)²
+  Counts: BSTs on n keys, Dyck paths, polygon triangulations,
+          non-crossing partitions, stack-sortable permutations, …
+
+Stirling 1st kind s(n,k): signed count of π∈Sₙ with exactly k cycles
+Stirling 2nd kind S(n,k): # set partitions of [n] into exactly k blocks
+  Recurrence: S(n,k) = k·S(n-1,k) + S(n-1,k-1)
+Bell numbers: Bₙ=Σ_k S(n,k) = 1,1,2,5,15,52,203,877,… (total set partitions)</div>
+<div class="kb">Ramsey Theory R(r,s): any 2-coloring of K_{R(r,s)} edges contains a red Kᵣ or blue Kₛ. R(3,3)=6 (party problem). R(4,4)=18. R(5,5)∈[43,48] — unknown exact value as of 2024. Upper bound: R(r,s)≤C(r+s-2,r-1). Ramsey's theorem generalizes: for any k-coloring and any target, sufficiently large complete graphs contain a monochromatic clique.</div>
+<div class="sh">Python — Stirling numbers, Bell numbers, Burnside necklaces</div>
+<div class="cb"><span class="kw">from</span> math <span class="kw">import</span> comb, gcd
+<span class="kw">from</span> functools <span class="kw">import</span> lru_cache
+
+@lru_cache(maxsize=<span class="nu">None</span>)
+<span class="kw">def</span> <span class="fn">stirling2</span>(n, k):
+    <span class="cm"># S(n,k) = k·S(n-1,k) + S(n-1,k-1)</span>
+    <span class="kw">if</span> n==k==<span class="nu">0</span>: <span class="kw">return</span> <span class="nu">1</span>
+    <span class="kw">if</span> n==<span class="nu">0</span> <span class="kw">or</span> k==<span class="nu">0</span>: <span class="kw">return</span> <span class="nu">0</span>
+    <span class="kw">return</span> k*stirling2(n-<span class="nu">1</span>,k) + stirling2(n-<span class="nu">1</span>,k-<span class="nu">1</span>)
+
+<span class="kw">def</span> <span class="fn">bell</span>(n): <span class="kw">return</span> sum(stirling2(n,k) <span class="kw">for</span> k <span class="kw">in</span> range(n+<span class="nu">1</span>))
+
+<span class="cm"># Catalan: C_n = comb(2n,n)//(n+1)</span>
+catalan = [comb(<span class="nu">2</span>*n,n)//(n+<span class="nu">1</span>) <span class="kw">for</span> n <span class="kw">in</span> range(<span class="nu">10</span>)]
+
+<span class="cm"># Burnside's lemma: count necklaces of n beads, k colors under rotation Z_n</span>
+<span class="cm"># |X/G| = (1/|G|) Σ_{g∈G} |Fix(g)|</span>
+<span class="cm"># For rotation by r: fixed colorings = k^gcd(n,r)</span>
+<span class="kw">def</span> <span class="fn">necklaces</span>(n, k):
+    <span class="kw">return</span> sum(k**gcd(n,r) <span class="kw">for</span> r <span class="kw">in</span> range(n)) // n
+
+<span class="cm"># Generating function via sympy for coefficient extraction</span>
+<span class="kw">from</span> sympy <span class="kw">import</span> series, sqrt, symbols
+x = symbols(<span class="st">'x'</span>)
+C_gf = (<span class="nu">1</span>-sqrt(<span class="nu">1</span>-<span class="nu">4</span>*x))/(<span class="nu">2</span>*x)   <span class="cm"># Catalan OGF</span>
+catalan_coeffs = [series(C_gf, x, <span class="nu">0</span>, n+<span class="nu">2</span>).coeff(x,n) <span class="kw">for</span> n <span class="kw">in</span> range(<span class="nu">6</span>)]
+print(catalan_coeffs)  <span class="cm"># [1, 1, 2, 5, 14, 42]</span></div>`,
+
+bigo:`<p class="ttl">Asymptotic Analysis — Big-O, Master Theorem & Amortized Complexity</p>
+<p class="sub">Rigorous complexity analysis: Θ/O/Ω/o/ω hierarchy, Master/Akra–Bazzi theorems for divide-and-conquer recurrences, and the potential method for amortized analysis.</p>
+<div class="tags"><span class="tag">Θ Ω O o ω</span><span class="tag">Master theorem 3 cases</span><span class="tag">Akra–Bazzi</span><span class="tag">potential method</span><span class="tag">amortized O(1)</span><span class="tag">P vs NP</span></div>
+<div class="sh">Asymptotic classes</div>
+<div class="mb">O(f):   ∃c,n₀: T(n) ≤ c·f(n) ∀n≥n₀         [upper bound]
+Ω(f):   ∃c,n₀: T(n) ≥ c·f(n) ∀n≥n₀         [lower bound]
+Θ(f):   T(n)∈O(f) ∧ T(n)∈Ω(f)               [tight]
+o(f):   lim_{n→∞} T(n)/f(n) = 0              [strict upper]
+ω(f):   lim_{n→∞} f(n)/T(n) = 0              [strict lower]
+
+Hierarchy (strict ⊂): O(1)⊂O(log n)⊂O(√n)⊂O(n)⊂O(n log n)⊂O(n²)⊂O(2ⁿ)⊂O(n!)
+Stirling:  n! ∼ √(2πn)·(n/e)ⁿ   →   log(n!) = Θ(n log n)</div>
+<div class="sh">Master Theorem (CLRS Theorem 4.1)</div>
+<div class="mb">T(n) = aT(n/b) + f(n),   a≥1, b>1,  let crit = log_b(a)
+
+Case 1: f(n) = O(n^{crit-ε})           →  T(n) = Θ(n^crit)        [leaves dominate]
+Case 2: f(n) = Θ(n^crit · log^k n)     →  T(n) = Θ(n^crit·log^{k+1}n) [equal]
+Case 3: f(n) = Ω(n^{crit+ε}) + regularity  →  T(n) = Θ(f(n))     [root dominates]
+
+Mergesort:   T=2T(n/2)+Θ(n)   crit=1, k=0 → Θ(n log n)   [Case 2]
+Karatsuba:   T=3T(n/2)+Θ(n)   crit=log₂3  → Θ(n^1.585)   [Case 1]
+Strassen:    T=7T(n/2)+Θ(n²)  crit=log₂7  → Θ(n^2.807)   [Case 1]
+Bin search:  T=T(n/2)+O(1)    crit=0       → Θ(log n)     [Case 2, k=0]</div>
+<div class="sh">Akra–Bazzi & amortized potential method</div>
+<div class="mb">Akra–Bazzi (generalizes Master to T(n)=Σᵢ aᵢT(bᵢn)+f(n)):
+  Find p: Σᵢ aᵢ·bᵢᵖ = 1,  then  T(n) = Θ(nᵖ·(1+∫₁ⁿ f(u)/u^{p+1} du))
+
+Potential method (amortized analysis):
+  â(op) = actual_cost(op) + Φ(after) - Φ(before)
+  Σ â(opᵢ) = Σ actual(opᵢ) + Φ(final) - Φ(initial)
+
+Dynamic array doubling: let Φ = 2·size - capacity
+  push (no resize):    â = 1 + (2(k+1)-(c)) - (2k-c) = 3 = O(1) ✓
+  push (doubles c→2c): â = c+1 + (2(c+1)-2c) - (2c-c) = c+1+2-c = 3 ✓
+Splay trees: Φ = Σ log(subtree_size), gives O(log n) amortized per op.</div>
+<div class="sh">Python — Master theorem solver</div>
+<div class="cb"><span class="kw">import</span> math
+
+<span class="kw">def</span> <span class="fn">master</span>(a, b, k, logpow=<span class="nu">0</span>):
+    <span class="cm">"""T(n)=aT(n/b)+Θ(n^k·log^logpow(n))"""</span>
+    crit = math.log(a, b)
+    eps = <span class="nu">1e-9</span>
+    <span class="kw">if</span>   k &lt; crit-eps: <span class="kw">return</span> <span class="st">f"Θ(n^{crit:.4g})"</span>
+    <span class="kw">elif</span> abs(k-crit) &lt; eps: <span class="kw">return</span> <span class="st">f"Θ(n^{crit:.4g}·log^{logpow+1}n)"</span>
+    <span class="kw">else</span>: <span class="kw">return</span> <span class="st">f"Θ(n^{k}·log^{logpow}n)"</span>
+
+cases = [(<span class="nu">2</span>,<span class="nu">2</span>,<span class="nu">1</span>,<span class="st">'Mergesort'</span>),(<span class="nu">3</span>,<span class="nu">2</span>,<span class="nu">1</span>,<span class="st">'Karatsuba'</span>),
+         (<span class="nu">7</span>,<span class="nu">2</span>,<span class="nu">2</span>,<span class="st">'Strassen'</span>), (<span class="nu">1</span>,<span class="nu">2</span>,<span class="nu">0</span>,<span class="st">'BinSearch'</span>),(<span class="nu">4</span>,<span class="nu">2</span>,<span class="nu">2</span>,<span class="st">'Case2-k=1'</span>)]
+<span class="kw">for</span> a,b,k,name <span class="kw">in</span> cases:
+    print(<span class="st">f"{name:12} {master(a,b,k)}"</span>)
+
+<span class="cm"># Complexity zoo reminders:</span>
+<span class="cm"># P ⊆ NP ⊆ PSPACE ⊆ EXPTIME  (all inclusions believed strict)</span>
+<span class="cm"># NP ∩ co-NP contains integer factoring (believed not NP-complete)</span>
+<span class="cm"># BPP ⊆ Σ₂ ∩ Π₂ (probably BPP=P under derandomization conjectures)</span></div>`,
+
+rel:`<p class="ttl">Relations, Partial Orders, Lattices & Fixed-Point Theorems</p>
+<p class="sub">Binary relations generate the order-theoretic infrastructure of CS: equivalence classes, quotient algebras, Hasse diagrams, complete lattices, Galois connections, and the Knaster–Tarski theorem used in static analysis.</p>
+<div class="tags"><span class="tag">equivalence classes</span><span class="tag">quotient sets</span><span class="tag">POSET</span><span class="tag">Hasse diagrams</span><span class="tag">complete lattice</span><span class="tag">Galois connection</span><span class="tag">Knaster–Tarski</span></div>
+<div class="sh">Equivalence relations & quotient algebras</div>
+<div class="mb">R is equivalence iff: reflexive, symmetric, transitive.
+[a]_R = {b : aRb}   Quotient A/R = {[a]_R : a∈A}
+Fundamental theorem: A/R partitions A (parts = equivalence classes).
+
+ℤ/nℤ = {[0],[1],…,[n-1]}: [a]+[b]=[a+b],  [a]·[b]=[ab]  — ring operations.
+Kernel of homomorphism f:G→H: ker(f)={g:f(g)=e_H} is a normal subgroup;
+  First isomorphism: G/ker(f) ≅ Im(f).  [abstract algebra connection]</div>
+<div class="sh">Partial orders, chains & well-orders</div>
+<div class="mb">POSET (A,≤): reflexive, antisymmetric, transitive.
+Hasse diagram: draw a→b (cover) if a&lt;b and ∄c: a&lt;c&lt;b.
+  Special elements: max/min (unique global), maximal/minimal (local, multiple possible)
+  sup(join)∨, inf(meet)∧ may or may not exist in general POSET.
+
+Total order: every pair comparable. Well-order: every nonempty subset has minimum.
+Cantor's theorem: any countable, dense, unbounded linear order ≅ (ℚ,≤).
+Dilworth: in finite POSET, max antichain size = min # of chains covering the POSET.</div>
+<div class="sh">Complete lattices, Galois connections & Knaster–Tarski</div>
+<div class="mb">Complete lattice: every subset S has ⊔S (join) and ⊓S (meet). Implies ⊤=⊔A, ⊥=⊓A.
+Examples: (𝒫(X),⊆), [0,1] with max/min, Hoare powerdomain.
+
+Galois connection between (A,≤_A) and (B,≤_B):
+  f:A→B,  g:B→A  with  f(a)≤_B b  ↔  a≤_A g(b)
+  gf is a closure operator: extensive (a≤gf(a)), monotone, idempotent.
+  Used in: Formal Concept Analysis, abstract interpretation (compiler analysis),
+           Galois theory of field extensions.
+
+Knaster–Tarski (1955): every monotone f on a complete lattice has a complete lattice
+  of fixed points. Least FP: lfp(f)=⊓{x:f(x)≤x} = lim f^n(⊥).
+  CS application: dataflow analysis (reaching defs, liveness, pointer analysis)
+  — iterate f until fixpoint, guaranteed to terminate on finite lattice.</div>
+<div class="sh">Python — Hasse diagram + Knaster–Tarski fixpoint iteration</div>
+<div class="cb"><span class="kw">import</span> networkx <span class="kw">as</span> nx
+<span class="kw">from</span> itertools <span class="kw">import</span> combinations
+
+<span class="kw">def</span> <span class="fn">hasse_diagram</span>(elements, leq):
+    <span class="cm">"""Build cover-relation digraph (Hasse) from partial order leq."""</span>
+    G = nx.DiGraph(); G.add_nodes_from(elements)
+    <span class="kw">for</span> a,b <span class="kw">in</span> combinations(elements, <span class="nu">2</span>):
+        <span class="kw">if</span> leq(a,b) <span class="kw">and not</span> any(leq(a,c) <span class="kw">and</span> leq(c,b)
+                                 <span class="kw">for</span> c <span class="kw">in</span> elements <span class="kw">if</span> c!=a <span class="kw">and</span> c!=b):
+            G.add_edge(a,b)  <span class="cm"># a covered by b</span>
+    <span class="kw">return</span> G
+
+<span class="cm"># Divisibility POSET on {1,2,3,4,6,12} — a lattice</span>
+divs=[<span class="nu">1</span>,<span class="nu">2</span>,<span class="nu">3</span>,<span class="nu">4</span>,<span class="nu">6</span>,<span class="nu">12</span>]
+H = hasse_diagram(divs, <span class="kw">lambda</span> a,b: b%a==<span class="nu">0</span>)
+
+<span class="cm"># Knaster-Tarski: find least fixed point via iteration from ⊥</span>
+<span class="kw">def</span> <span class="fn">lfp</span>(f, bot, leq):
+    <span class="cm">"""Least fixed point of monotone f, starting from bottom element."""</span>
+    x = bot
+    <span class="kw">while True</span>:
+        nx_ = f(x)
+        <span class="kw">if</span> nx_ == x: <span class="kw">return</span> x   <span class="cm"># fixpoint reached</span>
+        x = nx_
+
+<span class="cm"># Example: reaching definitions dataflow (sets as lattice elements)</span>
+gen = {<span class="st">'B1'</span>:{<span class="st">'d1'</span>,<span class="st">'d2'</span>}, <span class="st">'B2'</span>:{<span class="st">'d3'</span>}}
+kill = {<span class="st">'B1'</span>:{<span class="st">'d3'</span>}, <span class="st">'B2'</span>:{<span class="st">'d1'</span>}}
+<span class="cm"># OUT[B] = gen[B] ∪ (IN[B] - kill[B]); IN[B] = ∪_{pred P} OUT[P]</span></div>`,
+
+nt:`<p class="ttl">Number Theory — Modular Arithmetic, CRT & Primality Testing</p>
+<p class="sub">The arithmetic of finite rings ℤ/nℤ, Euler's theorem, primitive roots over (ℤ/pℤ)*, the Chinese Remainder Theorem, and Miller–Rabin — the mathematical substrate of RSA, Diffie–Hellman, and elliptic curve cryptography.</p>
+<div class="tags"><span class="tag">extended Euclidean</span><span class="tag">Bézout identity</span><span class="tag">CRT</span><span class="tag">Euler totient φ(n)</span><span class="tag">primitive roots</span><span class="tag">Miller–Rabin</span><span class="tag">RSA</span></div>
+<div class="sh">Extended Euclidean, Bézout & modular inverse</div>
+<div class="mb">gcd(a,b) = s·a + t·b    (Bézout — s,t∈ℤ, computed by ext-Euclidean in O(log min))
+a⁻¹ (mod m) exists ↔ gcd(a,m)=1  →  solve s·a ≡ 1 (mod m) via Bézout.
+
+CRT: system x≡aᵢ (mod mᵢ), pairwise coprime mᵢ, has unique solution mod M=∏mᵢ:
+  x = Σ aᵢ·Mᵢ·(Mᵢ⁻¹ mod mᵢ) (mod M),   Mᵢ=M/mᵢ
+  Applications: RSA-CRT (2–4× speedup), NTT (Number Theoretic Transform for FFT),
+                secret sharing (Asmuth–Bloom), multi-party computation.</div>
+<div class="sh">Euler's theorem & discrete logarithm</div>
+<div class="mb">Euler: a^φ(n) ≡ 1 (mod n)  for gcd(a,n)=1;  φ(n)=n·∏_{p|n}(1-1/p)
+Fermat's little: a^{p-1} ≡ 1 (mod p) for prime p, p∤a
+(ℤ/pℤ)* is cyclic of order p-1 for prime p.
+Primitive root g: ord_p(g)=p-1;  {g⁰,…,g^{p-2}}={1,…,p-1}
+DL_g(h)=k s.t. g^k≡h(mod p): computationally hard (sub-exp BabyGiant/NFS)
+→ Discrete log hardness underpins DH, ElGamal, DSA, ECDSA.</div>
+<div class="kb">Miller–Rabin (1976): write n-1=2ʳ·d. For witness a: check a^d≡1 or a^{2^j·d}≡-1 for some j&lt;r. If neither holds for any witness, n is composite. With witnesses {2,3,5,7,11,13,17,19,23,29,31,37}, deterministically correct for n&lt;3.3×10²⁴ (Bach 1990 under GRH). Randomized version: k witnesses → error probability ≤4⁻ᵏ.</div>
+<div class="sh">Python — cryptographic number theory primitives</div>
+<div class="cb"><span class="kw">def</span> <span class="fn">egcd</span>(a, b):
+    <span class="cm">"""Extended Euclidean: returns (gcd, s, t) with s·a+t·b=gcd."""</span>
+    <span class="kw">if</span> b==<span class="nu">0</span>: <span class="kw">return</span> a,<span class="nu">1</span>,<span class="nu">0</span>
+    g,s,t = egcd(b, a%b); <span class="kw">return</span> g, t, s-(a//b)*t
+
+<span class="kw">def</span> <span class="fn">modinv</span>(a,m): _,s,_ = egcd(a%m,m); <span class="kw">return</span> s%m
+
+WITNESSES = [<span class="nu">2</span>,<span class="nu">3</span>,<span class="nu">5</span>,<span class="nu">7</span>,<span class="nu">11</span>,<span class="nu">13</span>,<span class="nu">17</span>,<span class="nu">19</span>,<span class="nu">23</span>,<span class="nu">29</span>,<span class="nu">31</span>,<span class="nu">37</span>]
+<span class="kw">def</span> <span class="fn">miller_rabin</span>(n):
+    <span class="kw">if</span> n&lt;<span class="nu">2</span> <span class="kw">or</span> (n><span class="nu">2</span> <span class="kw">and</span> n%<span class="nu">2</span>==<span class="nu">0</span>): <span class="kw">return False</span>
+    d,r = n-<span class="nu">1</span>,<span class="nu">0</span>
+    <span class="kw">while</span> d%<span class="nu">2</span>==<span class="nu">0</span>: d//=<span class="nu">2</span>; r+=<span class="nu">1</span>      <span class="cm"># n-1 = 2^r · d</span>
+    <span class="kw">for</span> a <span class="kw">in</span> WITNESSES:
+        <span class="kw">if</span> a>=n: <span class="kw">continue</span>
+        x = pow(a,d,n)
+        <span class="kw">if</span> x <span class="kw">in</span> (<span class="nu">1</span>,n-<span class="nu">1</span>): <span class="kw">continue</span>
+        <span class="kw">for</span> _ <span class="kw">in</span> range(r-<span class="nu">1</span>):
+            x = pow(x,<span class="nu">2</span>,n)
+            <span class="kw">if</span> x==n-<span class="nu">1</span>: <span class="kw">break</span>
+        <span class="kw">else</span>: <span class="kw">return False</span>   <span class="cm"># composite witness</span>
+    <span class="kw">return True</span>   <span class="cm"># deterministically prime for n &lt; 3.3×10²⁴</span>
+
+<span class="cm"># RSA in 5 lines (pedagogical; real RSA needs padding, constant-time ops)</span>
+<span class="cm"># p,q=large primes; n=p*q; phi=(p-1)*(q-1); e=65537</span>
+<span class="cm"># d=modinv(e,phi); enc=pow(m,e,n); dec=pow(enc,d,n)</span></div>`,
+
+rec:`<p class="ttl">Recurrence Relations — Characteristic Equations & Generating Functions</p>
+<p class="sub">Systematic closed-form solution of recurrences arising in algorithm analysis: characteristic polynomial method, particular solutions, EGF technique, and fast computation via matrix exponentiation.</p>
+<div class="tags"><span class="tag">homogeneous/particular</span><span class="tag">characteristic equation</span><span class="tag">Binet formula</span><span class="tag">generating function method</span><span class="tag">matrix exponentiation</span><span class="tag">annihilators</span></div>
+<div class="sh">Linear homogeneous recurrences</div>
+<div class="mb">aₙ = c₁aₙ₋₁ + c₂aₙ₋₂ + … + cₖaₙ₋ₖ
+Characteristic poly: rᵏ - c₁rᵏ⁻¹ - … - cₖ = 0
+Roots r₁,…,rₛ with multiplicities m₁,…,mₛ:
+  aₙ = Σᵢ (αᵢ₀ + αᵢ₁n + … + αᵢ,mᵢ₋₁·n^{mᵢ-1})·rᵢⁿ
+
+Fibonacci: aₙ=aₙ₋₁+aₙ₋₂, a₀=0, a₁=1
+  Char poly: r²=r+1  →  r = φ=(1+√5)/2, ψ=(1-√5)/2
+  Binet: Fₙ = (φⁿ-ψⁿ)/√5       [|ψ|&lt;1 → Fₙ = round(φⁿ/√5)]
+
+Tower of Hanoi: Tₙ=2Tₙ₋₁+1 → Tₙ=2ⁿ-1 (geometric series particular solution)</div>
+<div class="sh">Non-homogeneous & generating function method</div>
+<div class="mb">aₙ = c·aₙ₋₁ + f(n): particular solution depends on form of f(n):
+  f(n)=pᵈ(n)·bⁿ  →  particular = n^s·qᵈ(n)·bⁿ  where s=multiplicity of b as root.
+
+GF method: define A(x)=Σaₙxⁿ, multiply recurrence by xⁿ, sum → algebraic eq in A(x).
+  Partial fractions → coefficients = sum of geometric sequences.
+
+Akra–Bazzi for D&amp;C recurrences (see Asymptotic Analysis section):
+  Subsumes Master; handles unequal subproblem sizes aᵢT(bᵢn) with bᵢ∈(0,1).</div>
+<div class="sh">Python — sympy rsolve + O(log n) matrix exponentiation</div>
+<div class="cb"><span class="kw">from</span> sympy <span class="kw">import</span> Function, rsolve, symbols
+f = Function(<span class="st">'f'</span>); n = symbols(<span class="st">'n'</span>, integer=<span class="nu">True</span>)
+
+<span class="cm"># sympy's rsolve solves linear recurrences symbolically</span>
+fib = rsolve(f(n)-f(n-<span class="nu">1</span>)-f(n-<span class="nu">2</span>), f(n), {f(<span class="nu">0</span>):<span class="nu">0</span>,f(<span class="nu">1</span>):<span class="nu">1</span>})
+print(fib)  <span class="cm"># Binet: (φⁿ - ψⁿ)/√5</span>
+
+<span class="cm"># O(log n) Fibonacci via 2×2 matrix exponentiation</span>
+<span class="kw">def</span> <span class="fn">mat_mul</span>(A, B, mod=<span class="nu">None</span>):
+    [[a,b],[c,d]], [[e,f_],[g,h]] = A, B
+    res = [[a*e+b*g, a*f_+b*h],[c*e+d*g, c*f_+d*h]]
+    <span class="kw">return</span> [[x%mod <span class="kw">for</span> x <span class="kw">in</span> r] <span class="kw">for</span> r <span class="kw">in</span> res] <span class="kw">if</span> mod <span class="kw">else</span> res
+
+<span class="kw">def</span> <span class="fn">fib_fast</span>(n, mod=<span class="nu">None</span>):
+    <span class="cm">"""F(n) in O(log n) — [[1,1],[1,0]]^n gives [[F_{n+1},F_n],[F_n,F_{n-1}]]"""</span>
+    M = [[<span class="nu">1</span>,<span class="nu">1</span>],[<span class="nu">1</span>,<span class="nu">0</span>]]; R = [[<span class="nu">1</span>,<span class="nu">0</span>],[<span class="nu">0</span>,<span class="nu">1</span>]]   <span class="cm"># identity</span>
+    <span class="kw">while</span> n:
+        <span class="kw">if</span> n&<span class="nu">1</span>: R = mat_mul(R,M,mod)
+        M = mat_mul(M,M,mod); n>>=<span class="nu">1</span>
+    <span class="kw">return</span> R[<span class="nu">0</span>][<span class="nu">1</span>]
+
+print(fib_fast(<span class="nu">10</span>**<span class="nu">6</span>, mod=<span class="nu">10</span>**<span class="nu">9</span>+<span class="nu">7</span>))  <span class="cm"># F(10^6) mod p in microseconds</span></div>`,
+
+gr:`<p class="ttl">Graph Theory — Structure, Flows, Coloring & Complexity</p>
+<p class="sub">Graphs G=(V,E) are the universal relational structure. Euler's 1736 Königsberg bridges initiated the field; today graph algorithms permeate OS scheduling, network routing, compiler optimization, and social network analysis.</p>
+<div class="tags"><span class="tag">Euler/Handshaking</span><span class="tag">planarity/Kuratowski</span><span class="tag">chromatic polynomial</span><span class="tag">max-flow min-cut</span><span class="tag">König/Hall</span><span class="tag">4-color theorem</span><span class="tag">NP-hardness</span></div>
+<div class="sh">Fundamental theorems</div>
+<div class="mb">Handshaking: Σ_v deg(v) = 2|E|  →  #{odd-degree vertices} is even.
+Euler circuit ↔ connected ∧ all vertices even-degree.
+Euler path   ↔ connected ∧ exactly 2 odd-degree vertices (start/end).
+
+Euler's planar formula: V - E + F = 2  (connected plane graph)
+  Corollary: E ≤ 3V-6 (simple planar),  E ≤ 2V-4 (bipartite planar)
+  K₅: E=10 > 3·5-6=9  ⟹  K₅ non-planar. K₃,₃: E=9 > 2·6-4=8  ⟹  non-planar.
+Kuratowski (1930): G planar ↔ no subdivision of K₅ or K₃,₃ as subgraph.
+Wagner: G planar ↔ no K₅ or K₃,₃ as a minor.</div>
+<div class="sh">Chromatic polynomial, flows & matching</div>
+<div class="mb">χ(G,k): # proper k-colorings. Polynomial of degree |V|, coefficients alternate sign.
+  Deletion-contraction: χ(G,k) = χ(G-e,k) - χ(G/e,k)
+  χ(Kₙ,k) = k(k-1)…(k-n+1),  χ(Tree,k) = k(k-1)^{n-1}
+Four-Color Theorem: χ(planar)≤4.  [Appel–Haken 1976, computer-assisted proof]
+  
+Max-Flow Min-Cut (Ford–Fulkerson, 1956):
+  max s-t flow = min s-t cut capacity  [Menger's theorem dual]
+  Edmonds–Karp (BFS augmentation): O(VE²)
+  Push-relabel (Goldberg–Tarjan): O(V²√E) for unit caps
+  
+König (bipartite): max matching = min vertex cover.
+Hall's marriage: bipartite G has perfect matching ↔ ∀S⊆A: |N(S)|≥|S|.
+Hamiltonian cycle: NP-complete [Karp 1972]. TSP: NP-hard to approximate within 1-ε.</div>
+<div class="sh">Python — networkx graph analysis suite</div>
+<div class="cb"><span class="kw">import</span> networkx <span class="kw">as</span> nx
+
+G = nx.petersen_graph()         <span class="cm"># famous: 3-reg, non-planar, non-Hamiltonian</span>
+print(nx.is_planar(G))          <span class="cm"># False</span>
+print(nx.is_eulerian(G))        <span class="cm"># False (odd degrees)</span>
+
+<span class="cm"># Max-flow via Edmonds-Karp</span>
+DG = nx.DiGraph()
+DG.add_weighted_edges_from([
+    (<span class="st">'s'</span>,<span class="st">'a'</span>,<span class="nu">10</span>),(<span class="st">'s'</span>,<span class="st">'b'</span>,<span class="nu">8</span>),(<span class="st">'a'</span>,<span class="st">'c'</span>,<span class="nu">5</span>),
+    (<span class="st">'b'</span>,<span class="st">'c'</span>,<span class="nu">7</span>),(<span class="st">'c'</span>,<span class="st">'t'</span>,<span class="nu">12</span>),(<span class="st">'a'</span>,<span class="st">'t'</span>,<span class="nu">4</span>)
+], weight=<span class="st">'capacity'</span>)
+flow, fd = nx.maximum_flow(DG,<span class="st">'s'</span>,<span class="st">'t'</span>)
+print(<span class="st">f"Max flow={flow}"</span>)        <span class="cm"># 16</span>
+
+<span class="cm"># Minimum spanning tree: Kruskal O(E log E), Prim O(E log V)</span>
+wG = nx.random_geometric_graph(<span class="nu">30</span>, <span class="nu">0.35</span>)
+mst = nx.minimum_spanning_tree(wG)
+
+<span class="cm"># Bipartite matching via Hopcroft-Karp O(E√V)</span>
+B = nx.complete_bipartite_graph(<span class="nu">4</span>,<span class="nu">4</span>)
+matching = nx.bipartite.maximum_matching(B)
+print(len(matching)//<span class="nu">2</span>, <span class="st">"matched pairs"</span>)  <span class="cm"># 4</span></div>
+<div class="ib">⚡ Approximation hardness: Vertex Cover ≈ 2-approx (greedy), but VC∉PTAS unless P=NP. Independent Set and Clique are hard to approximate within n^{1-ε}. Graph Coloring: greedily achievable in O(Δ+1) colors; optimally NP-hard. For planar graphs: 4-colorable in poly time, 3-colorability remains NP-complete!</div>`,
+
+spec:`<p class="ttl">Spectral Graph Theory — Laplacian Eigenstructure & Graph Clustering</p>
+<p class="sub">The eigenvalues and eigenvectors of the graph Laplacian encode deep structural properties: connectivity, bottlenecks, random walk mixing, and the theoretical foundation of all spectral GNN methods.</p>
+<div class="tags"><span class="tag">Laplacian L=D−A</span><span class="tag">Fiedler value λ₂</span><span class="tag">Cheeger inequality</span><span class="tag">expander graphs</span><span class="tag">spectral clustering</span><span class="tag">random walk mixing</span><span class="tag">matrix-tree theorem</span></div>
+<div class="sh">Graph Laplacian & spectral decomposition</div>
+<div class="mb">Adjacency matrix A:  A_{ij}=1 iff {i,j}∈E
+Degree matrix D:     D_{ii}=deg(i)
+Laplacian L=D-A:     symmetric, PSD (positive semi-definite), xᵀLx=Σ_{(i,j)∈E}(xᵢ-xⱼ)²
+Spectrum:            0=λ₁≤λ₂≤…≤λₙ   [λ₁=0 always; λ₂>0 ↔ G connected]
+Normalized:          L̃=D^{-½}LD^{-½}=I-D^{-½}AD^{-½};  eigenvalues∈[0,2]
+                     λₙ=2 ↔ G is bipartite.
+
+Matrix-Tree Theorem (Kirchhoff): #spanning trees = (1/n)·∏_{i=2}^{n}λᵢ(L)
+Random walk matrix: P=D⁻¹A; stationary π_v=deg(v)/(2|E|); P=I-D^{-½}L̃D^{½}</div>
+<div class="sh">Cheeger inequality & expander graphs</div>
+<div class="mb">Edge expansion: h(G) = min_{S:|S|≤n/2} |∂S|/min(vol(S),vol(V\S))
+  ∂S = edges crossing the cut,  vol(S) = Σ_{v∈S}deg(v)
+
+Cheeger inequality:  h(G)²/2 ≤ λ₂(L̃)/2 ≤ h(G)
+  Large λ₂ → large expansion → hard to cut → good connectivity (expander).
+  Small λ₂ → near-disconnected → bottleneck → easy spectral bisection.
+
+d-regular expander: λ₂ ≥ cd.  Ramanujan graph: λ₂ ≥ d-2√(d-1)  [optimal bound]
+  Applications: explicit constructions via Cayley graphs of PGL₂(𝔽_p) (LPS graphs).
+  Uses: derandomization (zig-zag product), error-correcting codes, pseudorandom generators.
+
+Random walk mixing time: τ_mix = O(log(n/ε) / (1-λ₂(P)))  where λ₂(P)=1-λ₂(L̃)/d</div>
+<div class="sh">Python — Laplacian spectrum, Fiedler bisection, spectral clustering</div>
+<div class="cb"><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> networkx <span class="kw">as</span> nx
+
+<span class="kw">def</span> <span class="fn">laplacian_spectrum</span>(G):
+    L = nx.laplacian_matrix(G).toarray().astype(float)
+    <span class="kw">return</span> np.sort(np.linalg.eigvalsh(L))   <span class="cm"># O(n³), ARPACK for sparse</span>
+
+<span class="kw">def</span> <span class="fn">fiedler_bisection</span>(G):
+    <span class="cm">"""Spectral bisection via 2nd eigenvector (Fiedler vector)."""</span>
+    L = nx.laplacian_matrix(G).toarray().astype(float)
+    _, vecs = np.linalg.eigh(L)
+    fv = vecs[:,<span class="nu">1</span>]   <span class="cm"># Fiedler vector — sign gives bipartition</span>
+    A = [v <span class="kw">for</span> v,f <span class="kw">in</span> enumerate(fv) <span class="kw">if</span> f &lt; <span class="nu">0</span>]
+    B = [v <span class="kw">for</span> v,f <span class="kw">in</span> enumerate(fv) <span class="kw">if</span> f >= <span class="nu">0</span>]
+    <span class="kw">return</span> A, B
+
+<span class="cm"># Barbell graph: two 10-cliques connected by one edge — λ₂ ≈ 0 (bottleneck!)</span>
+G = nx.barbell_graph(<span class="nu">10</span>,<span class="nu">1</span>)
+spec = laplacian_spectrum(G)
+print(<span class="st">f"λ₂={spec[1]:.4f}"</span>)   <span class="cm"># very small — near-disconnected</span>
+A, B = fiedler_bisection(G)
+print(len(A), len(B))          <span class="cm"># recovers two communities</span>
+
+<span class="cm"># Spectral clustering (k clusters via k eigenvectors of L̃)</span>
+<span class="cm"># from sklearn.cluster import KMeans, SpectralClustering</span>
+<span class="cm"># sc = SpectralClustering(n_clusters=k, affinity='precomputed')</span></div>
+<div class="ib">⚡ Deep connection to GNNs: GCN's normalized adjacency Ã = D̃^{-½}(A+I)D̃^{-½} is a low-pass graph filter — it suppresses high-frequency (large λ) components of node features. ChebNet approximates arbitrary spectral filters with Chebyshev polynomials of L̃. Graph Wavelet Neural Networks (GWNN) use wavelet transforms on graphs instead. Spectral methods → spatial methods (GCN, GAT) → this is the theoretical bridge between Tier 2 and GNNs.</div>`,
+
+kg:`<p class="ttl">Knowledge Graphs — RDF, OWL, SPARQL & Geometric Embeddings</p>
+<p class="sub">Knowledge graphs represent world knowledge as typed triple stores, enable logical inference via description logic (OWL/DL), are queried via SPARQL, and are made ML-amenable via geometric embedding models that enable link prediction.</p>
+<div class="tags"><span class="tag">RDF triples</span><span class="tag">OWL/SROIQ(D)</span><span class="tag">SPARQL 1.1</span><span class="tag">TransE</span><span class="tag">RotatE</span><span class="tag">DistMult</span><span class="tag">link prediction</span><span class="tag">entity resolution</span></div>
+<div class="sh">RDF, RDFS & OWL description logic</div>
+<div class="mb">RDF triple: (s,p,o) ∈ (URI∪BNode) × URI × (URI∪BNode∪Literal)
+RDFS: rdfs:subClassOf, rdfs:domain, rdfs:range  [lightweight, poly-time inference]
+OWL DL = description logic SROIQ(D):
+  Constructors: ⊓,⊔,¬,∃R.C,∀R.C,≤nR.C,≥nR.C,Self,nominals {a},D-types
+  Reasoning tasks: satisfiability, subsumption, instance checking, consistency
+  Reasoners: HermiT (tableau), ELK (EL++ fragment — poly-time — used in SNOMED CT)
+  Complexity: ALC satisfiability = PSPACE-complete; SROIQ = 2-EXPTIME-complete.
+SPARQL 1.1: BGP matching, OPTIONAL, FILTER, UNION, subqueries, aggregates, CONSTRUCT.</div>
+<div class="sh">Knowledge graph embeddings for link prediction</div>
+<div class="mb">Goal: learn entity/relation representations e_h,e_r,e_t∈ℝᵈ (or ℂᵈ) such that
+  valid triples (h,r,t) score high; corrupted triples score low.
+
+TransE:    score=-‖h+r-t‖         [translation; fails on 1-N, symmetric relations]
+TransR:    score=-‖Mᵣh+r-Mᵣt‖    [relation-specific subspace projection]
+DistMult:  score=⟨h,r,t⟩=Σhᵢrᵢtᵢ [bilinear; symmetric — misses anti-symmetry]
+ComplEx:   score=Re(⟨h,r,t̄⟩)     [complex bilinear; handles asymmetric ✓]
+RotatE:    t=h∘r, |rᵢ|=1          [rotation in ℂᵈ; models sym,antisym,inv,comp ✓]
+RESCAL:    score=hᵀ·Mᵣ·t          [full bilinear tensor; expressive, O(d²) params]
+Benchmarks: FB15k-237, WN18RR, YAGO3-10 (MRR, Hits@1/3/10 metrics).</div>
+<div class="sh">Python — RDF graph + TransE scoring sketch</div>
+<div class="cb"><span class="kw">from</span> rdflib <span class="kw">import</span> Graph, Namespace, RDF, RDFS, OWL
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+g = Graph()
+EX = Namespace(<span class="st">"http://ex.org/"</span>)
+g.add((EX.Researcher, RDF.type, OWL.Class))
+g.add((EX.alice, RDF.type, EX.Researcher))
+g.add((EX.alice, EX.advisedBy, EX.bob))
+g.add((EX.advisedBy, RDFS.domain, EX.Researcher))
+g.add((EX.advisedBy, RDFS.range, EX.Researcher))
+
+<span class="cm"># SPARQL: find all researcher–advisor pairs</span>
+<span class="kw">for</span> row <span class="kw">in</span> g.query(<span class="st">"""
+  SELECT ?p ?a WHERE { ?p ex:advisedBy ?a }
+"""</span>, initNs={<span class="st">'ex'</span>:EX}): print(row)
+
+<span class="cm"># TransE scoring (numpy)</span>
+d = <span class="nu">50</span>   <span class="cm"># embedding dimension</span>
+entities = {e:np.random.randn(d) <span class="kw">for</span> e <span class="kw">in</span> [<span class="st">'alice'</span>,<span class="st">'bob'</span>,<span class="st">'carol'</span>]}
+relations = {r:np.random.randn(d) <span class="kw">for</span> r <span class="kw">in</span> [<span class="st">'advisedBy'</span>,<span class="st">'collaborates'</span>]}
+
+<span class="kw">def</span> <span class="fn">transe_score</span>(h,r,t): <span class="kw">return</span> -np.linalg.norm(entities[h]+relations[r]-entities[t])
+<span class="cm"># RotatE: t=h∘r in ℂᵈ; |rᵢ|=1 enforced via r_phase → exp(iθ)</span>
+<span class="cm"># Training: margin ranking loss + negative sampling (corrupting head/tail)</span></div>
+<div class="ib">⚡ Entity resolution (record linkage) in KGs: block candidates via LSH/TF-IDF, then rank with embedding similarity + string distance (Levenshtein, Jaro-Winkler). Graph-level reasoning: OWL-RL (rule-based, poly-time) enables ABox completion — infer new triples from existings ones via rules (range/domain, transitivity, inverse properties). Used at scale: Wikidata (100M+ triples), Google KG (500B+ facts), Amazon product graph.</div>`,
+
+gnn:`<p class="ttl">Graph Neural Networks — MPNN Framework, Expressivity & Transformers</p>
+<p class="sub">GNNs generalize deep learning to graph-structured data. The message-passing neural network (MPNN) framework unifies GCN, GAT, GraphSAGE, and GIN — all bounded above in expressivity by the 1-Weisfeiler–Lehman graph isomorphism test.</p>
+<div class="tags"><span class="tag">MPNN framework</span><span class="tag">GCN</span><span class="tag">GAT attention</span><span class="tag">GraphSAGE</span><span class="tag">GIN</span><span class="tag">1-WL bound</span><span class="tag">over-smoothing</span><span class="tag">Graph Transformer</span></div>
+<div class="sh">Unified MPNN framework (Gilmer 2017)</div>
+<div class="mb">At layer l, for each node v with feature h_v^{(l)}:
+  AGGREGATE:  m_v^{(l)} = AGG({MSG(h_u^{(l-1)}, h_v^{(l-1)}, e_{uv}) : u∈N(v)})
+  UPDATE:     h_v^{(l)} = UPD(h_v^{(l-1)}, m_v^{(l)})
+
+GCN (Kipf &amp; Welling 2017):
+  H^{(l+1)} = σ(D̃^{-½}ÃD̃^{-½} · H^{(l)} · W^{(l)})
+  Ã=A+I (self-loops),  D̃ᵢᵢ=Σⱼ Ãᵢⱼ  [symmetric renormalization trick]
+  First-order approximation of spectral ChebNet — each layer = 1-hop aggregation.
+
+GAT (Veličković 2018):  α_{ij} = softmax_j(LeakyReLU(aᵀ[Wh_i ‖ Wh_j]))
+  h_i' = σ(Σ_{j∈N̄(i)} α_{ij}·W·h_j)   [multi-head: K heads, concat or mean]
+
+GraphSAGE (Hamilton 2017): inductive; samples fixed-size neighborhood ← scalable
+  h_v^{(l)} = σ(W·CONCAT(h_v^{(l-1)}, MEAN_{u∈sample(N(v))}h_u^{(l-1)}))
+
+GIN (Xu 2019): maximally expressive under 1-WL test
+  h_v^{(l)} = MLP^{(l)}((1+ε^{(l)})·h_v^{(l-1)} + Σ_{u∈N(v)} h_u^{(l-1)})</div>
+<div class="sh">WL hierarchy, expressivity limits & beyond</div>
+<div class="mb">1-WL color refinement: iteratively hash (color_v, sorted({color_u:u∈N(v)})).
+Xu 2019: any GNN ≤ 1-WL; GIN ≡ 1-WL in distinguishing power.
+1-WL cannot distinguish: regular graphs of same degree, some non-isomorphic pairs.
+
+k-WL hierarchy: k-FWL ≡ C^k (FO + counting with k vars), exponential in n^k nodes.
+RING/Distance encoding: random node features break WL-equivalence stochastically.
+Positional encodings: Laplacian eigenvectors (SignNet), random walk encodings (RWPE).
+
+Graph Transformers (GT):  full O(n²) attention = global receptive field.
+  Approximations: BigBird (sparse+random+global), Performer (FAVOR+ linear attn).
+  GraphGPS (Rampášek 2022): MPNN + Transformer + PE — SOTA on many benchmarks.
+
+Key failure modes:
+  Over-smoothing: depth-L GNN → all features converge (fix: JK-Net, GCNII, DropEdge)
+  Over-squashing: exponential info compressed through graph bottlenecks (fix: graph rewiring)</div>
+<div class="sh">Python — GCN layer from scratch (PyTorch)</div>
+<div class="cb"><span class="kw">import</span> torch, torch.nn <span class="kw">as</span> nn, torch.nn.functional <span class="kw">as</span> F
+
+<span class="kw">class</span> <span class="fn">GCNLayer</span>(nn.Module):
+    <span class="cm">"""H' = σ(D̃^{-½}ÃD̃^{-½}·H·W)  — one GCN propagation layer."""</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, in_f, out_f):
+        super().__init__()
+        self.W = nn.Linear(in_f, out_f, bias=<span class="nu">False</span>)
+    <span class="kw">def</span> <span class="fn">forward</span>(self, H, A):
+        A_hat = A + torch.eye(A.shape[<span class="nu">0</span>])
+        D_inv_sqrt = A_hat.sum(<span class="nu">1</span>).pow(-<span class="nu">0.5</span>).diag()
+        A_norm = D_inv_sqrt @ A_hat @ D_inv_sqrt
+        <span class="kw">return</span> F.relu(A_norm @ self.W(H))
+
+<span class="kw">class</span> <span class="fn">GINLayer</span>(nn.Module):
+    <span class="cm">"""(1+ε)·h_v + Σ_{u∈N(v)} h_u  then MLP — maximally expressive (1-WL)."""</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, d):
+        super().__init__()
+        self.mlp = nn.Sequential(nn.Linear(d,d),nn.ReLU(),nn.Linear(d,d))
+        self.eps = nn.Parameter(torch.tensor(<span class="nu">0.0</span>))
+    <span class="kw">def</span> <span class="fn">forward</span>(self, H, A):
+        agg = A @ H                           <span class="cm"># sum neighbor features</span>
+        <span class="kw">return</span> self.mlp((<span class="nu">1</span>+self.eps)*H + agg)
+
+<span class="cm"># Production: torch_geometric.nn.{GCNConv,GATConv,SAGEConv,GINConv}</span>
+<span class="cm"># handles sparse adjacency, batching, heterogeneous graphs, edge features.</span>
+<span class="cm"># pip install torch-geometric</span></div>
+<div class="ib">⚡ The WL hierarchy has a deep connection to logic: k-WL ≡ k-variable counting first-order logic (C^k). So GNNs ≤ 1-WL means GNNs cannot express properties that require 2 logical variables with counting. Implications: GNNs cannot count triangles, cannot distinguish certain regular graphs, cannot encode graph isomorphism for all graphs — fundamental limits, not implementation issues.</div>`,
+
+inf:`<p class="ttl">Transfinite Mathematics — Cardinals, Ordinals & Independence Results</p>
+<p class="sub">Cantor's paradise: the rigorous mathematics of multiple infinities. The Continuum Hypothesis — are there cardinals strictly between ℵ₀ and 2^ℵ₀? — is independent of ZFC (Gödel 1938 consistency, Cohen 1963 forcing independence). The deepest result in 20th century logic.</p>
+<div class="tags"><span class="tag">ℵ aleph numbers</span><span class="tag">ℶ beth numbers</span><span class="tag">Cantor diagonal</span><span class="tag">cardinal arithmetic</span><span class="tag">ordinal arithmetic</span><span class="tag">CH independent of ZFC</span><span class="tag">Cohen forcing</span></div>
+<div class="sh">Cantor's diagonal argument & uncountability</div>
+<div class="mb">Claim: |ℝ| > |ℕ| = ℵ₀.
+Proof (diagonal): suppose f:ℕ↠[0,1] bijection. Construct x=0.d₁d₂…:
+  dₙ ≠ f(n)'s n-th decimal digit (avoid 0 and 9 to prevent .999…=1 issue).
+  Then x ≠ f(n) for ALL n (differs in n-th digit). Contradicts surjectivity. □
+
+Cantor's theorem: |A| &lt; |𝒫(A)| for any set A.
+Infinite strict chain: ℵ₀=|ℕ| &lt; 2^ℵ₀=|ℝ|=|ℝⁿ|=|𝒫(ℕ)| &lt; 2^{2^ℵ₀} &lt; ···
+ℚ is countable: Calkin–Wilf or diagonal enumeration of ℕ×ℕ (Cantor 1891).</div>
+<div class="sh">Aleph, beth numbers & cardinal arithmetic</div>
+<div class="mb">Aleph numbers (via well-orderings):
+  ℵ₀ = |ℕ|,  ℵ₁ = least uncountable cardinal,  ℵ_{α+1} = least cardinal > ℵ_α
+Beth numbers (via power set iteration):
+  ℶ₀ = ℵ₀,  ℶ₁ = 2^{ℶ₀} = |ℝ|,  ℶ₂ = 2^{ℶ₁} = |𝒫(ℝ)|, …
+
+Continuum Hypothesis (CH): ℵ₁ = ℶ₁  i.e., no cardinal between ℵ₀ and 2^ℵ₀.
+  Gödel 1938: L (constructible universe) ⊨ ZFC+CH  →  Con(ZFC)→Con(ZFC+CH)
+  Cohen 1963: forcing adds ℵ₂ many new reals to model of ZFC without collapsing ℵ₁
+              →  Con(ZFC)→Con(ZFC+¬CH).  CH is INDEPENDENT of ZFC!
+
+Cardinal arithmetic:  ℵ₀+ℵ₀=ℵ₀,  ℵ₀·ℵ₀=ℵ₀,  ℵ₀^ℵ₀=2^ℵ₀
+König's theorem: cf(2^ℵ₀) > ℵ₀  [cofinality constraint — 2^ℵ₀ ≠ ℵ_ω]</div>
+<div class="sh">Ordinal arithmetic (non-commutative!)</div>
+<div class="mb">Ordinals: well-ordered sets up to order-isomorphism. Von Neumann: ord = set of smaller ordinals.
+  0=∅, 1={∅}, 2={∅,{∅}}, …, ω={0,1,2,…}, ω+1={0,1,…,ω}, …
+
+Ordinal addition (NOT commutative!):
+  1 + ω = ω  ≠  ω + 1  [1+ω: prepend 1 to ω-sequence → still type ω]
+Ordinal multiplication:
+  2 · ω = ω+ω = {(0,0),(0,1),(0,2),…,(1,0),(1,1),…}  ≠  ω · 2 = ω
+Ordinal exponentiation:
+  ω^ω = ω^ω,  …  ε₀ = sup{ω,ω^ω,ω^{ω^ω},…} = least fixed point of α↦ω^α
+  Gentzen (1936): Con(PA) provable in PRA + transfinite induction up to ε₀.</div>
+<div class="sh">Python — countability demos & ordinal arithmetic concepts</div>
+<div class="cb"><span class="kw">from</span> collections <span class="kw">import</span> deque
+<span class="kw">from</span> fractions <span class="kw">import</span> Fraction
+<span class="kw">from</span> itertools <span class="kw">import</span> islice
+
+<span class="cm"># ℚ is countable — Calkin-Wilf tree bijection ℕ↔ℚ⁺</span>
+<span class="kw">def</span> <span class="fn">calkin_wilf</span>():
+    q = deque([Fraction(<span class="nu">1</span>)])
+    <span class="kw">while True</span>:
+        r = q.popleft(); <span class="kw">yield</span> r
+        n,d = r.numerator, r.denominator
+        q.append(Fraction(n,n+d)); q.append(Fraction(n+d,d))
+
+print(list(islice(calkin_wilf(), <span class="nu">8</span>)))  <span class="cm"># 1,1/2,2,1/3,3/2,2/3,3,1/4,…</span>
+
+<span class="cm"># Diagonal argument (finite simulation)</span>
+<span class="kw">def</span> <span class="fn">diagonal_out</span>(table):
+    <span class="cm">"""Given rows=purported enum of binary strings, construct one absent from list."""</span>
+    <span class="kw">return</span> <span class="st">''</span>.join(<span class="st">'1'</span> <span class="kw">if</span> row[i]==<span class="st">'0'</span> <span class="kw">else</span> <span class="st">'0'</span>
+                   <span class="kw">for</span> i,row <span class="kw">in</span> enumerate(table) <span class="kw">if</span> i &lt; len(row))
+
+<span class="cm"># Ordinal exponentiation tower ω^ω^ω (symbolic, not computable)</span>
+<span class="cm"># Python ints ARE finite ordinals! ω itself requires lazy/symbolic repr.</span>
+<span class="cm"># See cantor-normal-form libraries for full ordinal arithmetic.</span>
+
+<span class="cm"># Hilbert Hotel: |ℕ|+1 = |ℕ| via shift f(n)=n+1</span>
+hotel = list(range(<span class="nu">10</span>))            <span class="cm"># finite model of N</span>
+shifted = [x+<span class="nu">1</span> <span class="kw">for</span> x <span class="kw">in</span> hotel]   <span class="cm"># new guest at room 0</span>
+<span class="cm"># No finite analog can capture ω+1≠1+ω — the key transfinite phenomenon!</span></div>
+<div class="ib">⚡ Forcing (Cohen 1963): to show ¬CH is consistent, adjoin a "generic" object G to a countable transitive model M of ZFC, forming M[G]. G is a function from ℵ₂×ℕ→{0,1} — it codes ℵ₂ many new real numbers. The forcing conditions are finite approximations; genericity ensures no ZFC axiom is violated. Result: M[G]⊨ZFC+¬CH. This technique has proved independence of hundreds of statements: Suslin's hypothesis, Martin's Axiom, the Proper Forcing Axiom (PFA), the Whitehead problem, and more — revealing the profound incompleteness of ZFC as a foundation.</div>`
+};
+
+function show(id){
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('n-'+id).classList.add('active');
+  document.getElementById('dmc').innerHTML=T[id];
+}
+show('sets');
+</script>
